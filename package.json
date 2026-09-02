@@ -1,0 +1,25 @@
+{
+  "name": "salary-maker",
+  "version": "1.0.0",
+  "description": "Salary Maker - Modern Multi-Company Payroll & Payslip Management Suite",
+  "scripts": {
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "build": "cd client && npm install && npm run build && cd ../server && npm install",
+    "start": "cd server && npm start",
+    "server": "cd server && npm start",
+    "client": "cd client && npm run dev",
+    "build:client": "cd client && npm run build"
+  },
+  "keywords": [
+    "mern",
+    "payroll",
+    "payslip-generator",
+    "authentication",
+    "salary-maker",
+    "react",
+    "express",
+    "mongodb"
+  ],
+  "author": "procypher72-ai",
+  "license": "ISC"
+}
