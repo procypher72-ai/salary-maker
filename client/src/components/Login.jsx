@@ -29,7 +29,7 @@ export const Login = () => {
   };
 
   const handleFillDemoAdmin = () => {
-    setEmail('admin@salarymaker.com');
+    setEmail('mydocuments0701@gmail.com');
     setPassword('Admin@12345');
     setErrorMsg('');
   };
@@ -72,7 +72,7 @@ export const Login = () => {
                 id="admin-email"
                 type="email"
                 className="form-input has-icon"
-                placeholder="admin@salarymaker.com"
+                placeholder="mydocuments0701@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -152,7 +152,7 @@ export const Login = () => {
             </button>
           </div>
           <div className="demo-credentials-code">
-            Email: <strong>admin@salarymaker.com</strong>
+            Email: <strong>mydocuments0701@gmail.com</strong>
             <br />
             Password: <strong>Admin@12345</strong>
           </div>
