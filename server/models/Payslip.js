@@ -73,7 +73,34 @@ const payslipSchema = new mongoose.Schema(
         currency: String,
         signatoryName: String,
         signatoryDesignation: String,
+        signatureUrl: String,
+        signatureWidth: Number,
+        signatureHeight: Number,
+        signatureOffsetX: Number,
+        signatureOffsetY: Number,
+        showSignature: Boolean,
+        stampUrl: String,
+        stampWidth: Number,
+        stampHeight: Number,
+        stampOffsetX: Number,
+        stampOffsetY: Number,
+        stampOpacity: Number,
+        showStamp: Boolean,
         templateKey: String,
+        slipWidth: Number,
+        slipMinHeight: Number,
+        slipPadding: Number,
+        slipBorderWidth: Number,
+        slipBorderStyle: String,
+        slipBorderColor: String,
+        slipBorderRadius: Number,
+        incomeDeductionHeight: Number,
+        incomeDeductionMinHeight: Number,
+        incomeColumnWidth: Number,
+        tableBorderWidth: Number,
+        tableBorderStyle: String,
+        tableBorderColor: String,
+        fontSizeScale: Number,
       },
       employee: {
         empCode: String,
@@ -84,8 +111,11 @@ const payslipSchema = new mongoose.Schema(
         department: String,
         joiningDate: Date,
         dynamicFields: mongoose.Schema.Types.Mixed,
+        taxRegime: String,
+        ptState: String,
       },
       templateKey: String,
+      statutoryAudit: mongoose.Schema.Types.Mixed,
     },
 
     status: {
@@ -96,5 +126,9 @@ const payslipSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Compound indexes for fast lookups by company, employee, and month/year
+payslipSchema.index({ companyId: 1, employeeId: 1, year: 1, month: 1 });
+payslipSchema.index({ companyId: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Payslip', payslipSchema);

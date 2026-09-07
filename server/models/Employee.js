@@ -60,9 +60,24 @@ const employeeSchema = new mongoose.Schema(
       
       // Standard deductions
       pfDeduction: { type: Number, default: 0 },
+      esicDeduction: { type: Number, default: 0 },
       professionalTax: { type: Number, default: 0 },
       tds: { type: Number, default: 0 },
       otherDeductions: { type: Number, default: 0 },
+    },
+
+    ctcAnnual: {
+      type: Number,
+      default: 0,
+    },
+    taxRegime: {
+      type: String,
+      enum: ['new', 'old'],
+      default: 'new',
+    },
+    ptState: {
+      type: String,
+      default: 'maharashtra',
     },
 
     status: {

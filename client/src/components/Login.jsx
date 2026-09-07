@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Shield, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Sparkles } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Sparkles, ShieldCheck } from 'lucide-react';
+import { SalaryMakerLogo } from './common/SalaryMakerLogo';
 
 export const Login = () => {
   const { login } = useAuth();
@@ -37,12 +38,15 @@ export const Login = () => {
   return (
     <div className="auth-wrapper">
       <div className="glass-panel auth-card">
-        <div className="auth-header">
-          <div className="auth-shield-icon">
-            <Shield size={32} />
+        <div className="auth-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+          <div style={{ marginBottom: '1.25rem' }}>
+            <SalaryMakerLogo variant="full" size="lg" />
           </div>
-          <h2>Admin Authentication</h2>
-          <p>Sign in to access the Salary Maker User Registration & Payroll Suite</p>
+          <div className="auth-secure-pill">
+            <ShieldCheck size={14} className="text-cyan" />
+            <span>Secure Admin Authentication</span>
+          </div>
+          <p style={{ marginTop: '0.65rem' }}>Sign in to access the Enterprise Multi-Company Payroll Suite</p>
         </div>
 
         {errorMsg && (

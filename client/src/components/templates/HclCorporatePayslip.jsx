@@ -1,5 +1,6 @@
 import React from 'react';
 import { ResizableLogo } from '../common/ResizableLogo';
+import { SignatureStampBox } from '../common/SignatureStampBox';
 
 // HCL Tech Branding Icon / Text matching PDF
 export const HclBrandLogo = () => (
@@ -26,8 +27,24 @@ export const HclCorporatePayslip = ({
   onDeleteDeduction,
   onDaysChange,
   onSizeSaved,
+  layoutConfig = null,
 }) => {
   const dynamic = employee?.dynamicFields || {};
+  const cfg = layoutConfig || company || {};
+
+  const slipStyle = {
+    maxWidth: cfg.slipWidth ? `${cfg.slipWidth}px` : undefined,
+    minHeight: cfg.slipMinHeight ? `${cfg.slipMinHeight}px` : undefined,
+    padding: cfg.slipPadding ? `${cfg.slipPadding}px` : undefined,
+    borderWidth: cfg.slipBorderWidth !== undefined ? `${cfg.slipBorderWidth}px` : undefined,
+    borderStyle: cfg.slipBorderStyle || undefined,
+    borderColor: cfg.slipBorderColor || undefined,
+    borderRadius: cfg.slipBorderRadius !== undefined ? `${cfg.slipBorderRadius}px` : undefined,
+    fontSize: cfg.fontSizeScale ? `${cfg.fontSizeScale * 0.00785}rem` : undefined,
+  };
+
+  const rowMinHeight = cfg.incomeDeductionHeight ? `${cfg.incomeDeductionHeight}px` : undefined;
+  const finTableMinHeight = cfg.incomeDeductionMinHeight ? `${cfg.incomeDeductionMinHeight}px` : undefined;
 
   // Formatter for Indian Currency string (e.g. 1,59,030.00)
   const formatAmount = (num) => {
@@ -60,7 +77,7 @@ export const HclCorporatePayslip = ({
   const daysWorked = draft.workingDays !== undefined ? draft.workingDays : 31;
 
   return (
-    <div className="hcl-corporate-wrapper" id="hcl-pdf-sheet">
+    <div className="hcl-corporate-wrapper" id="hcl-pdf-sheet" style={slipStyle}>
       
       {/* 1. Header Section */}
       <div className="hcl-header-box">
@@ -177,14 +194,14 @@ export const HclCorporatePayslip = ({
       <div className="hcl-divider-line" />
 
       {/* 4. Financial Line Items Rows */}
-      <div className="hcl-table-rows">
+      <div className="hcl-table-rows" style={{ minHeight: finTableMinHeight }}>
         {Array.from({ length: maxRows }).map((_, idx) => {
           const std = standardItems[idx];
           const ern = earnings[idx];
           const ded = deductions[idx];
 
           return (
-            <div key={idx} className="hcl-table-row">
+            <div key={idx} className="hcl-table-row" style={{ minHeight: rowMinHeight }}>
               {/* Standard Monthly Salary Column */}
               <div className="hcl-td-col std-desc">{std ? std.label : ''}</div>
               <div className="hcl-td-col std-val">{std ? formatAmount(std.amount) : ''}</div>
@@ -268,9 +285,21 @@ export const HclCorporatePayslip = ({
 
       <div className="hcl-divider-line" />
 
+      {/* Signature & Stamp Row */}
+      {(company?.showSignature !== false || company?.showStamp !== false) && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 16px 8px' }}>
+          <SignatureStampBox
+            company={company}
+            signatoryTitle={company?.signatoryName || 'Authorized Signatory'}
+            signatorySubtitle={company?.signatoryDesignation || 'Head of HR'}
+            align="right"
+          />
+        </div>
+      )}
+
       {/* 7. Bottom Disclaimer */}
       <div className="hcl-footer-text">
-        *This is a computer generated payslip and doesn't require signature or any company seal.
+        *This is a computer generated payslip and doesn't require manual signature unless stamped.
       </div>
 
     </div>

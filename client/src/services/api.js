@@ -149,6 +149,17 @@ export const api = {
     return data;
   },
 
+  bulkImportEmployees: async (companyId, employees) => {
+    const res = await fetch(`${API_BASE}/employees/bulk-import`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ companyId, employees }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to import employees');
+    return data;
+  },
+
   // Payslips
   prepareDraftPayslip: async (payload) => {
     const res = await fetch(`${API_BASE}/payslips/prepare-draft`, {
@@ -199,6 +210,17 @@ export const api = {
     return data;
   },
 
+  updatePayslip: async (id, payslipData) => {
+    const res = await fetch(`${API_BASE}/payslips/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payslipData),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to update salary slip');
+    return data;
+  },
+
   deletePayslip: async (id) => {
     const res = await fetch(`${API_BASE}/payslips/${id}`, {
       method: 'DELETE',
@@ -208,4 +230,84 @@ export const api = {
     if (!res.ok) throw new Error(data.message || 'Failed to delete payslip');
     return data;
   },
+
+  getBankAdviceReport: async (companyId, month, year) => {
+    const res = await fetch(
+      `${API_BASE}/payslips/reports/bank-advice?companyId=${companyId}&month=${month}&year=${year}`,
+      { headers: getAuthHeaders() }
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to fetch bank advice report');
+    return data;
+  },
+
+  getEpfEcrReport: async (companyId, month, year) => {
+    const res = await fetch(
+      `${API_BASE}/payslips/reports/epf-ecr?companyId=${companyId}&month=${month}&year=${year}`,
+      { headers: getAuthHeaders() }
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to fetch EPF ECR report');
+    return data;
+  },
+
+  // Tax Computations
+  getComputations: async (filter = {}) => {
+    const queryParams = new URLSearchParams(filter).toString();
+    const url = queryParams ? `${API_BASE}/computations?${queryParams}` : `${API_BASE}/computations`;
+    const res = await fetch(url, { headers: getAuthHeaders() });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to fetch computations');
+    return data;
+  },
+
+  getComputationById: async (id) => {
+    const res = await fetch(`${API_BASE}/computations/${id}`, { headers: getAuthHeaders() });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to fetch computation details');
+    return data;
+  },
+
+  createComputation: async (computationData) => {
+    const res = await fetch(`${API_BASE}/computations`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(computationData),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to create computation');
+    return data;
+  },
+
+  updateComputation: async (id, computationData) => {
+    const res = await fetch(`${API_BASE}/computations/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(computationData),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to update computation');
+    return data;
+  },
+
+  deleteComputation: async (id) => {
+    const res = await fetch(`${API_BASE}/computations/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to delete computation');
+    return data;
+  },
+
+  aggregateSalaryForFY: async (employeeId, financialYear) => {
+    const res = await fetch(
+      `${API_BASE}/computations/aggregate-salary?employeeId=${employeeId}&financialYear=${financialYear}`,
+      { headers: getAuthHeaders() }
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to aggregate salary for FY');
+    return data;
+  },
 };
+

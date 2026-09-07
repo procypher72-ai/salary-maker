@@ -7,6 +7,11 @@ import { AiimsGovtPayslip } from './templates/AiimsGovtPayslip';
 import { ConcentrixDakshPayslip } from './templates/ConcentrixDakshPayslip';
 import { SushmaBuildtechPayslip } from './templates/SushmaBuildtechPayslip';
 import { ResizableLogo } from './common/ResizableLogo';
+import { SlipLayoutToolbar } from './common/SlipLayoutToolbar';
+import { SignatureStampBox } from './common/SignatureStampBox';
+import { CtcCalculatorModal } from './CtcCalculatorModal';
+import { calculateEPF, calculateESIC, calculatePT } from '../utils/statutoryRules';
+import { exportElementToPdf } from '../utils/exportUtils';
 import {
   FileText,
   Calendar,
@@ -14,6 +19,7 @@ import {
   Plus,
   Trash2,
   Printer,
+  Download,
   Save,
   Layers,
   Sparkles,
@@ -22,6 +28,10 @@ import {
   CheckCircle2,
   Loader2,
   HelpCircle,
+  Calculator,
+  ShieldCheck,
+  Clock,
+  Zap,
 } from 'lucide-react';
 
 const MONTHS = [
@@ -36,6 +46,7 @@ export const PayslipGenerator = ({
   employees = [],
   templates = [],
   onPayslipGenerated,
+  onCompanyUpdated,
 }) => {
   const { showToast } = useAuth();
 
@@ -55,9 +66,53 @@ export const PayslipGenerator = ({
 
   // Interactive Live Canvas State
   const [draft, setDraft] = useState(null);
+  const [existingPayslipRecord, setExistingPayslipRecord] = useState(null);
   const [loadingDraft, setLoadingDraft] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isBulkGenerating, setIsBulkGenerating] = useState(false);
+  const [isCtcModalOpen, setIsCtcModalOpen] = useState(false);
+  const [overtimeHours, setOvertimeHours] = useState(0);
+
+  // Live Layout & Styling Configuration
+  const [layoutConfig, setLayoutConfig] = useState({
+    slipWidth: activeCompany?.slipWidth || 950,
+    slipMinHeight: activeCompany?.slipMinHeight || 0,
+    slipPadding: activeCompany?.slipPadding || 24,
+    slipBorderWidth: activeCompany?.slipBorderWidth !== undefined ? activeCompany.slipBorderWidth : 1,
+    slipBorderStyle: activeCompany?.slipBorderStyle || 'solid',
+    slipBorderColor: activeCompany?.slipBorderColor || '#000000',
+    slipBorderRadius: activeCompany?.slipBorderRadius || 0,
+    incomeDeductionHeight: activeCompany?.incomeDeductionHeight || 30,
+    incomeDeductionMinHeight: activeCompany?.incomeDeductionMinHeight || 160,
+    incomeColumnWidth: activeCompany?.incomeColumnWidth || 50,
+    tableBorderWidth: activeCompany?.tableBorderWidth !== undefined ? activeCompany.tableBorderWidth : 1,
+    tableBorderStyle: activeCompany?.tableBorderStyle || 'solid',
+    tableBorderColor: activeCompany?.tableBorderColor || '#000000',
+    fontSizeScale: activeCompany?.fontSizeScale || 100,
+  });
+
+  // Sync layoutConfig when activeCompany changes
+  useEffect(() => {
+    if (activeCompany) {
+      setLayoutConfig({
+        slipWidth: activeCompany.slipWidth || 950,
+        slipMinHeight: activeCompany.slipMinHeight || 0,
+        slipPadding: activeCompany.slipPadding || 24,
+        slipBorderWidth: activeCompany.slipBorderWidth !== undefined ? activeCompany.slipBorderWidth : 1,
+        slipBorderStyle: activeCompany.slipBorderStyle || 'solid',
+        slipBorderColor: activeCompany.slipBorderColor || '#000000',
+        slipBorderRadius: activeCompany.slipBorderRadius || 0,
+        incomeDeductionHeight: activeCompany.incomeDeductionHeight || 30,
+        incomeDeductionMinHeight: activeCompany.incomeDeductionMinHeight || 160,
+        incomeColumnWidth: activeCompany.incomeColumnWidth || 50,
+        tableBorderWidth: activeCompany.tableBorderWidth !== undefined ? activeCompany.tableBorderWidth : 1,
+        tableBorderStyle: activeCompany.tableBorderStyle || 'solid',
+        tableBorderColor: activeCompany.tableBorderColor || '#000000',
+        fontSizeScale: activeCompany.fontSizeScale || 100,
+      });
+    }
+  }, [activeCompany]);
 
   // Set default employee when employees list is loaded
   useEffect(() => {
@@ -71,6 +126,19 @@ export const PayslipGenerator = ({
     if (!selectedEmpId || !activeCompany) return;
     setLoadingDraft(true);
     try {
+      // Check if payslip already exists for this employee, month, and year
+      const existingRes = await api.getPayslips({
+        employeeId: selectedEmpId,
+        month: selectedMonth,
+        year: selectedYear,
+      });
+
+      if (existingRes.payslips && existingRes.payslips.length > 0) {
+        setExistingPayslipRecord(existingRes.payslips[0]);
+      } else {
+        setExistingPayslipRecord(null);
+      }
+
       const res = await api.prepareDraftPayslip({
         employeeId: selectedEmpId,
         month: selectedMonth,
@@ -172,13 +240,130 @@ export const PayslipGenerator = ({
     setDraft({ ...targetDraft });
   };
 
+  // Auto Pro-Rata Recalculator based on Paid Days / Working Days
+  const handleAutoProRata = () => {
+    if (!draft || !selectedEmployeeObj) return;
+    const workingDays = draft.workingDays > 0 ? draft.workingDays : 30;
+    const paidDays = draft.paidDays !== undefined ? draft.paidDays : workingDays;
+    const payRatio = paidDays / workingDays;
+    const base = selectedEmployeeObj.baselineSalary || {};
+
+    let updatedEarnings = [];
+    if (templateKey === 'aiims_govt_medical') {
+      const aiimsBaseEarnings = [
+        { label: 'Basic', amount: 67400 },
+        { label: 'Dearness Allowance', amount: 26960 },
+        { label: 'Travelling Allowance', amount: 4800 },
+        { label: 'TADA', amount: 1512 },
+        { label: 'ICU Allowance', amount: 540 },
+        { label: 'Deputation Pay Allowance', amount: 1280 },
+        { label: 'Uniform Allowance', amount: 2800 },
+        { label: 'Medical Allowance', amount: 3200 },
+        { label: 'Nps Employer Earning Share', amount: 15224 },
+        { label: 'Other Allowance', amount: 10650 },
+      ];
+      updatedEarnings = aiimsBaseEarnings.map((item) => ({
+        label: item.label,
+        amount: Math.round(item.amount * payRatio),
+      }));
+    } else {
+      if (base.basicPay) updatedEarnings.push({ label: 'Basic Salary', amount: Math.round(base.basicPay * payRatio) });
+      if (base.hra) updatedEarnings.push({ label: 'House Rent Allowance (HRA)', amount: Math.round(base.hra * payRatio) });
+      if (base.specialAllowance) updatedEarnings.push({ label: 'Special Allowance', amount: Math.round(base.specialAllowance * payRatio) });
+      if (base.conveyanceAllowance) updatedEarnings.push({ label: 'Conveyance Allowance', amount: Math.round(base.conveyanceAllowance * payRatio) });
+      if (base.medicalAllowance) updatedEarnings.push({ label: 'Medical Allowance', amount: Math.round(base.medicalAllowance * payRatio) });
+      if (base.otherAllowances) updatedEarnings.push({ label: 'Other Allowances', amount: Math.round(base.otherAllowances * payRatio) });
+      if (updatedEarnings.length === 0) {
+        updatedEarnings = (draft.earnings || []).map((e) => ({
+          label: e.label,
+          amount: Math.round(e.amount * payRatio),
+        }));
+      }
+    }
+
+    // Add Overtime Pay if overtime hours > 0
+    if (overtimeHours > 0) {
+      const basicPay = base.basicPay || 67400;
+      const hourlyRate = (basicPay / (workingDays * 8)) * 2; // Double rate for OT
+      const otAmount = Math.round(hourlyRate * Number(overtimeHours));
+      updatedEarnings.push({ label: `Overtime Allowance (${overtimeHours} hrs)`, amount: otAmount });
+    }
+
+    const updated = {
+      ...draft,
+      earnings: updatedEarnings,
+    };
+    recalculateTotals(updated);
+    showToast(`Pro-rata salary recalculated for ${paidDays}/${workingDays} days (${(payRatio * 100).toFixed(1)}%)!`, 'info');
+  };
+
+  // Statutory Deductions Autofill (EPF, ESIC, PT, TDS, AIIMS Recoveries)
+  const handleStatutoryAutofill = () => {
+    if (!draft || !selectedEmployeeObj) return;
+
+    if (templateKey === 'aiims_govt_medical') {
+      const updatedDeductions = [
+        { label: 'Association Fund Category Amount', amount: 20 },
+        { label: 'Emp Health Scheme', amount: 650 },
+        { label: 'Emp Insurance Scheme', amount: 60 },
+        { label: 'Income Tax', amount: 7357 },
+        { label: 'Miscellaneous Recovery NA', amount: 967 },
+        { label: 'New Pension Scehme-110001989995', amount: 10874 },
+        { label: 'Nps Employer Ded Share', amount: 15224 },
+        { label: 'Water Charges', amount: 82 },
+      ];
+      const updated = {
+        ...draft,
+        deductions: updatedDeductions,
+      };
+      recalculateTotals(updated);
+      showToast('Autofilled AIIMS Central Govt statutory deductions & recoveries!', 'success');
+      return;
+    }
+
+    const gross = draft.grossEarnings || 0;
+    const basicItem = draft.earnings.find((e) => e.label.toLowerCase().includes('basic'));
+    const basicPay = basicItem ? Number(basicItem.amount) || 0 : Math.round(gross * 0.4);
+
+    const ptState = selectedEmployeeObj.ptState || activeCompany?.ptState || 'maharashtra';
+    const epfObj = calculateEPF(basicPay, false);
+    const esicObj = calculateESIC(gross);
+    const pt = calculatePT(gross, ptState, selectedEmployeeObj.dynamicFields?.gender || 'M', draft.month);
+
+    const updatedDeductions = [];
+    if (epfObj.employeeEPF > 0) {
+      updatedDeductions.push({ label: 'Provident Fund (PF 12%)', amount: epfObj.employeeEPF });
+    }
+    if (esicObj.isEligible && esicObj.employeeESIC > 0) {
+      updatedDeductions.push({ label: 'Employee State Insurance (ESIC 0.75%)', amount: esicObj.employeeESIC });
+    }
+    if (pt > 0) {
+      updatedDeductions.push({ label: 'Professional Tax (PT)', amount: pt });
+    }
+    if (selectedEmployeeObj.baselineSalary?.tds) {
+      updatedDeductions.push({ label: 'Income Tax / TDS', amount: Number(selectedEmployeeObj.baselineSalary.tds) });
+    }
+
+    const updated = {
+      ...draft,
+      deductions: updatedDeductions,
+    };
+    recalculateTotals(updated);
+    showToast('Autofilled statutory EPF, ESIC, PT, and TDS deductions!', 'success');
+  };
+
   // Save / Finalize Single Payslip
   const handleSavePayslip = async () => {
     if (!draft) return;
     setIsSaving(true);
     try {
-      const res = await api.createPayslip(draft);
-      showToast(res.message || 'Payslip saved & finalized!', 'success');
+      if (existingPayslipRecord?._id) {
+        const res = await api.updatePayslip(existingPayslipRecord._id, draft);
+        showToast(res.message || 'Existing salary slip updated successfully!', 'success');
+      } else {
+        const res = await api.createPayslip(draft);
+        showToast(res.message || 'Payslip saved & finalized!', 'success');
+      }
       if (onPayslipGenerated) onPayslipGenerated();
     } catch (err) {
       showToast(err.message, 'error');
@@ -215,6 +400,29 @@ export const PayslipGenerator = ({
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadPdf = async () => {
+    const el = document.getElementById('live-payslip-print-target');
+    if (!el) {
+      showToast('Live payslip preview not found', 'error');
+      return;
+    }
+    setIsExportingPdf(true);
+    try {
+      const empName = (selectedEmployeeObj?.fullName || 'Employee').replace(/\s+/g, '_');
+      const filename = `Payslip_${empName}_${selectedMonth}_${selectedYear}.pdf`;
+      await exportElementToPdf(el, filename, {
+        margin: [6, 6, 6, 6],
+        scale: 2,
+      });
+      showToast(`Exported ${filename} successfully!`, 'success');
+    } catch (err) {
+      console.error('PDF Export Error:', err);
+      showToast('PDF Export failed: ' + err.message, 'error');
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   const selectedEmployeeObj = employees.find((e) => e._id === selectedEmpId);
@@ -326,16 +534,27 @@ export const PayslipGenerator = ({
                   id="save-payslip-btn"
                 >
                   {isSaving ? <Loader2 size={16} className="spin" /> : <Save size={16} />}
-                  <span>Save Snapshot</span>
+                  <span>{existingPayslipRecord ? 'Update Salary Slip' : 'Save Snapshot'}</span>
+                </button>
+                <button
+                  onClick={handleDownloadPdf}
+                  className="btn btn-primary"
+                  disabled={isExportingPdf || !draft}
+                  title="Export live canvas directly to PDF"
+                  id="download-pdf-btn"
+                  style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', border: 'none' }}
+                >
+                  {isExportingPdf ? <Loader2 size={16} className="spin" /> : <Download size={16} />}
+                  <span>Download PDF</span>
                 </button>
                 <button
                   onClick={handlePrint}
                   className="btn btn-secondary"
-                  title="Print or Export to PDF"
+                  title="Print or Export to PDF via browser dialog"
                   id="print-payslip-btn"
                 >
                   <Printer size={16} />
-                  <span>Print / PDF</span>
+                  <span>Print</span>
                 </button>
               </div>
             </div>
@@ -437,20 +656,144 @@ export const PayslipGenerator = ({
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          LIVE EDITABLE PAYSLIP CANVAS PREVIEW
-          Supports 3 distinct visual template layouts:
-          1. Corporate Detailed
-          2. Minimalist Startup
-          3. Standard Industrial
+          LIVE EDITABLE PAYSLIP CANVAS PREVIEW & LAYOUT CUSTOMIZER
       ───────────────────────────────────────────────────────────── */}
       {draft && mode === 'single' ? (
         <div className="payslip-canvas-container">
+
+          {/* ATTENDANCE & STATUTORY INTELLIGENT ACTION BAR */}
+          <div
+            className="glass-panel no-print"
+            style={{
+              padding: '1rem 1.25rem',
+              marginBottom: '1rem',
+              background: 'rgba(15, 23, 42, 0.75)',
+              border: '1px solid rgba(99, 102, 241, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '1rem',
+            }}
+          >
+            {/* Left: Attendance Inputs */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--accent-cyan)', fontWeight: 700, fontSize: '0.85rem' }}>
+                <Clock size={16} />
+                <span>Attendance & Days:</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Month Days:</span>
+                <input
+                  type="number"
+                  min="20"
+                  max="31"
+                  value={draft.workingDays || 30}
+                  onChange={(e) => handleDaysChange('workingDays', e.target.value)}
+                  className="form-input"
+                  style={{ width: '60px', padding: '0.25rem 0.4rem', textAlign: 'center', fontSize: '0.85rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Paid Days:</span>
+                <input
+                  type="number"
+                  min="0"
+                  max={draft.workingDays || 31}
+                  value={draft.paidDays !== undefined ? draft.paidDays : (draft.workingDays || 30)}
+                  onChange={(e) => handleDaysChange('paidDays', e.target.value)}
+                  className="form-input"
+                  style={{ width: '60px', padding: '0.25rem 0.4rem', textAlign: 'center', fontSize: '0.85rem', fontWeight: 700, borderColor: 'var(--accent-cyan)' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Loss of Pay (LOP):</span>
+                <span className={`badge ${draft.lopDays > 0 ? 'badge-admin' : 'badge-employee'}`} style={{ fontWeight: 700 }}>
+                  {draft.lopDays || 0} Days
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Overtime:</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={overtimeHours}
+                  onChange={(e) => setOvertimeHours(Number(e.target.value) || 0)}
+                  className="form-input"
+                  placeholder="0 hrs"
+                  style={{ width: '65px', padding: '0.25rem 0.4rem', textAlign: 'center', fontSize: '0.85rem' }}
+                />
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>hrs</span>
+              </div>
+            </div>
+
+            {/* Right: Quick Action Engines */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn btn-sm btn-secondary"
+                onClick={handleAutoProRata}
+                title="Automatically calculate earnings based on Paid Days / Total Days and Overtime"
+                id="pro-rata-btn"
+                style={{ borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)' }}
+              >
+                <Zap size={14} />
+                <span>Recalculate Pro-Rata</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-sm btn-secondary"
+                onClick={handleStatutoryAutofill}
+                title="Autofill EPF 12%, ESIC 0.75%, State PT, and TDS"
+                id="statutory-autofill-btn"
+                style={{ borderColor: 'var(--accent-emerald)', color: 'var(--accent-emerald)' }}
+              >
+                <ShieldCheck size={14} />
+                <span>Statutory Autofill (PF/ESIC/PT)</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-sm btn-primary"
+                onClick={() => setIsCtcModalOpen(true)}
+                title="Open interactive CTC & Tax Breakdown Calculator"
+                id="generator-ctc-calc-btn"
+              >
+                <Calculator size={14} />
+                <span>CTC Engine</span>
+              </button>
+            </div>
+          </div>
+          
+          {/* Slip Dimensions, Borders & Column Layout Toolbar */}
+          <SlipLayoutToolbar
+            company={activeCompany}
+            layoutConfig={layoutConfig}
+            onChangeLayout={(newCfg) => setLayoutConfig(newCfg)}
+            onSaveCompanyLayout={(updatedComp) => {
+              if (onCompanyUpdated) onCompanyUpdated(updatedComp);
+            }}
+          />
+
+          {/* Mobile Swipe / Scroll Hint */}
+          <div className="mobile-scroll-hint">
+            <span>↔ Swipe horizontally to view & edit full payslip sheet</span>
+          </div>
+
+          <div className="payslip-canvas-scroll-wrapper" id="live-payslip-print-target">
           {templateKey === 'aiims_govt_medical' ? (
             <AiimsGovtPayslip
               company={activeCompany}
               employee={selectedEmployeeObj}
               draft={draft}
               isEditable={true}
+              layoutConfig={layoutConfig}
               onEarningChange={handleEarningChange}
               onDeductionChange={handleDeductionChange}
               onAddEarning={handleAddEarning}
@@ -465,6 +808,7 @@ export const PayslipGenerator = ({
               employee={selectedEmployeeObj}
               draft={draft}
               isEditable={true}
+              layoutConfig={layoutConfig}
               onEarningChange={handleEarningChange}
               onDeductionChange={handleDeductionChange}
               onAddEarning={handleAddEarning}
@@ -480,6 +824,7 @@ export const PayslipGenerator = ({
               template={templates.find((t) => t.templateKey === templateKey)}
               draft={draft}
               isEditable={true}
+              layoutConfig={layoutConfig}
               onEarningChange={handleEarningChange}
               onDeductionChange={handleDeductionChange}
               onAddEarning={handleAddEarning}
@@ -494,6 +839,7 @@ export const PayslipGenerator = ({
               employee={selectedEmployeeObj}
               draft={draft}
               isEditable={true}
+              layoutConfig={layoutConfig}
               onEarningChange={handleEarningChange}
               onDeductionChange={handleDeductionChange}
               onAddEarning={handleAddEarning}
@@ -508,6 +854,7 @@ export const PayslipGenerator = ({
               employee={selectedEmployeeObj}
               draft={draft}
               isEditable={true}
+              layoutConfig={layoutConfig}
               onEarningChange={handleEarningChange}
               onDeductionChange={handleDeductionChange}
               onAddEarning={handleAddEarning}
@@ -517,7 +864,20 @@ export const PayslipGenerator = ({
               onDaysChange={handleDaysChange}
             />
           ) : (
-          <div className={`payslip-sheet template-${templateKey}`} id="printable-payslip">
+          <div
+            className={`payslip-sheet template-${templateKey}`}
+            id="printable-payslip"
+            style={{
+              maxWidth: layoutConfig.slipWidth ? `${layoutConfig.slipWidth}px` : undefined,
+              minHeight: layoutConfig.slipMinHeight ? `${layoutConfig.slipMinHeight}px` : undefined,
+              padding: layoutConfig.slipPadding ? `${layoutConfig.slipPadding}px` : undefined,
+              borderWidth: layoutConfig.slipBorderWidth !== undefined ? `${layoutConfig.slipBorderWidth}px` : undefined,
+              borderStyle: layoutConfig.slipBorderStyle || undefined,
+              borderColor: layoutConfig.slipBorderColor || undefined,
+              borderRadius: layoutConfig.slipBorderRadius !== undefined ? `${layoutConfig.slipBorderRadius}px` : undefined,
+              fontSize: layoutConfig.fontSizeScale ? `${layoutConfig.fontSizeScale * 0.0085}rem` : undefined,
+            }}
+          >
             
             {/* Header / Brand */}
             <div className="payslip-header">
@@ -626,10 +986,20 @@ export const PayslipGenerator = ({
             </div>
 
             {/* Financials Two-Column Breakdown (Earnings vs Deductions) */}
-            <div className="payslip-financials-grid">
+            <div
+              className="payslip-financials-grid"
+              style={{
+                gridTemplateColumns: `${layoutConfig.incomeColumnWidth}% ${100 - layoutConfig.incomeColumnWidth}%`,
+              }}
+            >
               
               {/* Earnings Table */}
-              <div className="financial-section earnings-section">
+              <div
+                className="financial-section earnings-section"
+                style={{
+                  minHeight: layoutConfig.incomeDeductionMinHeight ? `${layoutConfig.incomeDeductionMinHeight}px` : undefined,
+                }}
+              >
                 <div className="section-head">
                   <h3>EARNINGS</h3>
                   <button
@@ -651,8 +1021,8 @@ export const PayslipGenerator = ({
                   </thead>
                   <tbody>
                     {draft.earnings.map((e, idx) => (
-                      <tr key={idx}>
-                        <td>
+                      <tr key={idx} style={{ height: `${layoutConfig.incomeDeductionHeight}px` }}>
+                        <td style={{ padding: `${Math.max(4, (layoutConfig.incomeDeductionHeight - 20) / 2)}px 0.75rem` }}>
                           <input
                             type="text"
                             className="canvas-table-input"
@@ -660,7 +1030,7 @@ export const PayslipGenerator = ({
                             onChange={(ev) => handleEarningChange(idx, 'label', ev.target.value)}
                           />
                         </td>
-                        <td style={{ textAlign: 'right' }}>
+                        <td style={{ textAlign: 'right', padding: `${Math.max(4, (layoutConfig.incomeDeductionHeight - 20) / 2)}px 0.75rem` }}>
                           <input
                             type="number"
                             className="canvas-table-input num-right"
@@ -684,7 +1054,12 @@ export const PayslipGenerator = ({
               </div>
 
               {/* Deductions Table */}
-              <div className="financial-section deductions-section">
+              <div
+                className="financial-section deductions-section"
+                style={{
+                  minHeight: layoutConfig.incomeDeductionMinHeight ? `${layoutConfig.incomeDeductionMinHeight}px` : undefined,
+                }}
+              >
                 <div className="section-head">
                   <h3>DEDUCTIONS</h3>
                   <button
@@ -706,8 +1081,8 @@ export const PayslipGenerator = ({
                   </thead>
                   <tbody>
                     {draft.deductions.map((d, idx) => (
-                      <tr key={idx}>
-                        <td>
+                      <tr key={idx} style={{ height: `${layoutConfig.incomeDeductionHeight}px` }}>
+                        <td style={{ padding: `${Math.max(4, (layoutConfig.incomeDeductionHeight - 20) / 2)}px 0.75rem` }}>
                           <input
                             type="text"
                             className="canvas-table-input"
@@ -715,7 +1090,7 @@ export const PayslipGenerator = ({
                             onChange={(ev) => handleDeductionChange(idx, 'label', ev.target.value)}
                           />
                         </td>
-                        <td style={{ textAlign: 'right' }}>
+                        <td style={{ textAlign: 'right', padding: `${Math.max(4, (layoutConfig.incomeDeductionHeight - 20) / 2)}px 0.75rem` }}>
                           <input
                             type="number"
                             className="canvas-table-input num-right"
@@ -782,6 +1157,7 @@ export const PayslipGenerator = ({
 
           </div>
           )}
+          </div>
         </div>
       ) : mode === 'single' ? (
         <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
@@ -789,6 +1165,38 @@ export const PayslipGenerator = ({
           <p>Compiling interactive payslip preview canvas...</p>
         </div>
       ) : null}
+
+      {/* CTC Breakdown & Tax Comparator Modal */}
+      <CtcCalculatorModal
+        isOpen={isCtcModalOpen}
+        onClose={() => setIsCtcModalOpen(false)}
+        initialCtc={selectedEmployeeObj?.ctcAnnual || 600000}
+        initialState={selectedEmployeeObj?.ptState || activeCompany?.ptState || 'maharashtra'}
+        onApplySalary={(data) => {
+          if (!draft) return;
+          const updatedEarnings = [
+            { label: 'Basic Salary', amount: data.baselineSalary.basicPay },
+            { label: 'House Rent Allowance (HRA)', amount: data.baselineSalary.hra },
+            { label: 'Special Allowance', amount: data.baselineSalary.specialAllowance },
+            { label: 'Conveyance Allowance', amount: data.baselineSalary.conveyanceAllowance },
+            { label: 'Medical Allowance', amount: data.baselineSalary.medicalAllowance },
+          ];
+          const updatedDeductions = [
+            { label: 'Provident Fund (PF 12%)', amount: data.baselineSalary.pfDeduction },
+            ...(data.baselineSalary.esicDeduction > 0 ? [{ label: 'Employee State Insurance (ESIC 0.75%)', amount: data.baselineSalary.esicDeduction }] : []),
+            { label: 'Professional Tax (PT)', amount: data.baselineSalary.professionalTax },
+            ...(data.baselineSalary.tds > 0 ? [{ label: 'Income Tax / TDS', amount: data.baselineSalary.tds }] : []),
+          ];
+
+          const updated = {
+            ...draft,
+            earnings: updatedEarnings,
+            deductions: updatedDeductions,
+          };
+          recalculateTotals(updated);
+          showToast('Applied calculated CTC structure to current payslip draft!', 'success');
+        }}
+      />
     </div>
   );
 };

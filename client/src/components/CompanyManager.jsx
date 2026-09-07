@@ -41,6 +41,24 @@ export const CompanyManager = ({
     logoUrl: '',
     logoWidth: 65,
     logoHeight: 65,
+    logoPosition: 'left',
+    logoOffsetX: 0,
+    logoOffsetY: 0,
+    signatureUrl: '',
+    signatureWidth: 120,
+    signatureHeight: 50,
+    signatureOffsetX: 0,
+    signatureOffsetY: 0,
+    showSignature: true,
+    stampUrl: '',
+    stampWidth: 90,
+    stampHeight: 90,
+    stampOffsetX: 0,
+    stampOffsetY: 0,
+    stampOpacity: 85,
+    showStamp: true,
+    ptState: 'maharashtra',
+    defaultTaxRegime: 'new',
     templateKey: 'corporate_detailed',
     currency: '₹',
     currencyCode: 'INR',
@@ -72,6 +90,21 @@ export const CompanyManager = ({
       logoPosition: comp.logoPosition || 'left',
       logoOffsetX: comp.logoOffsetX || 0,
       logoOffsetY: comp.logoOffsetY || 0,
+      signatureUrl: comp.signatureUrl || '',
+      signatureWidth: comp.signatureWidth || 120,
+      signatureHeight: comp.signatureHeight || 50,
+      signatureOffsetX: comp.signatureOffsetX || 0,
+      signatureOffsetY: comp.signatureOffsetY || 0,
+      showSignature: comp.showSignature !== undefined ? comp.showSignature : true,
+      stampUrl: comp.stampUrl || '',
+      stampWidth: comp.stampWidth || 90,
+      stampHeight: comp.stampHeight || 90,
+      stampOffsetX: comp.stampOffsetX || 0,
+      stampOffsetY: comp.stampOffsetY || 0,
+      stampOpacity: comp.stampOpacity !== undefined ? comp.stampOpacity : 85,
+      showStamp: comp.showStamp !== undefined ? comp.showStamp : true,
+      ptState: comp.ptState || 'maharashtra',
+      defaultTaxRegime: comp.defaultTaxRegime || 'new',
       templateKey: comp.templateKey || 'corporate_detailed',
       currency: comp.currency || '₹',
       currencyCode: comp.currencyCode || 'INR',
@@ -91,6 +124,36 @@ export const CompanyManager = ({
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData((prev) => ({ ...prev, logoUrl: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSignatureUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('Signature file size must be less than 2MB', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({ ...prev, signatureUrl: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleStampUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('Stamp file size must be less than 2MB', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({ ...prev, stampUrl: reader.result }));
       };
       reader.readAsDataURL(file);
     }
@@ -239,7 +302,7 @@ export const CompanyManager = ({
                     <div>
                       <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>{comp.name}</h3>
                       <span className="badge badge-admin" style={{ marginTop: '0.25rem' }}>
-                        {comp.templateKey.replace('_', ' ').toUpperCase()}
+                        {(comp.templateKey || 'corporate_detailed').replace('_', ' ').toUpperCase()}
                       </span>
                     </div>
                   </div>
@@ -560,47 +623,185 @@ export const CompanyManager = ({
                 </div>
               </div>
 
-              {/* Signatory Settings */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+              {/* Digital Signature & Official Company Stamp Section */}
+              <div
+                style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '10px',
+                  padding: '1.25rem',
+                  marginTop: '1.25rem',
+                }}
+              >
+                <h4 style={{ margin: '0 0 1rem', fontSize: '0.95rem', fontWeight: 700, color: 'var(--accent-cyan)' }}>
+                  ✍️ Digital Signature & Official Company Seal / Stamp
+                </h4>
+
+                {/* 1. Digital Signature */}
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <label className="form-label" style={{ margin: 0, fontWeight: 600 }}>Authorized Signatory Signature (PNG)</label>
+                    <label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={formData.showSignature}
+                        onChange={(e) => setFormData({ ...formData, showSignature: e.target.checked })}
+                      />
+                      <span>Show on Payslips</span>
+                    </label>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                    {formData.signatureUrl ? (
+                      <img
+                        src={formData.signatureUrl}
+                        alt="Signature Preview"
+                        style={{
+                          width: `${formData.signatureWidth || 100}px`,
+                          height: `${formData.signatureHeight || 40}px`,
+                          objectFit: 'contain',
+                          background: '#fff',
+                          borderRadius: '4px',
+                          padding: '3px',
+                        }}
+                      />
+                    ) : (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>No signature uploaded</div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg"
+                      onChange={handleSignatureUpload}
+                      className="form-input"
+                      style={{ padding: '0.4rem', flex: '1 1 180px' }}
+                    />
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Width</label>
+                        <input
+                          type="number"
+                          min="40"
+                          max="250"
+                          value={formData.signatureWidth || 120}
+                          onChange={(e) => setFormData({ ...formData, signatureWidth: Number(e.target.value) })}
+                          className="form-input"
+                          style={{ width: '70px', padding: '0.35rem' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Height</label>
+                        <input
+                          type="number"
+                          min="20"
+                          max="120"
+                          value={formData.signatureHeight || 50}
+                          onChange={(e) => setFormData({ ...formData, signatureHeight: Number(e.target.value) })}
+                          className="form-input"
+                          style={{ width: '70px', padding: '0.35rem' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Official Seal / Stamp */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <label className="form-label" style={{ margin: 0, fontWeight: 600 }}>Company Official Stamp / Round Seal (PNG)</label>
+                    <label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={formData.showStamp}
+                        onChange={(e) => setFormData({ ...formData, showStamp: e.target.checked })}
+                      />
+                      <span>Show on Payslips</span>
+                    </label>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                    {formData.stampUrl ? (
+                      <img
+                        src={formData.stampUrl}
+                        alt="Stamp Preview"
+                        style={{
+                          width: `${formData.stampWidth || 70}px`,
+                          height: `${formData.stampHeight || 70}px`,
+                          objectFit: 'contain',
+                          background: '#fff',
+                          borderRadius: '4px',
+                          padding: '3px',
+                          opacity: (formData.stampOpacity || 85) / 100,
+                        }}
+                      />
+                    ) : (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>No stamp uploaded</div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg"
+                      onChange={handleStampUpload}
+                      className="form-input"
+                      style={{ padding: '0.4rem', flex: '1 1 180px' }}
+                    />
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Size (px)</label>
+                        <input
+                          type="number"
+                          min="40"
+                          max="180"
+                          value={formData.stampWidth || 90}
+                          onChange={(e) => setFormData({ ...formData, stampWidth: Number(e.target.value), stampHeight: Number(e.target.value) })}
+                          className="form-input"
+                          style={{ width: '70px', padding: '0.35rem' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Opacity %</label>
+                        <input
+                          type="number"
+                          min="10"
+                          max="100"
+                          value={formData.stampOpacity || 85}
+                          onChange={(e) => setFormData({ ...formData, stampOpacity: Number(e.target.value) })}
+                          className="form-input"
+                          style={{ width: '70px', padding: '0.35rem' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Statutory Compliance Defaults */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1.25rem' }}>
                 <div className="form-group">
-                  <label className="form-label">Currency Symbol</label>
+                  <label className="form-label">Default PT State Slab</label>
                   <select
                     className="form-select"
-                    value={formData.currency}
-                    onChange={(e) => {
-                      const curr = e.target.value;
-                      setFormData({
-                        ...formData,
-                        currency: curr,
-                        currencyCode: curr === '₹' ? 'INR' : curr === '$' ? 'USD' : curr === '€' ? 'EUR' : 'GBP',
-                      });
-                    }}
+                    value={formData.ptState}
+                    onChange={(e) => setFormData({ ...formData, ptState: e.target.value })}
                   >
-                    <option value="₹">₹ (INR - Rupee)</option>
-                    <option value="$">$ (USD - Dollar)</option>
-                    <option value="€">€ (EUR - Euro)</option>
-                    <option value="£">£ (GBP - Pound)</option>
+                    <option value="maharashtra">Maharashtra (₹200/mo)</option>
+                    <option value="karnataka">Karnataka (₹200/mo)</option>
+                    <option value="tamil_nadu">Tamil Nadu (Up to ₹208/mo)</option>
+                    <option value="west_bengal">West Bengal (Up to ₹200/mo)</option>
+                    <option value="telangana">Telangana (₹200/mo)</option>
+                    <option value="andhra_pradesh">Andhra Pradesh (₹200/mo)</option>
+                    <option value="gujarat">Gujarat (₹200/mo)</option>
+                    <option value="delhi">Delhi (Exempt / ₹0)</option>
+                    <option value="other">Other (Exempt / ₹0)</option>
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Signatory Name</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={formData.signatoryName}
-                    onChange={(e) => setFormData({ ...formData, signatoryName: e.target.value })}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Signatory Designation</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={formData.signatoryDesignation}
-                    onChange={(e) => setFormData({ ...formData, signatoryDesignation: e.target.value })}
-                  />
+                  <label className="form-label">Default Income Tax Regime</label>
+                  <select
+                    className="form-select"
+                    value={formData.defaultTaxRegime}
+                    onChange={(e) => setFormData({ ...formData, defaultTaxRegime: e.target.value })}
+                  >
+                    <option value="new">New Tax Regime (Default u/s 115BAC)</option>
+                    <option value="old">Old Tax Regime (With 80C/80D/HRA)</option>
+                  </select>
                 </div>
               </div>
 

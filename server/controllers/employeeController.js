@@ -337,11 +337,123 @@ const seedDefaultEmployees = async (companyId) => {
   }
 };
 
+// @desc    Bulk import multiple employees from JSON/CSV/Excel roster
+// @route   POST /api/employees/bulk-import
+const bulkImportEmployees = async (req, res) => {
+  try {
+    const { companyId, employees: employeeList } = req.body;
+
+    if (!companyId || !Array.isArray(employeeList) || employeeList.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide companyId and a list of employees to import.',
+      });
+    }
+
+    const company = await Company.findById(companyId);
+    if (!company) {
+      return res.status(404).json({ success: false, message: 'Company not found' });
+    }
+
+    const results = {
+      inserted: 0,
+      updated: 0,
+      errors: [],
+    };
+
+    for (const [index, emp] of employeeList.entries()) {
+      const empCode = emp.empCode || emp['Employee ID'] || emp['Emp Code'] || emp.id;
+      const fullName = emp.fullName || emp['Full Name'] || emp['Name'] || emp.name;
+      const designation = emp.designation || emp['Designation'] || 'Staff Member';
+      const department = emp.department || emp['Department'] || 'General';
+      const email = emp.email || emp['Email'] || '';
+      const phone = emp.phone || emp['Phone'] || '';
+
+      if (!empCode || !fullName) {
+        results.errors.push({
+          row: index + 1,
+          message: 'Missing required Employee ID or Full Name',
+        });
+        continue;
+      }
+
+      // Extract baseline compensation
+      const basicPay = Number(emp.basicPay || emp['Basic Pay'] || emp['Basic Salary'] || 0);
+      const hra = Number(emp.hra || emp['HRA'] || 0);
+      const specialAllowance = Number(emp.specialAllowance || emp['Special Allowance'] || 0);
+      const conveyanceAllowance = Number(emp.conveyanceAllowance || emp['Conveyance Allowance'] || 0);
+      const medicalAllowance = Number(emp.medicalAllowance || emp['Medical Allowance'] || 0);
+      const otherAllowances = Number(emp.otherAllowances || emp['Other Allowances'] || 0);
+      const pfDeduction = Number(emp.pfDeduction || emp['PF Deduction'] || 0);
+      const professionalTax = Number(emp.professionalTax || emp['Professional Tax'] || emp['PT'] || 200);
+      const tds = Number(emp.tds || emp['TDS'] || 0);
+
+      // Extract dynamic fields (pan, uan, bank, etc.)
+      const dynamicFields = {
+        panNumber: emp.panNumber || emp['PAN Number'] || emp['PAN'] || '',
+        uanNumber: emp.uanNumber || emp['UAN Number'] || emp['UAN'] || '',
+        pfNumber: emp.pfNumber || emp['PF Number'] || emp['PF No'] || '',
+        bankName: emp.bankName || emp['Bank Name'] || '',
+        bankAccount: emp.bankAccount || emp['Bank Account'] || emp['Account No'] || '',
+        ifscCode: emp.ifscCode || emp['IFSC Code'] || emp['IFSC'] || '',
+        location: emp.location || emp['Location'] || '',
+      };
+
+      const employeeDoc = {
+        companyId,
+        empCode: String(empCode).trim(),
+        fullName: String(fullName).trim(),
+        email: String(email).trim().toLowerCase(),
+        phone: String(phone).trim(),
+        designation: String(designation).trim(),
+        department: String(department).trim(),
+        joiningDate: emp.joiningDate ? new Date(emp.joiningDate) : new Date(),
+        dynamicFields,
+        baselineSalary: {
+          basicPay,
+          hra,
+          specialAllowance,
+          conveyanceAllowance,
+          medicalAllowance,
+          otherAllowances,
+          pfDeduction,
+          esicDeduction: Number(emp.esicDeduction || 0),
+          professionalTax,
+          tds,
+          otherDeductions: Number(emp.otherDeductions || 0),
+        },
+        taxRegime: emp.taxRegime || company.defaultTaxRegime || 'new',
+        ptState: emp.ptState || company.ptState || 'maharashtra',
+        status: 'active',
+      };
+
+      // Upsert employee by companyId and empCode
+      const existing = await Employee.findOne({ companyId, empCode: employeeDoc.empCode });
+      if (existing) {
+        await Employee.findByIdAndUpdate(existing._id, employeeDoc);
+        results.updated++;
+      } else {
+        await Employee.create(employeeDoc);
+        results.inserted++;
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Bulk import completed: ${results.inserted} inserted, ${results.updated} updated, ${results.errors.length} errors.`,
+      results,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getEmployees,
   getEmployeeById,
   createEmployee,
   updateEmployee,
   deleteEmployee,
+  bulkImportEmployees,
   seedDefaultEmployees,
 };

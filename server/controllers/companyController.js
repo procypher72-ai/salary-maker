@@ -1,4 +1,5 @@
 const Company = require('../models/Company');
+const Payslip = require('../models/Payslip');
 
 // @desc    Get all companies
 // @route   GET /api/companies
@@ -89,9 +90,34 @@ const updateCompany = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Company not found' });
     }
 
+    // Synchronize branding/logo/signature/stamp across all existing payslips for this company
+    const logoFields = [
+      'name', 'fullAddress', 'gstin', 'pan', 'website', 'email', 'phone', 'currency', 'currencyCode',
+      'logoWidth', 'logoHeight', 'logoPosition', 'logoOffsetX', 'logoOffsetY', 'logoUrl',
+      'secondaryLogoUrl', 'secondaryLogoWidth', 'secondaryLogoHeight', 'secondaryLogoPosition',
+      'secondaryLogoOffsetX', 'secondaryLogoOffsetY',
+      'signatoryName', 'signatoryDesignation', 'signatureUrl', 'stampUrl',
+      'showSignature', 'showStamp',
+      'signatureWidth', 'signatureHeight', 'signatureOffsetX', 'signatureOffsetY',
+      'stampWidth', 'stampHeight', 'stampOffsetX', 'stampOffsetY', 'stampOpacity',
+      'templateKey', 'slipWidth', 'slipMinHeight', 'slipPadding', 'slipBorderWidth', 'slipBorderStyle', 'slipBorderColor', 'slipBorderRadius',
+      'incomeDeductionHeight', 'incomeDeductionMinHeight', 'incomeColumnWidth', 'tableBorderWidth', 'tableBorderStyle', 'tableBorderColor', 'fontSizeScale'
+    ];
+
+    const updateSet = {};
+    logoFields.forEach((f) => {
+      if (req.body[f] !== undefined) {
+        updateSet[`snapshotData.company.${f}`] = req.body[f];
+      }
+    });
+
+    if (Object.keys(updateSet).length > 0) {
+      await Payslip.updateMany({ companyId: company._id }, { $set: updateSet });
+    }
+
     res.status(200).json({
       success: true,
-      message: `Company "${company.name}" updated successfully!`,
+      message: `Company "${company.name}" and all associated salary slips updated successfully!`,
       company,
     });
   } catch (error) {

@@ -57,6 +57,16 @@ export const TemplateGallery = ({
     required: false,
   });
 
+  const handlePreviewLogoUpdated = (logoData) => {
+    if (!logoData) return;
+    if (logoData.company) {
+      setActiveCompany(logoData.company);
+      if (onCompanyUpdated) onCompanyUpdated();
+    } else {
+      setActiveCompany((prev) => (prev ? { ...prev, ...logoData } : logoData));
+    }
+  };
+
   const handleOpenFieldsCustomizer = (tpl) => {
     setCustomizingTemplate(tpl);
     const currentFields = tpl.requiredFields && tpl.requiredFields.length > 0
@@ -243,9 +253,9 @@ export const TemplateGallery = ({
             }}
           >
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Active Company:</span>
-            <strong style={{ fontSize: '0.85rem', color: '#fff' }}>{activeCompany.name}</strong>
+            <strong style={{ fontSize: '0.85rem', color: '#fff' }}>{activeCompany.name || 'Company'}</strong>
             <span className="badge badge-admin" style={{ fontSize: '0.65rem' }}>
-              {activeCompany.templateKey.replace('_', ' ').toUpperCase()}
+              {(activeCompany.templateKey || 'DEFAULT').replace('_', ' ').toUpperCase()}
             </span>
           </div>
         )}
@@ -526,16 +536,14 @@ export const TemplateGallery = ({
             </div>
 
             {/* Render sample sheet in this template */}
+            <div className="payslip-canvas-scroll-wrapper">
             {selectedPreviewTemplate.templateKey === 'aiims_govt_medical' ? (
               <AiimsGovtPayslip
                 company={activeCompany || {
                   name: 'All India Institute Of Medical Sciences',
                 }}
                 isEditable={true}
-                onSizeSaved={(updatedComp) => {
-                  setActiveCompany(updatedComp);
-                  if (onCompanyUpdated) onCompanyUpdated();
-                }}
+                onSizeSaved={handlePreviewLogoUpdated}
                 employee={{
                   empCode: 'E0400345',
                   fullName: 'AMITESH KUMAR YADAV',
@@ -595,10 +603,7 @@ export const TemplateGallery = ({
                   name: 'HCL Technologies Ltd.',
                 }}
                 isEditable={true}
-                onSizeSaved={(updatedComp) => {
-                  setActiveCompany(updatedComp);
-                  if (onCompanyUpdated) onCompanyUpdated();
-                }}
+                onSizeSaved={handlePreviewLogoUpdated}
                 employee={{
                   empCode: 'S285679',
                   fullName: 'Hardeep Singh',
@@ -648,10 +653,7 @@ export const TemplateGallery = ({
                 }}
                 template={selectedPreviewTemplate}
                 isEditable={true}
-                onSizeSaved={(updatedComp) => {
-                  setActiveCompany(updatedComp);
-                  if (onCompanyUpdated) onCompanyUpdated();
-                }}
+                onSizeSaved={handlePreviewLogoUpdated}
                 employee={{
                   empCode: '51410',
                   fullName: 'HARWINDER SINGH',
@@ -701,10 +703,7 @@ export const TemplateGallery = ({
                   fullAddress: '1st Floor, Red Fort Capital Parsvnath Towers, Bhai Vir Singh Marg, Gole Market, Connaught Place, New Delhi110001, India',
                 }}
                 isEditable={true}
-                onSizeSaved={(updatedComp) => {
-                  setActiveCompany(updatedComp);
-                  if (onCompanyUpdated) onCompanyUpdated();
-                }}
+                onSizeSaved={handlePreviewLogoUpdated}
                 employee={{
                   empCode: '306007',
                   fullName: 'Pankaj Sharma',
@@ -752,10 +751,7 @@ export const TemplateGallery = ({
                   fullAddress: 'B-107, First Floor, Business Complex at Elante Mall, Industrial Area-1,Chandigarh-160002',
                 }}
                 isEditable={true}
-                onSizeSaved={(updatedComp) => {
-                  setActiveCompany(updatedComp);
-                  if (onCompanyUpdated) onCompanyUpdated();
-                }}
+                onSizeSaved={handlePreviewLogoUpdated}
                 employee={{
                   empCode: 'S10187',
                   fullName: 'SURJEET SINGH',
@@ -813,10 +809,7 @@ export const TemplateGallery = ({
                       fullAddress: '100 Tech Park Boulevard, Silicon City, CA',
                     }}
                     isEditable={true}
-                    onSizeSaved={(updatedComp) => {
-                      setActiveCompany(updatedComp);
-                      if (onCompanyUpdated) onCompanyUpdated();
-                    }}
+                    onSizeSaved={handlePreviewLogoUpdated}
                   />
                   <div>
                     <h1 className="company-title">{activeCompany?.name || 'Acme Global Corporation'}</h1>
@@ -966,6 +959,7 @@ export const TemplateGallery = ({
 
             </div>
             )}
+            </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
               <button

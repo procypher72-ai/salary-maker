@@ -1,5 +1,6 @@
 import React from 'react';
 import { ResizableLogo } from '../common/ResizableLogo';
+import { SignatureStampBox } from '../common/SignatureStampBox';
 
 // High-fidelity SVG Concentrix Brand Logo matching the original document
 export const ConcentrixLogo = () => (
@@ -50,8 +51,27 @@ export const ConcentrixDakshPayslip = ({
   onDeleteDeduction,
   onDaysChange,
   onSizeSaved,
+  layoutConfig = null,
 }) => {
   const dynamic = employee?.dynamicFields || {};
+  const cfg = layoutConfig || company || {};
+
+  const slipStyle = {
+    maxWidth: cfg.slipWidth ? `${cfg.slipWidth}px` : undefined,
+    minHeight: cfg.slipMinHeight ? `${cfg.slipMinHeight}px` : undefined,
+    padding: cfg.slipPadding ? `${cfg.slipPadding}px` : undefined,
+    fontSize: cfg.fontSizeScale ? `${cfg.fontSizeScale * 0.008}rem` : undefined,
+  };
+
+  const innerBorderStyle = {
+    borderWidth: cfg.slipBorderWidth !== undefined ? `${cfg.slipBorderWidth}px` : undefined,
+    borderStyle: cfg.slipBorderStyle || undefined,
+    borderColor: cfg.slipBorderColor || undefined,
+    borderRadius: cfg.slipBorderRadius !== undefined ? `${cfg.slipBorderRadius}px` : undefined,
+  };
+
+  const rowMinHeight = cfg.incomeDeductionHeight ? `${cfg.incomeDeductionHeight}px` : undefined;
+  const finTableMinHeight = cfg.incomeDeductionMinHeight ? `${cfg.incomeDeductionMinHeight}px` : undefined;
 
   // Formatter for numbers
   const formatAmount = (num) => {
@@ -85,10 +105,10 @@ export const ConcentrixDakshPayslip = ({
   };
 
   return (
-    <div className="concentrix-daksh-wrapper" id="concentrix-pdf-sheet">
+    <div className="concentrix-daksh-wrapper" id="concentrix-pdf-sheet" style={slipStyle}>
       
       {/* Outer Border Box Content */}
-      <div className="cnx-inner-border">
+      <div className="cnx-inner-border" style={innerBorderStyle}>
         {/* 1. Header Box */}
         <div className="cnx-header-box">
           <div className="cnx-logo-col">
@@ -225,13 +245,13 @@ export const ConcentrixDakshPayslip = ({
           <div className="cnx-divider-table" />
 
           {/* Data Rows */}
-          <div className="cnx-tb-rows">
+          <div className="cnx-tb-rows" style={{ minHeight: finTableMinHeight }}>
             {Array.from({ length: maxRows }).map((_, idx) => {
               const ern = earnings[idx];
               const ded = deductions[idx];
 
               return (
-                <div key={idx} className="cnx-tb-row">
+                <div key={idx} className="cnx-tb-row" style={{ minHeight: rowMinHeight }}>
                   {/* Earnings Description */}
                   <div className="cnx-col cnx-ern-desc">
                     {isEditable && ern ? (
@@ -336,9 +356,21 @@ export const ConcentrixDakshPayslip = ({
         </div>
       </div>
 
+      {/* Signature & Stamp Row */}
+      {(company?.showSignature !== false || company?.showStamp !== false) && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px', paddingRight: '12px' }}>
+          <SignatureStampBox
+            company={company}
+            signatoryTitle={company?.signatoryName || 'Authorized Signatory'}
+            signatorySubtitle={company?.signatoryDesignation || 'Human Resources Operations'}
+            align="right"
+          />
+        </div>
+      )}
+
       {/* 4. Footer Note */}
       <div className="cnx-footer-note">
-        This is a system generated payslip and does not require signature.
+        This is a system generated payslip and does not require signature unless officially stamped.
       </div>
 
     </div>

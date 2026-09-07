@@ -8,6 +8,8 @@ import { CompanyManager } from './components/CompanyManager';
 import { EmployeeManager } from './components/EmployeeManager';
 import { PayslipGenerator } from './components/PayslipGenerator';
 import { PayslipHistory } from './components/PayslipHistory';
+import { CtcCalculatorModal } from './components/CtcCalculatorModal';
+import { ComputationManager } from './components/computation/ComputationManager';
 import { api } from './services/api';
 import {
   CheckCircle2,
@@ -17,7 +19,7 @@ import {
   DollarSign,
 } from 'lucide-react';
 
-const VALID_TABS = ['dashboard', 'templates', 'companies', 'employees', 'generator', 'history'];
+const VALID_TABS = ['dashboard', 'templates', 'companies', 'employees', 'generator', 'computations', 'history'];
 
 const getInitialTab = () => {
   const hash = window.location.hash.replace('#', '').trim();
@@ -73,11 +75,27 @@ export function App() {
   const [templates, setTemplates] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [payslips, setPayslips] = useState([]);
+  const [isGlobalCtcModalOpen, setIsGlobalCtcModalOpen] = useState(false);
 
   const setActiveCompany = (comp) => {
-    setActiveCompanyState(comp);
-    if (comp?._id) {
-      localStorage.setItem('salarymaker_active_company_id', comp._id);
+    if (typeof comp === 'function') {
+      setActiveCompanyState((prev) => {
+        const next = comp(prev);
+        if (next?._id) {
+          localStorage.setItem('salarymaker_active_company_id', next._id);
+        }
+        return next;
+      });
+    } else if (comp && typeof comp === 'object') {
+      setActiveCompanyState((prev) => {
+        const merged = (!comp._id && prev?._id) ? { ...prev, ...comp } : comp;
+        if (merged?._id) {
+          localStorage.setItem('salarymaker_active_company_id', merged._id);
+        }
+        return merged;
+      });
+    } else {
+      setActiveCompanyState(comp);
     }
   };
 
@@ -153,6 +171,7 @@ export function App() {
             setActiveCompany={(comp) => {
               setActiveCompany(comp);
             }}
+            onOpenCtcCalc={() => setIsGlobalCtcModalOpen(true)}
           />
 
           <main className="main-content">
@@ -190,7 +209,9 @@ export function App() {
                 employees={employees}
                 activeCompany={activeCompany}
                 templates={templates}
+                payslips={payslips}
                 onRefresh={fetchAllData}
+                setActiveTab={setActiveTab}
               />
             )}
 
@@ -199,6 +220,7 @@ export function App() {
                 activeCompany={activeCompany}
                 employees={employees}
                 templates={templates}
+                onCompanyUpdated={fetchAllData}
                 onPayslipGenerated={() => {
                   fetchAllData();
                   setActiveTab('history');
@@ -213,6 +235,15 @@ export function App() {
                 onRefresh={fetchAllData}
               />
             )}
+
+            {activeTab === 'computations' && (
+              <ComputationManager
+                activeCompany={activeCompany}
+                companies={companies}
+                employees={employees}
+                onOpenGlobalCtcModal={() => setIsGlobalCtcModalOpen(true)}
+              />
+            )}
           </main>
         </>
       ) : (
@@ -220,6 +251,14 @@ export function App() {
           <Login />
         </main>
       )}
+
+      {/* Standalone Global CTC & Tax Engine Modal */}
+      <CtcCalculatorModal
+        isOpen={isGlobalCtcModalOpen}
+        onClose={() => setIsGlobalCtcModalOpen(false)}
+        initialCtc={600000}
+        initialState={activeCompany?.ptState || 'maharashtra'}
+      />
 
       {/* Global Toast Notifications */}
       <aside className="toast-container no-print" aria-live="polite" aria-atomic="true">

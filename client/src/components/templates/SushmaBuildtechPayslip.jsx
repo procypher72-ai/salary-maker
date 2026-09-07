@@ -1,5 +1,6 @@
 import React from 'react';
 import { ResizableLogo } from '../common/ResizableLogo';
+import { SignatureStampBox } from '../common/SignatureStampBox';
 
 // High-fidelity SVG Sushma Brand Logo matching the original document
 export const SushmaLogo = () => (
@@ -44,8 +45,23 @@ export const SushmaBuildtechPayslip = ({
   onDeleteDeduction,
   onDaysChange,
   onSizeSaved,
+  layoutConfig = null,
 }) => {
   const dynamic = employee?.dynamicFields || {};
+  const cfg = layoutConfig || company || {};
+
+  const slipStyle = {
+    maxWidth: cfg.slipWidth ? `${cfg.slipWidth}px` : undefined,
+    minHeight: cfg.slipMinHeight ? `${cfg.slipMinHeight}px` : undefined,
+    padding: cfg.slipPadding ? `${cfg.slipPadding}px` : undefined,
+    borderWidth: cfg.slipBorderWidth !== undefined ? `${cfg.slipBorderWidth}px` : undefined,
+    borderStyle: cfg.slipBorderStyle || undefined,
+    borderColor: cfg.slipBorderColor || undefined,
+    borderRadius: cfg.slipBorderRadius !== undefined ? `${cfg.slipBorderRadius}px` : undefined,
+    fontSize: cfg.fontSizeScale ? `${cfg.fontSizeScale * 0.008}rem` : undefined,
+  };
+
+  const rowMinHeight = cfg.incomeDeductionHeight ? `${cfg.incomeDeductionHeight}px` : undefined;
 
   // Formatter for Indian Currency string
   const formatAmount = (num) => {
@@ -80,7 +96,7 @@ export const SushmaBuildtechPayslip = ({
   };
 
   return (
-    <div className="sushma-buildtech-wrapper" id="sushma-pdf-sheet">
+    <div className="sushma-buildtech-wrapper" id="sushma-pdf-sheet" style={slipStyle}>
       
       {/* 1. Top Header: Logo on Left, Company Address on Right */}
       <div className="sushma-header-box">
@@ -221,7 +237,7 @@ export const SushmaBuildtechPayslip = ({
             const ded = deductions[idx];
 
             return (
-              <tr key={idx} className="sushma-fin-tr">
+              <tr key={idx} className="sushma-fin-tr" style={{ height: rowMinHeight }}>
                 {/* Earning Label */}
                 <td className="sushma-td-ern-desc">
                   {isEditable && ern ? (
@@ -314,11 +330,23 @@ export const SushmaBuildtechPayslip = ({
         </tbody>
       </table>
 
+      {/* Signature & Stamp Row */}
+      {(company?.showSignature !== false || company?.showStamp !== false) && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px', paddingRight: '12px' }}>
+          <SignatureStampBox
+            company={company}
+            signatoryTitle={company?.signatoryName || 'Authorized Signatory'}
+            signatorySubtitle={company?.signatoryDesignation || 'Head of HR & Admin'}
+            align="right"
+          />
+        </div>
+      )}
+
       {/* 5. Remarks & Computer Generated Note */}
       <div className="sushma-remarks-section">
         <div className="sushma-remarks-title bold">Remarks:</div>
         <div className="sushma-disclaimer">
-          ** This is a computer generated payslip and does not require signature and stamp.
+          ** This is a computer generated payslip and does not require signature and stamp unless authenticated.
         </div>
       </div>
 

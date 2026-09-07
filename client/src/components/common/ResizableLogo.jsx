@@ -38,18 +38,46 @@ export const ResizableLogo = ({
   const [isSaving, setIsSaving] = useState(false);
   const [showToolbar, setShowToolbar] = useState(false);
 
+  // Active Ref tracking the absolute latest values to prevent stale closures during mouse drag/resize
+  const latestValuesRef = useRef({
+    width: company?.[widthKey] || (isSecondary ? 85 : 65),
+    height: company?.[heightKey] || (isSecondary ? 60 : 65),
+    position: company?.[posKey] || (isSecondary ? 'right' : 'left'),
+    offsetX: company?.[offXKey] || 0,
+    offsetY: company?.[offYKey] || 0,
+    logoUrl: company?.[urlKey] || '',
+  });
+
   const resizeStartRef = useRef({ x: 0, y: 0, w: 65, h: 65 });
   const moveStartRef = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
 
-  // Synchronize when company updates
+  // Synchronize when company updates from outside (unless currently actively dragging/resizing)
   useEffect(() => {
-    if (company?.[widthKey]) setWidth(company[widthKey]);
-    if (company?.[heightKey]) setHeight(company[heightKey]);
-    if (company?.[posKey]) setPosition(company[posKey]);
-    if (company?.[offXKey] !== undefined) setOffsetX(company[offXKey]);
-    if (company?.[offYKey] !== undefined) setOffsetY(company[offYKey]);
-    if (company?.[urlKey] !== undefined) setLogoUrl(company[urlKey]);
-  }, [company, widthKey, heightKey, posKey, offXKey, offYKey, urlKey]);
+    if (isResizing || isMoving) return;
+
+    const w = company?.[widthKey] !== undefined ? company[widthKey] : (isSecondary ? 85 : 65);
+    const h = company?.[heightKey] !== undefined ? company[heightKey] : (isSecondary ? 60 : 65);
+    const p = company?.[posKey] !== undefined ? company[posKey] : (isSecondary ? 'right' : 'left');
+    const ox = company?.[offXKey] !== undefined ? company[offXKey] : 0;
+    const oy = company?.[offYKey] !== undefined ? company[offYKey] : 0;
+    const url = company?.[urlKey] !== undefined ? company[urlKey] : '';
+
+    setWidth(w);
+    setHeight(h);
+    setPosition(p);
+    setOffsetX(ox);
+    setOffsetY(oy);
+    setLogoUrl(url);
+
+    latestValuesRef.current = {
+      width: w,
+      height: h,
+      position: p,
+      offsetX: ox,
+      offsetY: oy,
+      logoUrl: url,
+    };
+  }, [company, widthKey, heightKey, posKey, offXKey, offYKey, urlKey, isResizing, isMoving]);
 
   // ─── 1. CORNER RESIZE HANDLER ────────────────────────────────────
   const handleResizeMouseDown = (e) => {
@@ -60,23 +88,36 @@ export const ResizableLogo = ({
     resizeStartRef.current = {
       x: e.clientX,
       y: e.clientY,
-      w: width,
-      h: height,
+      w: latestValuesRef.current.width,
+      h: latestValuesRef.current.height,
     };
 
     const handleResizeMouseMove = (ev) => {
       const dx = ev.clientX - resizeStartRef.current.x;
       const dy = ev.clientY - resizeStartRef.current.y;
-      const newWidth = Math.max(30, Math.min(280, resizeStartRef.current.w + dx));
-      const newHeight = Math.max(30, Math.min(280, resizeStartRef.current.h + dy));
-      setWidth(Math.round(newWidth));
-      setHeight(Math.round(newHeight));
+      const newWidth = Math.round(Math.max(30, Math.min(280, resizeStartRef.current.w + dx)));
+      const newHeight = Math.round(Math.max(30, Math.min(280, resizeStartRef.current.h + dy)));
+      
+      latestValuesRef.current.width = newWidth;
+      latestValuesRef.current.height = newHeight;
+      setWidth(newWidth);
+      setHeight(newHeight);
     };
 
     const handleResizeMouseUp = () => {
       setIsResizing(false);
       window.removeEventListener('mousemove', handleResizeMouseMove);
       window.removeEventListener('mouseup', handleResizeMouseUp);
+      if (onSizeSaved) {
+        onSizeSaved({
+          [widthKey]: latestValuesRef.current.width,
+          [heightKey]: latestValuesRef.current.height,
+          [posKey]: latestValuesRef.current.position,
+          [offXKey]: latestValuesRef.current.offsetX,
+          [offYKey]: latestValuesRef.current.offsetY,
+          [urlKey]: latestValuesRef.current.logoUrl,
+        });
+      }
     };
 
     window.addEventListener('mousemove', handleResizeMouseMove);
@@ -93,21 +134,36 @@ export const ResizableLogo = ({
     moveStartRef.current = {
       x: e.clientX,
       y: e.clientY,
-      ox: offsetX,
-      oy: offsetY,
+      ox: latestValuesRef.current.offsetX,
+      oy: latestValuesRef.current.offsetY,
     };
 
     const handleMoveMouseMove = (ev) => {
       const dx = ev.clientX - moveStartRef.current.x;
       const dy = ev.clientY - moveStartRef.current.y;
-      setOffsetX(Math.round(moveStartRef.current.ox + dx));
-      setOffsetY(Math.round(moveStartRef.current.oy + dy));
+      const newOffsetX = Math.round(moveStartRef.current.ox + dx);
+      const newOffsetY = Math.round(moveStartRef.current.oy + dy);
+
+      latestValuesRef.current.offsetX = newOffsetX;
+      latestValuesRef.current.offsetY = newOffsetY;
+      setOffsetX(newOffsetX);
+      setOffsetY(newOffsetY);
     };
 
     const handleMoveMouseUp = () => {
       setIsMoving(false);
       window.removeEventListener('mousemove', handleMoveMouseMove);
       window.removeEventListener('mouseup', handleMoveMouseUp);
+      if (onSizeSaved) {
+        onSizeSaved({
+          [widthKey]: latestValuesRef.current.width,
+          [heightKey]: latestValuesRef.current.height,
+          [posKey]: latestValuesRef.current.position,
+          [offXKey]: latestValuesRef.current.offsetX,
+          [offYKey]: latestValuesRef.current.offsetY,
+          [urlKey]: latestValuesRef.current.logoUrl,
+        });
+      }
     };
 
     window.addEventListener('mousemove', handleMoveMouseMove);
@@ -116,9 +172,22 @@ export const ResizableLogo = ({
 
   // ─── 3. QUICK SNAP ALIGNMENTS ────────────────────────────────────
   const handleSnapAlign = (align) => {
+    latestValuesRef.current.position = align;
+    latestValuesRef.current.offsetX = 0;
+    latestValuesRef.current.offsetY = 0;
     setPosition(align);
     setOffsetX(0);
     setOffsetY(0);
+    if (onSizeSaved) {
+      onSizeSaved({
+        [widthKey]: latestValuesRef.current.width,
+        [heightKey]: latestValuesRef.current.height,
+        [posKey]: align,
+        [offXKey]: 0,
+        [offYKey]: 0,
+        [urlKey]: latestValuesRef.current.logoUrl,
+      });
+    }
   };
 
   // ─── 4. IMAGE UPLOAD & REPLACE ───────────────────────────────────
@@ -131,8 +200,20 @@ export const ResizableLogo = ({
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setLogoUrl(reader.result);
-        showToast('Image replaced! Click "Save Layout" to persist.', 'info');
+        const newUrl = reader.result;
+        latestValuesRef.current.logoUrl = newUrl;
+        setLogoUrl(newUrl);
+        if (onSizeSaved) {
+          onSizeSaved({
+            [widthKey]: latestValuesRef.current.width,
+            [heightKey]: latestValuesRef.current.height,
+            [posKey]: latestValuesRef.current.position,
+            [offXKey]: latestValuesRef.current.offsetX,
+            [offYKey]: latestValuesRef.current.offsetY,
+            [urlKey]: newUrl,
+          });
+        }
+        showToast('Image replaced! Click "Save" on toolbar or "Save & Update Slip" to persist.', 'info');
       };
       reader.readAsDataURL(file);
     }
@@ -140,28 +221,40 @@ export const ResizableLogo = ({
 
   // ─── 5. SAVE LAYOUT & PERSIST ────────────────────────────────────
   const handleSaveLayout = async () => {
-    if (!company?._id) return;
+    const targetCompanyId =
+      company?._id ||
+      company?.companyId ||
+      localStorage.getItem('salarymaker_active_company_id');
+
+    if (!targetCompanyId) {
+      showToast('Please select an active company first', 'error');
+      return;
+    }
     setIsSaving(true);
     try {
       const payload = {
-        [widthKey]: width,
-        [heightKey]: height,
-        [posKey]: position,
-        [offXKey]: offsetX,
-        [offYKey]: offsetY,
-        [urlKey]: logoUrl,
+        [widthKey]: latestValuesRef.current.width,
+        [heightKey]: latestValuesRef.current.height,
+        [posKey]: latestValuesRef.current.position,
+        [offXKey]: latestValuesRef.current.offsetX,
+        [offYKey]: latestValuesRef.current.offsetY,
+        [urlKey]: latestValuesRef.current.logoUrl,
       };
 
-      const res = await api.updateCompany(company._id, payload);
+      const res = await api.updateCompany(targetCompanyId, payload);
       showToast(
-        `Saved ${isSecondary ? 'Secondary / G20' : 'Company'} logo layout (${width}×${height}px, ${position}) for ${company.name}!`,
+        `Saved ${isSecondary ? 'Secondary / G20' : 'Company'} logo layout (${latestValuesRef.current.width}×${latestValuesRef.current.height}px) and updated across all salary slips!`,
         'success'
       );
       if (onSizeSaved) {
-        onSizeSaved(res.company);
+        onSizeSaved({
+          ...payload,
+          company: res.company,
+          _persisted: true,
+        });
       }
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.message || 'Failed to save logo layout', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -169,12 +262,35 @@ export const ResizableLogo = ({
 
   // ─── 6. RESET LAYOUT ─────────────────────────────────────────────
   const handleResetLayout = () => {
-    setWidth(isSecondary ? 85 : 65);
-    setHeight(isSecondary ? 60 : 65);
-    setPosition(isSecondary ? 'right' : 'left');
+    const defW = isSecondary ? 85 : 65;
+    const defH = isSecondary ? 60 : 65;
+    const defP = isSecondary ? 'right' : 'left';
+    const defUrl = company?.[urlKey] || '';
+
+    latestValuesRef.current.width = defW;
+    latestValuesRef.current.height = defH;
+    latestValuesRef.current.position = defP;
+    latestValuesRef.current.offsetX = 0;
+    latestValuesRef.current.offsetY = 0;
+    latestValuesRef.current.logoUrl = defUrl;
+
+    setWidth(defW);
+    setHeight(defH);
+    setPosition(defP);
     setOffsetX(0);
     setOffsetY(0);
-    setLogoUrl(company?.[urlKey] || '');
+    setLogoUrl(defUrl);
+
+    if (onSizeSaved) {
+      onSizeSaved({
+        [widthKey]: defW,
+        [heightKey]: defH,
+        [posKey]: defP,
+        [offXKey]: 0,
+        [offYKey]: 0,
+        [urlKey]: defUrl,
+      });
+    }
   };
 
   // Compute container justify alignment
@@ -182,6 +298,53 @@ export const ResizableLogo = ({
     if (position === 'center') return 'center';
     if (position === 'right') return 'flex-end';
     return 'flex-start';
+  };
+
+  // Smart horizontal anchoring for the toolbar to prevent overflowing or clipping
+  const getToolbarStyle = () => {
+    const base = {
+      position: 'absolute',
+      top: '-46px',
+      background: 'rgba(15, 23, 42, 0.96)',
+      border: isSecondary ? '1.5px solid rgba(249, 115, 22, 0.7)' : '1.5px solid rgba(6, 182, 212, 0.6)',
+      color: '#fff',
+      padding: '0.35rem 0.65rem',
+      borderRadius: '8px',
+      fontSize: '0.72rem',
+      fontWeight: 600,
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      whiteSpace: 'nowrap',
+      zIndex: 99999,
+      boxShadow: '0 10px 25px -3px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+      pointerEvents: 'auto',
+      transition: 'opacity 0.2s ease, transform 0.15s ease',
+      opacity: 1, // Always visible when isEditable is active
+    };
+
+    if (isSecondary || position === 'right') {
+      return {
+        ...base,
+        right: '0px',
+        left: 'auto',
+        transform: 'none',
+      };
+    }
+    if (position === 'center') {
+      return {
+        ...base,
+        left: '50%',
+        right: 'auto',
+        transform: 'translateX(-50%)',
+      };
+    }
+    return {
+      ...base,
+      left: '0px',
+      right: 'auto',
+      transform: 'none',
+    };
   };
 
   return (
@@ -192,6 +355,9 @@ export const ResizableLogo = ({
         justifyContent: getJustifyContent(),
         alignItems: 'center',
         width: '100%',
+        overflow: 'visible',
+        position: 'relative',
+        zIndex: isEditable ? 40 : 1,
       }}
     >
       <div
@@ -206,6 +372,8 @@ export const ResizableLogo = ({
           cursor: isEditable ? (isMoving ? 'grabbing' : 'grab') : 'default',
           transition: isMoving ? 'none' : 'transform 0.15s ease',
           userSelect: 'none',
+          zIndex: isEditable ? 50 : 1,
+          overflow: 'visible',
         }}
         title={isEditable ? `Click & drag anywhere to move ${isSecondary ? 'Secondary / G20' : 'Company'} logo, drag corner to resize, or replace image` : undefined}
       >
@@ -224,23 +392,23 @@ export const ResizableLogo = ({
             className="no-print"
             style={{
               position: 'absolute',
-              top: '-8px',
-              left: '-8px',
-              width: '18px',
-              height: '18px',
+              top: '-9px',
+              left: '-9px',
+              width: '20px',
+              height: '20px',
               background: isSecondary ? '#f97316' : '#0284c7',
               color: '#fff',
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
-              zIndex: 35,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+              zIndex: 9999,
               pointerEvents: 'none',
             }}
             title="Drag to reposition logo"
           >
-            <Move size={10} />
+            <Move size={11} />
           </div>
         )}
 
@@ -306,47 +474,28 @@ export const ResizableLogo = ({
               title="Drag corner to resize width & height"
               style={{
                 position: 'absolute',
-                right: '-6px',
-                bottom: '-6px',
-                width: '14px',
-                height: '14px',
+                right: '-7px',
+                bottom: '-7px',
+                width: '16px',
+                height: '16px',
                 background: isSecondary ? '#f97316' : '#06b6d4',
                 border: '2px solid #ffffff',
                 borderRadius: '3px',
                 cursor: 'se-resize',
-                zIndex: 35,
-                boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
+                zIndex: 9999,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
               }}
             />
 
             {/* Quick Floating Toolbar with Size, Alignments, Replace & Save */}
             <div
-              className={`logo-size-pill no-print ${showToolbar || isResizing || isMoving ? 'visible' : ''}`}
+              className="logo-size-pill no-print"
               onMouseDown={(e) => e.stopPropagation()}
-              style={{
-                position: 'absolute',
-                top: '-44px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                background: 'rgba(15, 23, 42, 0.95)',
-                border: isSecondary ? '1px solid rgba(249, 115, 22, 0.5)' : '1px solid rgba(6, 182, 212, 0.4)',
-                color: '#fff',
-                padding: '0.3rem 0.6rem',
-                borderRadius: '8px',
-                fontSize: '0.7rem',
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.45rem',
-                whiteSpace: 'nowrap',
-                zIndex: 60,
-                boxShadow: '0 8px 20px rgba(0,0,0,0.6)',
-                pointerEvents: 'auto',
-                transition: 'opacity 0.2s ease',
-                opacity: showToolbar || isResizing || isMoving ? 1 : 0,
-              }}
+              style={getToolbarStyle()}
             >
-              <span>{width}×{height}px</span>
+              <span style={{ color: '#e2e8f0', fontWeight: 700, letterSpacing: '0.02em' }}>
+                {width}×{height}px
+              </span>
 
               {/* Snap Position Alignments */}
               <div style={{ display: 'flex', gap: '0.2rem', borderLeft: '1px solid rgba(255,255,255,0.2)', paddingLeft: '0.35rem' }}>
@@ -354,46 +503,52 @@ export const ResizableLogo = ({
                   type="button"
                   onClick={() => handleSnapAlign('left')}
                   style={{
-                    background: position === 'left' && offsetX === 0 ? '#0284c7' : 'rgba(255,255,255,0.1)',
+                    background: position === 'left' && offsetX === 0 ? '#0284c7' : 'rgba(255,255,255,0.12)',
                     color: '#fff',
                     border: 'none',
-                    padding: '0.15rem 0.3rem',
-                    borderRadius: '3px',
+                    padding: '0.2rem 0.35rem',
+                    borderRadius: '4px',
                     cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                   title="Snap Left"
                 >
-                  <AlignLeft size={11} />
+                  <AlignLeft size={12} />
                 </button>
                 <button
                   type="button"
                   onClick={() => handleSnapAlign('center')}
                   style={{
-                    background: position === 'center' && offsetX === 0 ? '#0284c7' : 'rgba(255,255,255,0.1)',
+                    background: position === 'center' && offsetX === 0 ? '#0284c7' : 'rgba(255,255,255,0.12)',
                     color: '#fff',
                     border: 'none',
-                    padding: '0.15rem 0.3rem',
-                    borderRadius: '3px',
+                    padding: '0.2rem 0.35rem',
+                    borderRadius: '4px',
                     cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                   title="Snap Center"
                 >
-                  <AlignCenter size={11} />
+                  <AlignCenter size={12} />
                 </button>
                 <button
                   type="button"
                   onClick={() => handleSnapAlign('right')}
                   style={{
-                    background: position === 'right' && offsetX === 0 ? '#0284c7' : 'rgba(255,255,255,0.1)',
+                    background: position === 'right' && offsetX === 0 ? '#0284c7' : 'rgba(255,255,255,0.12)',
                     color: '#fff',
                     border: 'none',
-                    padding: '0.15rem 0.3rem',
-                    borderRadius: '3px',
+                    padding: '0.2rem 0.35rem',
+                    borderRadius: '4px',
                     cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                   title="Snap Right"
                 >
-                  <AlignRight size={11} />
+                  <AlignRight size={12} />
                 </button>
               </div>
 
@@ -402,44 +557,46 @@ export const ResizableLogo = ({
                 type="button"
                 onClick={() => fileInputRef.current && fileInputRef.current.click()}
                 style={{
-                  background: 'rgba(255,255,255,0.12)',
+                  background: 'rgba(56, 189, 248, 0.15)',
                   color: '#38bdf8',
-                  border: 'none',
-                  padding: '0.18rem 0.4rem',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  padding: '0.22rem 0.45rem',
                   borderRadius: '4px',
                   cursor: 'pointer',
-                  fontSize: '0.65rem',
-                  fontWeight: 700,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.2rem',
-                }}
-                title={`Replace ${isSecondary ? 'G20' : 'Company'} Logo Image`}
-              >
-                <ImagePlus size={11} /> Replace
-              </button>
-
-              {/* Save Layout Button */}
-              <button
-                type="button"
-                onClick={handleSaveLayout}
-                disabled={isSaving}
-                style={{
-                  background: isSecondary ? '#f97316' : '#06b6d4',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '0.18rem 0.45rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.65rem',
+                  fontSize: '0.68rem',
                   fontWeight: 700,
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.25rem',
                 }}
+                title={`Replace ${isSecondary ? 'G20' : 'Company'} Logo Image`}
+              >
+                <ImagePlus size={12} /> Replace
+              </button>
+
+              {/* Save Layout Button - High Visibility Emerald Action */}
+              <button
+                type="button"
+                onClick={handleSaveLayout}
+                disabled={isSaving}
+                style={{
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '0.22rem 0.6rem',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  boxShadow: '0 2px 10px rgba(16, 185, 129, 0.5)',
+                  letterSpacing: '0.02em',
+                }}
                 title="Save position, size, and image for all salary slips"
               >
-                <Save size={11} /> Save
+                <Save size={12} /> {isSaving ? 'Saving...' : 'Save'}
               </button>
 
               {/* Reset Button */}
@@ -448,15 +605,17 @@ export const ResizableLogo = ({
                 onClick={handleResetLayout}
                 style={{
                   background: 'rgba(255,255,255,0.1)',
-                  color: '#94a3b8',
+                  color: '#cbd5e1',
                   border: 'none',
-                  padding: '0.15rem 0.35rem',
+                  padding: '0.2rem 0.35rem',
                   borderRadius: '4px',
                   cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
                 }}
                 title="Reset layout to default"
               >
-                <RotateCcw size={11} />
+                <RotateCcw size={12} />
               </button>
             </div>
           </>

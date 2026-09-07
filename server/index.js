@@ -7,6 +7,8 @@ const templateRoutes = require('./routes/templateRoutes');
 const companyRoutes = require('./routes/companyRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
 const payslipRoutes = require('./routes/payslipRoutes');
+const statutoryRoutes = require('./routes/statutoryRoutes');
+const computationRoutes = require('./routes/computationRoutes');
 
 const User = require('./models/User');
 const { seedDefaultTemplates } = require('./controllers/templateController');
@@ -30,12 +32,30 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 const path = require('path');
 const fs = require('fs');
 
+const errorHandler = require('./middleware/errorHandler');
+const rateLimit = require('express-rate-limit');
+
+// Rate limiting for auth and API
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 login/register requests per windowMs
+  message: {
+    success: false,
+    message: 'Too many login attempts from this IP, please try again after 15 minutes.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Routes
+app.use('/api/auth/login', authLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/payslips', payslipRoutes);
+app.use('/api/statutory', statutoryRoutes);
+app.use('/api/computations', computationRoutes);
 
 // Health Check
 app.get('/api/health', (req, res) => {
@@ -45,6 +65,9 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// Centralized Error Handling Middleware
+app.use(errorHandler);
 
 // Serve frontend in production if client/dist exists
 const clientDistPath = path.join(__dirname, '../client/dist');
