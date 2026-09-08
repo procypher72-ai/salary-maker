@@ -1,6 +1,9 @@
 # Salary Maker 💼
 
-A modern MERN stack portal featuring **Admin Authentication (JWT & Bcrypt)** and a dedicated **User Registration & Payroll Management Suite**.
+A modern MERN stack portal featuring **Multi-Company Management**, **Employee Payroll & CTC Structuring**, **Automated Multi-Template Payslip Generator**, and **Income Tax Assessment Engine**.
+
+- 🌐 **Live Deployed App**: [https://salary-maker.onrender.com/](https://salary-maker.onrender.com/)
+- 📖 **User Guide**: See [USER_GUIDE.md](file:///c:/Users/DREAMWORLD/Desktop/Salary%20Maker/USER_GUIDE.md) for full step-by-step instructions.
 
 ---
 
