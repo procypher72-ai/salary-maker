@@ -54,6 +54,34 @@ const computePayslipFinancials = (employee, company, customOverrides = {}) => {
       { label: 'Leave Travel Allowance', amount: Math.round(8080 * payRatio), rate: 8080, arrear: 0 },
       { label: 'Performance Bonus', amount: Math.round(24700 * payRatio), rate: 0, arrear: 0 },
     ];
+  } else if (company?.templateKey === 'hcl_corporate_tech') {
+    // Exact HCL Corporate Tech breakdown matching original HCL format
+    earnings = [
+      { label: 'Basic Salary', amount: Math.round(87450 * payRatio) },
+      { label: 'HRA', amount: Math.round(34980 * payRatio) },
+      { label: 'Travel Allowance', amount: Math.round(22600 * payRatio) },
+      { label: 'Holiday Allowance', amount: Math.round(9500 * payRatio) },
+      { label: 'Food Wallet', amount: Math.round(4500 * payRatio) },
+      { label: 'Incentives', amount: Math.round(45213 * payRatio) },
+    ];
+  } else if (company?.templateKey === 'concentrix_daksh') {
+    earnings = [
+      { label: 'BASIC SALARY', amount: Math.round(23000 * payRatio), fullAmount: 23000 },
+      { label: 'HOUSE RENT ALLOWANCE', amount: Math.round(11500 * payRatio), fullAmount: 11500 },
+      { label: 'STATUTORY BONUS', amount: Math.round(3500 * payRatio), fullAmount: 3500 },
+      { label: 'SPECIAL ALLOWANCE', amount: Math.round(17500 * payRatio), fullAmount: 17500 },
+      { label: 'RMEDICAL ALLOWANCE', amount: Math.round(2500 * payRatio), fullAmount: 2500 },
+      { label: 'PERFORMANCE BONUS', amount: Math.round(8000 * payRatio), fullAmount: 8000 },
+    ];
+  } else if (company?.templateKey === 'sushma_buildtech') {
+    earnings = [
+      { label: 'BASIC', amount: Math.round(28387 * payRatio), rate: 28387 },
+      { label: 'HRA', amount: Math.round(14194 * payRatio), rate: 14194 },
+      { label: 'CONVEYANCE', amount: Math.round(1600 * payRatio), rate: 1600 },
+      { label: 'CHILD EDU ALLOWANCE', amount: Math.round(200 * payRatio), rate: 200 },
+      { label: 'SPECIAL ALLOWANCE', amount: Math.round(13619 * payRatio), rate: 13619 },
+      { label: 'PERFORMANCE BONUS', amount: Math.round(10000 * payRatio), rate: 10000 },
+    ];
   } else {
     // Standard corporate earnings list based on baseline salary
     if (base.basicPay) earnings.push({ label: 'Basic Salary', amount: Math.round(base.basicPay * payRatio) });
@@ -96,6 +124,24 @@ const computePayslipFinancials = (employee, company, customOverrides = {}) => {
       { label: 'Provident Fund', amount: 17460 },
       { label: 'Professional Tax', amount: 200 },
       { label: 'Income Tax', amount: 31547 },
+    ];
+  } else if (company?.templateKey === 'hcl_corporate_tech') {
+    deductions = [
+      { label: 'Ee PF contribution', amount: 10494 },
+      { label: 'Prof Tax - split period', amount: 200 },
+      { label: 'Income Tax', amount: 36586 },
+    ];
+  } else if (company?.templateKey === 'concentrix_daksh') {
+    deductions = [
+      { label: 'PROVIDENT FUND', amount: 2760 },
+      { label: 'PROFESSIONAL TAX', amount: 200 },
+      { label: 'INCOME TAX (TDS)', amount: 4800 },
+    ];
+  } else if (company?.templateKey === 'sushma_buildtech') {
+    deductions = [
+      { label: 'PF EMPLOYEE SHARE', amount: 3406 },
+      { label: 'PROFESSIONAL TAX', amount: 200 },
+      { label: 'TDS', amount: 2500 },
     ];
   } else {
     // Standard deductions list based on baseline salary
@@ -180,6 +226,8 @@ const createSnapshot = (company, employee) => {
       tableBorderStyle: company.tableBorderStyle || 'solid',
       tableBorderColor: company.tableBorderColor || '#000000',
       fontSizeScale: company.fontSizeScale !== undefined ? company.fontSizeScale : 100,
+      extraSpacerHeight: company.extraSpacerHeight !== undefined ? company.extraSpacerHeight : 0,
+      minTableRows: company.minTableRows !== undefined ? company.minTableRows : 6,
     },
     employee: {
       empCode: employee.empCode,
@@ -397,7 +445,8 @@ const updatePayslip = async (req, res) => {
           'signatureWidth', 'signatureHeight', 'signatureOffsetX', 'signatureOffsetY',
           'stampWidth', 'stampHeight', 'stampOffsetX', 'stampOffsetY', 'stampOpacity',
           'templateKey', 'slipWidth', 'slipMinHeight', 'slipPadding', 'slipBorderWidth', 'slipBorderStyle', 'slipBorderColor', 'slipBorderRadius',
-          'incomeDeductionHeight', 'incomeDeductionMinHeight', 'incomeColumnWidth', 'tableBorderWidth', 'tableBorderStyle', 'tableBorderColor', 'fontSizeScale'
+          'incomeDeductionHeight', 'incomeDeductionMinHeight', 'incomeColumnWidth', 'tableBorderWidth', 'tableBorderStyle', 'tableBorderColor', 'fontSizeScale',
+          'extraSpacerHeight', 'minTableRows'
         ];
         const compUpdates = {};
         const allSlipsSync = {};

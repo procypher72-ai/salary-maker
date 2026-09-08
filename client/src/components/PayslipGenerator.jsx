@@ -6,6 +6,7 @@ import { HclCorporatePayslip } from './templates/HclCorporatePayslip';
 import { AiimsGovtPayslip } from './templates/AiimsGovtPayslip';
 import { ConcentrixDakshPayslip } from './templates/ConcentrixDakshPayslip';
 import { SushmaBuildtechPayslip } from './templates/SushmaBuildtechPayslip';
+import { DelhiPublicSchoolPayslip } from './templates/DelhiPublicSchoolPayslip';
 import { ResizableLogo } from './common/ResizableLogo';
 import { SlipLayoutToolbar } from './common/SlipLayoutToolbar';
 import { SignatureStampBox } from './common/SignatureStampBox';
@@ -90,6 +91,10 @@ export const PayslipGenerator = ({
     tableBorderStyle: activeCompany?.tableBorderStyle || 'solid',
     tableBorderColor: activeCompany?.tableBorderColor || '#000000',
     fontSizeScale: activeCompany?.fontSizeScale || 100,
+    extraSpacerHeight: activeCompany?.extraSpacerHeight !== undefined ? activeCompany.extraSpacerHeight : 0,
+    minTableRows: activeCompany?.minTableRows !== undefined ? activeCompany.minTableRows : 6,
+    dwpsCustomFields: activeCompany?.dwpsCustomFields,
+    dwpsMetaColumns: activeCompany?.dwpsMetaColumns,
   });
 
   // Sync layoutConfig when activeCompany changes
@@ -110,6 +115,10 @@ export const PayslipGenerator = ({
         tableBorderStyle: activeCompany.tableBorderStyle || 'solid',
         tableBorderColor: activeCompany.tableBorderColor || '#000000',
         fontSizeScale: activeCompany.fontSizeScale || 100,
+        extraSpacerHeight: activeCompany.extraSpacerHeight !== undefined ? activeCompany.extraSpacerHeight : 0,
+        minTableRows: activeCompany.minTableRows !== undefined ? activeCompany.minTableRows : 6,
+        dwpsCustomFields: activeCompany.dwpsCustomFields,
+        dwpsMetaColumns: activeCompany.dwpsMetaColumns,
       });
     }
   }, [activeCompany]);
@@ -120,6 +129,10 @@ export const PayslipGenerator = ({
       setSelectedEmpId(employees[0]._id);
     }
   }, [employees]);
+
+  const selectedEmployeeObj = employees.find((e) => e._id === selectedEmpId);
+  const currencySymbol = activeCompany?.currency || '₹';
+  const templateKey = activeCompany?.templateKey || 'corporate_detailed';
 
   // Load draft preview whenever employee, month, or year changes in Single mode
   const fetchDraft = async () => {
@@ -266,6 +279,57 @@ export const PayslipGenerator = ({
         label: item.label,
         amount: Math.round(item.amount * payRatio),
       }));
+    } else if (templateKey === 'hcl_corporate_tech') {
+      const hclBaseEarnings = [
+        { label: 'Basic Salary', amount: 87450 },
+        { label: 'HRA', amount: 34980 },
+        { label: 'Travel Allowance', amount: 22600 },
+        { label: 'Holiday Allowance', amount: 9500 },
+        { label: 'Food Wallet', amount: 4500 },
+        { label: 'Incentives', amount: 45213 },
+      ];
+      updatedEarnings = hclBaseEarnings.map((item) => ({
+        label: item.label,
+        amount: Math.round(item.amount * payRatio),
+      }));
+    } else if (templateKey === 'concentrix_daksh') {
+      const cnxBaseEarnings = [
+        { label: 'BASIC SALARY', amount: 23000, fullAmount: 23000 },
+        { label: 'HOUSE RENT ALLOWANCE', amount: 11500, fullAmount: 11500 },
+        { label: 'STATUTORY BONUS', amount: 3500, fullAmount: 3500 },
+        { label: 'SPECIAL ALLOWANCE', amount: 17500, fullAmount: 17500 },
+        { label: 'RMEDICAL ALLOWANCE', amount: 2500, fullAmount: 2500 },
+        { label: 'PERFORMANCE BONUS', amount: 8000, fullAmount: 8000 },
+      ];
+      updatedEarnings = cnxBaseEarnings.map((item) => ({
+        label: item.label,
+        amount: Math.round(item.amount * payRatio),
+        fullAmount: item.fullAmount,
+      }));
+    } else if (templateKey === 'sushma_buildtech') {
+      const sushmaBaseEarnings = [
+        { label: 'BASIC', amount: 28387, rate: 28387 },
+        { label: 'HRA', amount: 14194, rate: 14194 },
+        { label: 'CONVEYANCE', amount: 1600, rate: 1600 },
+        { label: 'CHILD EDU ALLOWANCE', amount: 200, rate: 200 },
+        { label: 'SPECIAL ALLOWANCE', amount: 13619, rate: 13619 },
+        { label: 'PERFORMANCE BONUS', amount: 10000, rate: 10000 },
+      ];
+      updatedEarnings = sushmaBaseEarnings.map((item) => ({
+        label: item.label,
+        amount: Math.round(item.amount * payRatio),
+        rate: item.rate,
+      }));
+    } else if (templateKey === 'delhi_public_school') {
+      const dwpsBaseEarnings = [
+        { label: 'Basic', amount: 20000 },
+        { label: 'D.A', amount: 10000 },
+        { label: 'H.R.A', amount: 20000 },
+      ];
+      updatedEarnings = dwpsBaseEarnings.map((item) => ({
+        label: item.label,
+        amount: Math.round(item.amount * payRatio),
+      }));
     } else {
       if (base.basicPay) updatedEarnings.push({ label: 'Basic Salary', amount: Math.round(base.basicPay * payRatio) });
       if (base.hra) updatedEarnings.push({ label: 'House Rent Allowance (HRA)', amount: Math.round(base.hra * payRatio) });
@@ -297,7 +361,7 @@ export const PayslipGenerator = ({
     showToast(`Pro-rata salary recalculated for ${paidDays}/${workingDays} days (${(payRatio * 100).toFixed(1)}%)!`, 'info');
   };
 
-  // Statutory Deductions Autofill (EPF, ESIC, PT, TDS, AIIMS Recoveries)
+  // Statutory Deductions Autofill (EPF, ESIC, PT, TDS, AIIMS Recoveries, HCL, Concentrix, Sushma)
   const handleStatutoryAutofill = () => {
     if (!draft || !selectedEmployeeObj) return;
 
@@ -318,6 +382,64 @@ export const PayslipGenerator = ({
       };
       recalculateTotals(updated);
       showToast('Autofilled AIIMS Central Govt statutory deductions & recoveries!', 'success');
+      return;
+    }
+
+    if (templateKey === 'hcl_corporate_tech') {
+      const updatedDeductions = [
+        { label: 'Ee PF contribution', amount: 10494 },
+        { label: 'Prof Tax - split period', amount: 200 },
+        { label: 'Income Tax', amount: 36586 },
+      ];
+      const updated = {
+        ...draft,
+        deductions: updatedDeductions,
+      };
+      recalculateTotals(updated);
+      showToast('Autofilled HCL Technologies enterprise statutory deductions!', 'success');
+      return;
+    }
+
+    if (templateKey === 'concentrix_daksh') {
+      const updatedDeductions = [
+        { label: 'PROVIDENT FUND', amount: 2760 },
+        { label: 'PROFESSIONAL TAX', amount: 200 },
+        { label: 'INCOME TAX (TDS)', amount: 4800 },
+      ];
+      const updated = {
+        ...draft,
+        deductions: updatedDeductions,
+      };
+      recalculateTotals(updated);
+      showToast('Autofilled Concentrix Daksh statutory deductions!', 'success');
+      return;
+    }
+
+    if (templateKey === 'sushma_buildtech') {
+      const updatedDeductions = [
+        { label: 'PF EMPLOYEE SHARE', amount: 3406 },
+        { label: 'PROFESSIONAL TAX', amount: 200 },
+        { label: 'TDS', amount: 2500 },
+      ];
+      const updated = {
+        ...draft,
+        deductions: updatedDeductions,
+      };
+      recalculateTotals(updated);
+      showToast('Autofilled Sushma Buildtech statutory deductions!', 'success');
+      return;
+    }
+
+    if (templateKey === 'delhi_public_school') {
+      const updatedDeductions = [
+        { label: 'Professsional Tax', amount: 212 },
+      ];
+      const updated = {
+        ...draft,
+        deductions: updatedDeductions,
+      };
+      recalculateTotals(updated);
+      showToast('Autofilled Delhi Public School statutory deductions!', 'success');
       return;
     }
 
@@ -425,9 +547,16 @@ export const PayslipGenerator = ({
     }
   };
 
-  const selectedEmployeeObj = employees.find((e) => e._id === selectedEmpId);
-  const currencySymbol = activeCompany?.currency || '₹';
-  const templateKey = activeCompany?.templateKey || 'corporate_detailed';
+  const handleLogoSaved = (logoData) => {
+    if (logoData?.company && onCompanyUpdated) {
+      onCompanyUpdated(logoData.company);
+    } else if (logoData && onCompanyUpdated && activeCompany) {
+      onCompanyUpdated({
+        ...activeCompany,
+        ...logoData,
+      });
+    }
+  };
 
   return (
     <div>
@@ -801,6 +930,7 @@ export const PayslipGenerator = ({
               onAddDeduction={handleAddDeduction}
               onDeleteDeduction={handleDeleteDeduction}
               onDaysChange={handleDaysChange}
+              onSizeSaved={handleLogoSaved}
             />
           ) : templateKey === 'hcl_corporate_tech' ? (
             <HclCorporatePayslip
@@ -816,6 +946,7 @@ export const PayslipGenerator = ({
               onAddDeduction={handleAddDeduction}
               onDeleteDeduction={handleDeleteDeduction}
               onDaysChange={handleDaysChange}
+              onSizeSaved={handleLogoSaved}
             />
           ) : templateKey === 'classic_tabular' ? (
             <ClassicTabularPayslip
@@ -832,6 +963,7 @@ export const PayslipGenerator = ({
               onAddDeduction={handleAddDeduction}
               onDeleteDeduction={handleDeleteDeduction}
               onDaysChange={handleDaysChange}
+              onSizeSaved={handleLogoSaved}
             />
           ) : templateKey === 'concentrix_daksh' ? (
             <ConcentrixDakshPayslip
@@ -847,6 +979,7 @@ export const PayslipGenerator = ({
               onAddDeduction={handleAddDeduction}
               onDeleteDeduction={handleDeleteDeduction}
               onDaysChange={handleDaysChange}
+              onSizeSaved={handleLogoSaved}
             />
           ) : templateKey === 'sushma_buildtech' ? (
             <SushmaBuildtechPayslip
@@ -862,6 +995,23 @@ export const PayslipGenerator = ({
               onAddDeduction={handleAddDeduction}
               onDeleteDeduction={handleDeleteDeduction}
               onDaysChange={handleDaysChange}
+              onSizeSaved={handleLogoSaved}
+            />
+          ) : templateKey === 'delhi_public_school' ? (
+            <DelhiPublicSchoolPayslip
+              company={activeCompany}
+              employee={selectedEmployeeObj}
+              draft={draft}
+              isEditable={true}
+              layoutConfig={layoutConfig}
+              onEarningChange={handleEarningChange}
+              onDeductionChange={handleDeductionChange}
+              onAddEarning={handleAddEarning}
+              onDeleteEarning={handleDeleteEarning}
+              onAddDeduction={handleAddDeduction}
+              onDeleteDeduction={handleDeleteDeduction}
+              onDaysChange={handleDaysChange}
+              onSizeSaved={handleLogoSaved}
             />
           ) : (
           <div

@@ -39,6 +39,8 @@ const PRESET_CONFIGS = [
       tableBorderStyle: 'solid',
       tableBorderColor: '#000000',
       fontSizeScale: 100,
+      extraSpacerHeight: 0,
+      minTableRows: 6,
     },
   },
   {
@@ -59,6 +61,8 @@ const PRESET_CONFIGS = [
       tableBorderStyle: 'solid',
       tableBorderColor: '#334155',
       fontSizeScale: 105,
+      extraSpacerHeight: 30,
+      minTableRows: 8,
     },
   },
   {
@@ -79,6 +83,8 @@ const PRESET_CONFIGS = [
       tableBorderStyle: 'solid',
       tableBorderColor: '#111111',
       fontSizeScale: 92,
+      extraSpacerHeight: 0,
+      minTableRows: 5,
     },
   },
   {
@@ -99,6 +105,8 @@ const PRESET_CONFIGS = [
       tableBorderStyle: 'solid',
       tableBorderColor: '#0f172a',
       fontSizeScale: 100,
+      extraSpacerHeight: 0,
+      minTableRows: 6,
     },
   },
   {
@@ -119,6 +127,8 @@ const PRESET_CONFIGS = [
       tableBorderStyle: 'solid',
       tableBorderColor: '#cbd5e1',
       fontSizeScale: 102,
+      extraSpacerHeight: 20,
+      minTableRows: 7,
     },
   },
 ];
@@ -164,6 +174,8 @@ export const SlipLayoutToolbar = ({
     tableBorderStyle: company?.tableBorderStyle || 'solid',
     tableBorderColor: company?.tableBorderColor || '#000000',
     fontSizeScale: company?.fontSizeScale || 100,
+    extraSpacerHeight: company?.extraSpacerHeight !== undefined ? company.extraSpacerHeight : 0,
+    minTableRows: company?.minTableRows !== undefined ? company.minTableRows : 6,
   };
 
   const updateField = (field, value) => {
@@ -202,6 +214,8 @@ export const SlipLayoutToolbar = ({
         tableBorderStyle: config.tableBorderStyle || 'solid',
         tableBorderColor: config.tableBorderColor || '#000000',
         fontSizeScale: Number(config.fontSizeScale) || 100,
+        extraSpacerHeight: Number(config.extraSpacerHeight) || 0,
+        minTableRows: Number(config.minTableRows) || 6,
       };
 
       const res = await api.updateCompany(company._id, payload);
@@ -237,7 +251,7 @@ export const SlipLayoutToolbar = ({
               Slip Dimensions, Borders & Column Height Controls
             </div>
             <div className="toolbar-subtitle">
-              Width: {config.slipWidth}px • Height: {config.slipMinHeight ? `${config.slipMinHeight}px` : 'Auto'} • Row Spacing: {config.incomeDeductionHeight}px • Border: {config.slipBorderWidth}px {config.slipBorderStyle}
+              Width: {config.slipWidth}px • Height: {config.slipMinHeight ? `${config.slipMinHeight}px` : 'Auto'} • Bottom Gap: {config.extraSpacerHeight || 0}px • Rows: {config.minTableRows || 6} • Row Spacing: {config.incomeDeductionHeight}px
             </div>
           </div>
         </div>
@@ -437,6 +451,76 @@ export const SlipLayoutToolbar = ({
                         type="button"
                         className={`btn-chip ${(config.fontSizeScale || 100) === btn.val ? 'active' : ''}`}
                         onClick={() => updateField('fontSizeScale', btn.val)}
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Extra Bottom White Space / Gap (After Last Field) */}
+                <div className="control-card">
+                  <div className="control-label-row">
+                    <label className="control-label">Extra Bottom White Space (Spacer Gap)</label>
+                    <span className="control-value-badge">{config.extraSpacerHeight || 0} px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="150"
+                    step="5"
+                    value={config.extraSpacerHeight || 0}
+                    onChange={(e) => updateField('extraSpacerHeight', Number(e.target.value))}
+                    className="toolbar-range-slider"
+                  />
+                  <div className="control-quick-buttons">
+                    {[
+                      { label: 'None (0px)', val: 0 },
+                      { label: '20px', val: 20 },
+                      { label: '40px', val: 40 },
+                      { label: '70px', val: 70 },
+                      { label: '100px', val: 100 },
+                    ].map((btn) => (
+                      <button
+                        key={btn.val}
+                        type="button"
+                        className={`btn-chip ${(config.extraSpacerHeight || 0) === btn.val ? 'active' : ''}`}
+                        onClick={() => updateField('extraSpacerHeight', btn.val)}
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Minimum Table Rows (Blank Rows) */}
+                <div className="control-card">
+                  <div className="control-label-row">
+                    <label className="control-label">Minimum Table Rows (Blank Grid Rows)</label>
+                    <span className="control-value-badge">{config.minTableRows || 6} rows</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="5"
+                    max="15"
+                    step="1"
+                    value={config.minTableRows || 6}
+                    onChange={(e) => updateField('minTableRows', Number(e.target.value))}
+                    className="toolbar-range-slider"
+                  />
+                  <div className="control-quick-buttons">
+                    {[
+                      { label: '5 Rows (Min)', val: 5 },
+                      { label: '6 Rows', val: 6 },
+                      { label: '8 Rows', val: 8 },
+                      { label: '10 Rows', val: 10 },
+                      { label: '12 Rows', val: 12 },
+                    ].map((btn) => (
+                      <button
+                        key={btn.val}
+                        type="button"
+                        className={`btn-chip ${(config.minTableRows || 6) === btn.val ? 'active' : ''}`}
+                        onClick={() => updateField('minTableRows', btn.val)}
                       >
                         {btn.label}
                       </button>

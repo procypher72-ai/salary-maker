@@ -9,6 +9,9 @@ export const ResizableLogo = ({
   isEditable = false,
   fallbackLogo = null,
   onSizeSaved,
+  defaultPosition = null,
+  defaultWidth = null,
+  defaultHeight = null,
 }) => {
   const { showToast } = useAuth();
   const fileInputRef = useRef(null);
@@ -21,12 +24,16 @@ export const ResizableLogo = ({
   const offYKey = isSecondary ? 'secondaryLogoOffsetY' : 'logoOffsetY';
   const urlKey = isSecondary ? 'secondaryLogoUrl' : 'logoUrl';
 
+  const defaultPosVal = defaultPosition || (isSecondary ? 'right' : 'left');
+  const defWidthVal = defaultWidth || (isSecondary ? 85 : 65);
+  const defHeightVal = defaultHeight || (isSecondary ? 60 : 65);
+
   // Dimensions
-  const [width, setWidth] = useState(company?.[widthKey] || (isSecondary ? 85 : 65));
-  const [height, setHeight] = useState(company?.[heightKey] || (isSecondary ? 60 : 65));
+  const [width, setWidth] = useState(company?.[widthKey] || defWidthVal);
+  const [height, setHeight] = useState(company?.[heightKey] || defHeightVal);
 
   // Position & Offsets
-  const [position, setPosition] = useState(company?.[posKey] || (isSecondary ? 'right' : 'left'));
+  const [position, setPosition] = useState(company?.[posKey] || defaultPosVal);
   const [offsetX, setOffsetX] = useState(company?.[offXKey] || 0);
   const [offsetY, setOffsetY] = useState(company?.[offYKey] || 0);
 
@@ -40,24 +47,46 @@ export const ResizableLogo = ({
 
   // Active Ref tracking the absolute latest values to prevent stale closures during mouse drag/resize
   const latestValuesRef = useRef({
-    width: company?.[widthKey] || (isSecondary ? 85 : 65),
-    height: company?.[heightKey] || (isSecondary ? 60 : 65),
-    position: company?.[posKey] || (isSecondary ? 'right' : 'left'),
+    width: company?.[widthKey] || defWidthVal,
+    height: company?.[heightKey] || defHeightVal,
+    position: company?.[posKey] || defaultPosVal,
     offsetX: company?.[offXKey] || 0,
     offsetY: company?.[offYKey] || 0,
     logoUrl: company?.[urlKey] || '',
   });
 
-  const resizeStartRef = useRef({ x: 0, y: 0, w: 65, h: 65 });
+  const resizeStartRef = useRef({ x: 0, y: 0, w: defWidthVal, h: defHeightVal });
   const moveStartRef = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
 
-  // Synchronize when company updates from outside (unless currently actively dragging/resizing)
+  const persistLogoToBackend = async (payload) => {
+    const targetCompanyId =
+      company?._id ||
+      company?.companyId ||
+      localStorage.getItem('salarymaker_active_company_id');
+
+    if (!targetCompanyId) return;
+
+    try {
+      const res = await api.updateCompany(targetCompanyId, payload);
+      if (onSizeSaved) {
+        onSizeSaved({
+          ...payload,
+          company: res.company,
+          _persisted: true,
+        });
+      }
+    } catch (err) {
+      console.error('Auto save logo layout failed:', err);
+    }
+  };
+
+  // Synchronize when company updates externally (like selecting a different company)
   useEffect(() => {
     if (isResizing || isMoving) return;
 
-    const w = company?.[widthKey] !== undefined ? company[widthKey] : (isSecondary ? 85 : 65);
-    const h = company?.[heightKey] !== undefined ? company[heightKey] : (isSecondary ? 60 : 65);
-    const p = company?.[posKey] !== undefined ? company[posKey] : (isSecondary ? 'right' : 'left');
+    const w = company?.[widthKey] !== undefined ? company[widthKey] : defWidthVal;
+    const h = company?.[heightKey] !== undefined ? company[heightKey] : defHeightVal;
+    const p = company?.[posKey] !== undefined ? company[posKey] : defaultPosVal;
     const ox = company?.[offXKey] !== undefined ? company[offXKey] : 0;
     const oy = company?.[offYKey] !== undefined ? company[offYKey] : 0;
     const url = company?.[urlKey] !== undefined ? company[urlKey] : '';
@@ -77,7 +106,15 @@ export const ResizableLogo = ({
       offsetY: oy,
       logoUrl: url,
     };
-  }, [company, widthKey, heightKey, posKey, offXKey, offYKey, urlKey, isResizing, isMoving]);
+  }, [
+    company?._id,
+    company?.[widthKey],
+    company?.[heightKey],
+    company?.[posKey],
+    company?.[offXKey],
+    company?.[offYKey],
+    company?.[urlKey],
+  ]);
 
   // ─── 1. CORNER RESIZE HANDLER ────────────────────────────────────
   const handleResizeMouseDown = (e) => {
@@ -108,16 +145,20 @@ export const ResizableLogo = ({
       setIsResizing(false);
       window.removeEventListener('mousemove', handleResizeMouseMove);
       window.removeEventListener('mouseup', handleResizeMouseUp);
+      
+      const payload = {
+        [widthKey]: latestValuesRef.current.width,
+        [heightKey]: latestValuesRef.current.height,
+        [posKey]: latestValuesRef.current.position,
+        [offXKey]: latestValuesRef.current.offsetX,
+        [offYKey]: latestValuesRef.current.offsetY,
+        [urlKey]: latestValuesRef.current.logoUrl,
+      };
+
       if (onSizeSaved) {
-        onSizeSaved({
-          [widthKey]: latestValuesRef.current.width,
-          [heightKey]: latestValuesRef.current.height,
-          [posKey]: latestValuesRef.current.position,
-          [offXKey]: latestValuesRef.current.offsetX,
-          [offYKey]: latestValuesRef.current.offsetY,
-          [urlKey]: latestValuesRef.current.logoUrl,
-        });
+        onSizeSaved(payload);
       }
+      persistLogoToBackend(payload);
     };
 
     window.addEventListener('mousemove', handleResizeMouseMove);
@@ -154,16 +195,20 @@ export const ResizableLogo = ({
       setIsMoving(false);
       window.removeEventListener('mousemove', handleMoveMouseMove);
       window.removeEventListener('mouseup', handleMoveMouseUp);
+      
+      const payload = {
+        [widthKey]: latestValuesRef.current.width,
+        [heightKey]: latestValuesRef.current.height,
+        [posKey]: latestValuesRef.current.position,
+        [offXKey]: latestValuesRef.current.offsetX,
+        [offYKey]: latestValuesRef.current.offsetY,
+        [urlKey]: latestValuesRef.current.logoUrl,
+      };
+
       if (onSizeSaved) {
-        onSizeSaved({
-          [widthKey]: latestValuesRef.current.width,
-          [heightKey]: latestValuesRef.current.height,
-          [posKey]: latestValuesRef.current.position,
-          [offXKey]: latestValuesRef.current.offsetX,
-          [offYKey]: latestValuesRef.current.offsetY,
-          [urlKey]: latestValuesRef.current.logoUrl,
-        });
+        onSizeSaved(payload);
       }
+      persistLogoToBackend(payload);
     };
 
     window.addEventListener('mousemove', handleMoveMouseMove);
@@ -260,37 +305,59 @@ export const ResizableLogo = ({
     }
   };
 
-  // ─── 6. RESET LAYOUT ─────────────────────────────────────────────
+  // ─── 6. REMOVE CUSTOM IMAGE / REVERT TO DEFAULT ──────────────────
+  const handleRemoveCustomImage = () => {
+    latestValuesRef.current.logoUrl = '';
+    setLogoUrl('');
+    const payload = {
+      [widthKey]: latestValuesRef.current.width,
+      [heightKey]: latestValuesRef.current.height,
+      [posKey]: latestValuesRef.current.position,
+      [offXKey]: latestValuesRef.current.offsetX,
+      [offYKey]: latestValuesRef.current.offsetY,
+      [urlKey]: '',
+    };
+    if (onSizeSaved) {
+      onSizeSaved(payload);
+    }
+    persistLogoToBackend(payload);
+    showToast('Custom logo removed. Reverted to default transparent vector logo!', 'info');
+  };
+
+  // ─── 7. RESET LAYOUT ─────────────────────────────────────────────
   const handleResetLayout = () => {
     const defW = isSecondary ? 85 : 65;
     const defH = isSecondary ? 60 : 65;
     const defP = isSecondary ? 'right' : 'left';
-    const defUrl = company?.[urlKey] || '';
 
     latestValuesRef.current.width = defW;
     latestValuesRef.current.height = defH;
     latestValuesRef.current.position = defP;
     latestValuesRef.current.offsetX = 0;
     latestValuesRef.current.offsetY = 0;
-    latestValuesRef.current.logoUrl = defUrl;
+    latestValuesRef.current.logoUrl = '';
 
     setWidth(defW);
     setHeight(defH);
     setPosition(defP);
     setOffsetX(0);
     setOffsetY(0);
-    setLogoUrl(defUrl);
+    setLogoUrl('');
+
+    const payload = {
+      [widthKey]: defW,
+      [heightKey]: defH,
+      [posKey]: defP,
+      [offXKey]: 0,
+      [offYKey]: 0,
+      [urlKey]: '',
+    };
 
     if (onSizeSaved) {
-      onSizeSaved({
-        [widthKey]: defW,
-        [heightKey]: defH,
-        [posKey]: defP,
-        [offXKey]: 0,
-        [offYKey]: 0,
-        [urlKey]: defUrl,
-      });
+      onSizeSaved(payload);
     }
+    persistLogoToBackend(payload);
+    showToast('Reset logo position, dimensions, and reverted to default transparent vector logo.', 'info');
   };
 
   // Compute container justify alignment
@@ -305,7 +372,7 @@ export const ResizableLogo = ({
     const base = {
       position: 'absolute',
       top: '-46px',
-      background: 'rgba(15, 23, 42, 0.96)',
+      background: 'rgba(15, 23, 42, 0.98)',
       border: isSecondary ? '1.5px solid rgba(249, 115, 22, 0.7)' : '1.5px solid rgba(6, 182, 212, 0.6)',
       color: '#fff',
       padding: '0.35rem 0.65rem',
@@ -314,7 +381,7 @@ export const ResizableLogo = ({
       fontWeight: 600,
       display: 'flex',
       alignItems: 'center',
-      gap: '0.5rem',
+      gap: '0.45rem',
       whiteSpace: 'nowrap',
       zIndex: 99999,
       boxShadow: '0 10px 25px -3px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.1)',
@@ -323,7 +390,7 @@ export const ResizableLogo = ({
       opacity: 1, // Always visible when isEditable is active
     };
 
-    if (isSecondary || position === 'right') {
+    if (isSecondary || position === 'right' || defaultPosVal === 'right' || offsetX > 10) {
       return {
         ...base,
         right: '0px',
@@ -425,6 +492,7 @@ export const ResizableLogo = ({
               borderRadius: '4px',
               userSelect: 'none',
               pointerEvents: 'none',
+              background: 'transparent',
             }}
             draggable={false}
           />
@@ -438,10 +506,11 @@ export const ResizableLogo = ({
               justifyContent: 'center',
               userSelect: 'none',
               pointerEvents: 'none',
+              background: 'transparent',
             }}
           >
             {fallbackLogo ? (
-              <div style={{ transform: `scale(${width / (isSecondary ? 75 : 50)})`, transformOrigin: 'center center' }}>
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'nowrap' }}>
                 {fallbackLogo}
               </div>
             ) : (
@@ -496,6 +565,77 @@ export const ResizableLogo = ({
               <span style={{ color: '#e2e8f0', fontWeight: 700, letterSpacing: '0.02em' }}>
                 {width}×{height}px
               </span>
+
+              {/* Save Layout Button - Prominent High Visibility Action */}
+              <button
+                type="button"
+                onClick={handleSaveLayout}
+                disabled={isSaving}
+                style={{
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '0.22rem 0.6rem',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  boxShadow: '0 2px 10px rgba(16, 185, 129, 0.5)',
+                  letterSpacing: '0.02em',
+                }}
+                title="Save position, size, and image for all salary slips"
+              >
+                <Save size={12} /> {isSaving ? 'Saving...' : 'Save'}
+              </button>
+
+              {/* Replace / Upload Image Button */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                style={{
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  color: '#38bdf8',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  padding: '0.22rem 0.45rem',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                }}
+                title={`Replace ${isSecondary ? 'G20' : 'Company'} Logo Image`}
+              >
+                <ImagePlus size={12} /> Replace
+              </button>
+
+              {/* Remove Custom Image Button (reverts to clean transparent default logo) */}
+              {logoUrl && (
+                <button
+                  type="button"
+                  onClick={handleRemoveCustomImage}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    color: '#f87171',
+                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                    padding: '0.22rem 0.45rem',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                  }}
+                  title="Remove uploaded image & revert to clean transparent default vector logo"
+                >
+                  <Trash2 size={12} /> Clear
+                </button>
+              )}
 
               {/* Snap Position Alignments */}
               <div style={{ display: 'flex', gap: '0.2rem', borderLeft: '1px solid rgba(255,255,255,0.2)', paddingLeft: '0.35rem' }}>
@@ -552,53 +692,6 @@ export const ResizableLogo = ({
                 </button>
               </div>
 
-              {/* Replace / Upload Image Button */}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                style={{
-                  background: 'rgba(56, 189, 248, 0.15)',
-                  color: '#38bdf8',
-                  border: '1px solid rgba(56, 189, 248, 0.4)',
-                  padding: '0.22rem 0.45rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.68rem',
-                  fontWeight: 700,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.25rem',
-                }}
-                title={`Replace ${isSecondary ? 'G20' : 'Company'} Logo Image`}
-              >
-                <ImagePlus size={12} /> Replace
-              </button>
-
-              {/* Save Layout Button - High Visibility Emerald Action */}
-              <button
-                type="button"
-                onClick={handleSaveLayout}
-                disabled={isSaving}
-                style={{
-                  background: 'linear-gradient(135deg, #10b981, #059669)',
-                  color: '#ffffff',
-                  border: 'none',
-                  padding: '0.22rem 0.6rem',
-                  borderRadius: '5px',
-                  cursor: 'pointer',
-                  fontSize: '0.72rem',
-                  fontWeight: 800,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.3rem',
-                  boxShadow: '0 2px 10px rgba(16, 185, 129, 0.5)',
-                  letterSpacing: '0.02em',
-                }}
-                title="Save position, size, and image for all salary slips"
-              >
-                <Save size={12} /> {isSaving ? 'Saving...' : 'Save'}
-              </button>
-
               {/* Reset Button */}
               <button
                 type="button"
@@ -613,7 +706,7 @@ export const ResizableLogo = ({
                   display: 'flex',
                   alignItems: 'center',
                 }}
-                title="Reset layout to default"
+                title="Reset layout & revert to default transparent vector logo"
               >
                 <RotateCcw size={12} />
               </button>

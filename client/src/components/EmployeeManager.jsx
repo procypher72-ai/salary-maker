@@ -126,7 +126,42 @@ export const EmployeeManager = ({
 
   const handleOpenCreate = () => {
     setEditingEmp(null);
-    setFormData(initialForm);
+    const tplKey = activeCompany?.templateKey || 'corporate_detailed';
+    if (tplKey === 'delhi_public_school') {
+      setFormData({
+        empCode: `DWPS-${Math.floor(1000 + Math.random() * 9000)}`,
+        fullName: '',
+        email: '',
+        phone: '',
+        designation: '',
+        department: 'Management',
+        joiningDate: new Date().toISOString().split('T')[0],
+        taxRegime: activeCompany?.defaultTaxRegime || 'new',
+        ptState: activeCompany?.ptState || 'madhya pradesh',
+        ctcAnnual: 600000,
+        dynamicFields: {
+          functionRole: 'Management',
+          location: 'Ashta',
+          bankDetails: '',
+          dateOfJoiningStr: '',
+        },
+        baselineSalary: {
+          basicPay: 20000,
+          hra: 20000,
+          specialAllowance: 10000, // D.A
+          conveyanceAllowance: 0,
+          medicalAllowance: 0,
+          otherAllowances: 0,
+          pfDeduction: 0,
+          esicDeduction: 0,
+          professionalTax: 212,
+          tds: 0,
+          otherDeductions: 0,
+        },
+      });
+    } else {
+      setFormData(initialForm);
+    }
     setIsModalOpen(true);
   };
 
@@ -189,15 +224,44 @@ export const EmployeeManager = ({
       showToast('Please select an active company first', 'error');
       return;
     }
-    if (!formData.empCode || !formData.fullName || !formData.designation) {
-      showToast('Please fill in Employee ID, Full Name, and Designation', 'error');
+    const tplKey = activeCompany?.templateKey || 'corporate_detailed';
+
+    let empCodeToUse = formData.empCode?.trim();
+    if (!empCodeToUse) {
+      empCodeToUse = `EMP-${Date.now().toString().slice(-4)}`;
+    }
+
+    if (!formData.fullName?.trim() || !formData.designation?.trim()) {
+      showToast('Please fill in Employee Full Name and Designation', 'error');
       return;
+    }
+
+    // Sync DWPS specific field mappings
+    const dynamicFieldsToSave = { ...(formData.dynamicFields || {}) };
+    let departmentToUse = formData.department || 'General';
+
+    if (tplKey === 'delhi_public_school') {
+      if (formData.joiningDate) {
+        const d = new Date(formData.joiningDate);
+        if (!isNaN(d.getTime())) {
+          const day = String(d.getDate()).padStart(2, '0');
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const year = d.getFullYear();
+          dynamicFieldsToSave.dateOfJoiningStr = `${day}/${month}/${year}`;
+        }
+      }
+      if (dynamicFieldsToSave.functionRole) {
+        departmentToUse = dynamicFieldsToSave.functionRole;
+      }
     }
 
     setLoading(true);
     try {
       const payload = {
         ...formData,
+        empCode: empCodeToUse,
+        department: departmentToUse,
+        dynamicFields: dynamicFieldsToSave,
         companyId: activeCompany._id,
       };
 
@@ -282,6 +346,39 @@ export const EmployeeManager = ({
         { label: 'Nps Employer Earning Share', amount: 15224 },
         { label: 'Other Allowance', amount: 10650 },
       ];
+    } else if (tplKey === 'hcl_corporate_tech') {
+      initialEarnings = [
+        { label: 'Basic Salary', amount: 87450 },
+        { label: 'HRA', amount: 34980 },
+        { label: 'Travel Allowance', amount: 22600 },
+        { label: 'Holiday Allowance', amount: 9500 },
+        { label: 'Food Wallet', amount: 4500 },
+        { label: 'Incentives', amount: 45213 },
+      ];
+    } else if (tplKey === 'concentrix_daksh') {
+      initialEarnings = [
+        { label: 'BASIC SALARY', amount: 23000, fullAmount: 23000 },
+        { label: 'HOUSE RENT ALLOWANCE', amount: 11500, fullAmount: 11500 },
+        { label: 'STATUTORY BONUS', amount: 3500, fullAmount: 3500 },
+        { label: 'SPECIAL ALLOWANCE', amount: 17500, fullAmount: 17500 },
+        { label: 'RMEDICAL ALLOWANCE', amount: 2500, fullAmount: 2500 },
+        { label: 'PERFORMANCE BONUS', amount: 8000, fullAmount: 8000 },
+      ];
+    } else if (tplKey === 'sushma_buildtech') {
+      initialEarnings = [
+        { label: 'BASIC', amount: 28387, rate: 28387 },
+        { label: 'HRA', amount: 14194, rate: 14194 },
+        { label: 'CONVEYANCE', amount: 1600, rate: 1600 },
+        { label: 'CHILD EDU ALLOWANCE', amount: 200, rate: 200 },
+        { label: 'SPECIAL ALLOWANCE', amount: 13619, rate: 13619 },
+        { label: 'PERFORMANCE BONUS', amount: 10000, rate: 10000 },
+      ];
+    } else if (tplKey === 'delhi_public_school') {
+      initialEarnings = [
+        { label: 'Basic', amount: base.basicPay ? Number(base.basicPay) : 20000 },
+        { label: 'D.A', amount: base.specialAllowance ? Number(base.specialAllowance) : 10000 },
+        { label: 'H.R.A', amount: base.hra ? Number(base.hra) : 20000 },
+      ];
     } else {
       if (base.basicPay) initialEarnings.push({ label: 'Basic Salary', amount: Number(base.basicPay) });
       if (base.hra) initialEarnings.push({ label: 'House Rent Allowance (HRA)', amount: Number(base.hra) });
@@ -306,6 +403,28 @@ export const EmployeeManager = ({
         { label: 'New Pension Scehme-110001989995', amount: 10874 },
         { label: 'Nps Employer Ded Share', amount: 15224 },
         { label: 'Water Charges', amount: 82 },
+      ];
+    } else if (tplKey === 'hcl_corporate_tech') {
+      initialDeductions = [
+        { label: 'Ee PF contribution', amount: 10494 },
+        { label: 'Prof Tax - split period', amount: 200 },
+        { label: 'Income Tax', amount: 36586 },
+      ];
+    } else if (tplKey === 'concentrix_daksh') {
+      initialDeductions = [
+        { label: 'PROVIDENT FUND', amount: 2760 },
+        { label: 'PROFESSIONAL TAX', amount: 200 },
+        { label: 'INCOME TAX (TDS)', amount: 4800 },
+      ];
+    } else if (tplKey === 'sushma_buildtech') {
+      initialDeductions = [
+        { label: 'PF EMPLOYEE SHARE', amount: 3406 },
+        { label: 'PROFESSIONAL TAX', amount: 200 },
+        { label: 'TDS', amount: 2500 },
+      ];
+    } else if (tplKey === 'delhi_public_school') {
+      initialDeductions = [
+        { label: 'Professsional Tax', amount: base.professionalTax ? Number(base.professionalTax) : 212 },
       ];
     } else {
       if (base.pfDeduction) initialDeductions.push({ label: 'Provident Fund (PF)', amount: Number(base.pfDeduction) });
@@ -1729,244 +1848,416 @@ export const EmployeeManager = ({
             </div>
 
             <form onSubmit={handleSubmit}>
-              {/* Section 1: Core Profile */}
-              <h4 style={{ fontSize: '0.9rem', color: 'var(--accent-cyan)', marginBottom: '0.85rem' }}>
-                1. Core Employee Details
-              </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Employee ID / Code *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. EMP-001"
-                    value={formData.empCode}
-                    onChange={(e) => setFormData({ ...formData, empCode: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Full Name *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. Rajesh Kumar"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Designation *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. Lead Engineer"
-                    value={formData.designation}
-                    onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
+              {activeCompany?.templateKey === 'delhi_public_school' ? (
+                /* ── DELHI WORLD PUBLIC SCHOOL FOCUSED ONBOARDING FORM ── */
+                <>
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                      <Users size={18} className="text-cyan" />
+                      <h4 style={{ fontSize: '0.95rem', color: 'var(--accent-cyan)', margin: 0, fontWeight: 700 }}>
+                        Employee Details (Delhi World Public School Format)
+                      </h4>
+                    </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Department</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. Engineering"
-                    value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Email Address</label>
-                  <input
-                    type="email"
-                    className="form-input"
-                    placeholder="rajesh@company.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Joining Date</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={formData.joiningDate}
-                    onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
-                  />
-                </div>
-              </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      {/* Name (Full Name) */}
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 700 }}>Name (Full Name) *</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. SUNAINA SHARMA"
+                          value={formData.fullName}
+                          onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                          required
+                          autoFocus
+                          id="dwps-input-fullname"
+                        />
+                      </div>
 
-              {/* Section 2: Dynamic Template Fields */}
-              <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.25rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
-                  <h4 style={{ fontSize: '0.9rem', color: 'var(--accent-cyan)', margin: 0 }}>
-                    2. Schema Fields ({activeTemplate?.name || 'Standard'})
+                      {/* Function */}
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 700 }}>Function</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. Management"
+                          value={formData.dynamicFields?.functionRole !== undefined ? formData.dynamicFields.functionRole : (formData.department || '')}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFormData((prev) => ({
+                              ...prev,
+                              department: val,
+                              dynamicFields: { ...prev.dynamicFields, functionRole: val },
+                            }));
+                          }}
+                          id="dwps-input-function"
+                        />
+                      </div>
+
+                      {/* Designation */}
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 700 }}>Designation *</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. Principal"
+                          value={formData.designation}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFormData((prev) => ({
+                              ...prev,
+                              designation: val,
+                              dynamicFields: { ...prev.dynamicFields, designation: val },
+                            }));
+                          }}
+                          required
+                          id="dwps-input-designation"
+                        />
+                      </div>
+
+                      {/* Location */}
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 700 }}>Location</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. Ashta"
+                          value={formData.dynamicFields?.location || ''}
+                          onChange={(e) => handleDynamicFieldChange('location', e.target.value)}
+                          id="dwps-input-location"
+                        />
+                      </div>
+
+                      {/* Bank Details */}
+                      <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                        <label className="form-label" style={{ fontWeight: 700 }}>Bank Details (Account No, Bank Name, Branch)</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. 38570100006930,Bank of Baroda,Ashta"
+                          value={formData.dynamicFields?.bankDetails || ''}
+                          onChange={(e) => handleDynamicFieldChange('bankDetails', e.target.value)}
+                          id="dwps-input-bankdetails"
+                        />
+                      </div>
+
+                      {/* Date of Joining */}
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 700 }}>Date of Joining</label>
+                        <input
+                          type="date"
+                          className="form-input"
+                          value={formData.joiningDate}
+                          onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
+                          id="dwps-input-joiningdate"
+                        />
+                      </div>
+
+                      {/* Employee ID (Auto / Optional) */}
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 700 }}>Employee ID / Code (Auto)</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. DWPS-1021"
+                          value={formData.empCode}
+                          onChange={(e) => setFormData({ ...formData, empCode: e.target.value })}
+                          id="dwps-input-empcode"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 2: DWPS Baseline Compensation Structure */}
+                  <div style={{ marginTop: '1.25rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                      <DollarSign size={18} className="text-cyan" />
+                      <h4 style={{ fontSize: '0.95rem', color: 'var(--accent-cyan)', margin: 0, fontWeight: 700 }}>
+                        Monthly Salary Structure ({currencySymbol})
+                      </h4>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem' }}>
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>Basic ({currencySymbol})</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={formData.baselineSalary.basicPay}
+                          onChange={(e) => handleSalaryChange('basicPay', e.target.value)}
+                          id="dwps-salary-basic"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>D.A ({currencySymbol})</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={formData.baselineSalary.specialAllowance}
+                          onChange={(e) => handleSalaryChange('specialAllowance', e.target.value)}
+                          id="dwps-salary-da"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>H.R.A ({currencySymbol})</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={formData.baselineSalary.hra}
+                          onChange={(e) => handleSalaryChange('hra', e.target.value)}
+                          id="dwps-salary-hra"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>Professional Tax ({currencySymbol})</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={formData.baselineSalary.professionalTax}
+                          onChange={(e) => handleSalaryChange('professionalTax', e.target.value)}
+                          id="dwps-salary-pt"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* ── DYNAMIC SCHEMA FORM FOR ALL OTHER TEMPLATES ── */
+                <>
+                  {/* Section 1: Core Profile */}
+                  <h4 style={{ fontSize: '0.9rem', color: 'var(--accent-cyan)', marginBottom: '0.85rem' }}>
+                    1. Core Employee Details
                   </h4>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    Auto-configured for active template
-                  </span>
-                </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                    <div className="form-group">
+                      <label className="form-label">Employee ID / Code *</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="e.g. EMP-001"
+                        value={formData.empCode}
+                        onChange={(e) => setFormData({ ...formData, empCode: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Full Name *</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="e.g. Rajesh Kumar"
+                        value={formData.fullName}
+                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Designation *</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="e.g. Lead Engineer"
+                        value={formData.designation}
+                        onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                  <div className="form-group">
-                    <label className="form-label">PAN Number</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="ABCDE1234F"
-                      value={formData.dynamicFields?.panNumber || ''}
-                      onChange={(e) => handleDynamicFieldChange('panNumber', e.target.value.toUpperCase())}
-                    />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+                    <div className="form-group">
+                      <label className="form-label">Department</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="e.g. Engineering"
+                        value={formData.department}
+                        onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Email Address</label>
+                      <input
+                        type="email"
+                        className="form-input"
+                        placeholder="rajesh@company.com"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Joining Date</label>
+                      <input
+                        type="date"
+                        className="form-input"
+                        value={formData.joiningDate}
+                        onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
+                      />
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">UAN Number</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="101234567890"
-                      value={formData.dynamicFields?.uanNumber || ''}
-                      onChange={(e) => handleDynamicFieldChange('uanNumber', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Bank Account Number</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="50100482910482"
-                      value={formData.dynamicFields?.bankAccount || ''}
-                      onChange={(e) => handleDynamicFieldChange('bankAccount', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Bank Name</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="HDFC Bank"
-                      value={formData.dynamicFields?.bankName || ''}
-                      onChange={(e) => handleDynamicFieldChange('bankName', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">IFSC Code</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="HDFC0001234"
-                      value={formData.dynamicFields?.ifscCode || ''}
-                      onChange={(e) => handleDynamicFieldChange('ifscCode', e.target.value.toUpperCase())}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">PF Number</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="MH/BAN/0012345/001"
-                      value={formData.dynamicFields?.pfNumber || ''}
-                      onChange={(e) => handleDynamicFieldChange('pfNumber', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
 
-              {/* Section 3: Baseline Monthly Salary Structure */}
-              <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.25rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
-                  <h4 style={{ fontSize: '0.9rem', color: 'var(--accent-cyan)', margin: 0 }}>
-                    3. Baseline Monthly Salary ({currencySymbol})
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={() => setIsCtcModalOpen(true)}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    <Calculator size={14} />
-                    <span>Auto CTC Deconstructor</span>
-                  </button>
-                </div>
+                  {/* Section 2: Dynamic Template Fields */}
+                  <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                      <h4 style={{ fontSize: '0.9rem', color: 'var(--accent-cyan)', margin: 0 }}>
+                        2. Schema Fields ({activeTemplate?.name || 'Standard'})
+                      </h4>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        Auto-configured for active template
+                      </span>
+                    </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                  <div className="form-group">
-                    <label className="form-label">Basic Salary</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={formData.baselineSalary.basicPay}
-                      onChange={(e) => handleSalaryChange('basicPay', e.target.value)}
-                    />
+                    {activeTemplate?.requiredFields && activeTemplate.requiredFields.length > 0 ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                        {activeTemplate.requiredFields.map((field) => (
+                          <div className="form-group" key={field.key}>
+                            <label className="form-label">
+                              {field.label} {field.required ? '*' : ''}
+                            </label>
+                            <input
+                              type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                              className="form-input"
+                              placeholder={field.placeholder || `Enter ${field.label}`}
+                              value={formData.dynamicFields?.[field.key] || ''}
+                              onChange={(e) => handleDynamicFieldChange(field.key, e.target.value)}
+                              required={!!field.required}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                        <div className="form-group">
+                          <label className="form-label">PAN Number</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="ABCDE1234F"
+                            value={formData.dynamicFields?.panNumber || ''}
+                            onChange={(e) => handleDynamicFieldChange('panNumber', e.target.value.toUpperCase())}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Bank Account Number</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="50100482910482"
+                            value={formData.dynamicFields?.bankAccount || ''}
+                            onChange={(e) => handleDynamicFieldChange('bankAccount', e.target.value)}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Bank Name</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="HDFC Bank"
+                            value={formData.dynamicFields?.bankName || ''}
+                            onChange={(e) => handleDynamicFieldChange('bankName', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">House Rent Allowance (HRA)</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={formData.baselineSalary.hra}
-                      onChange={(e) => handleSalaryChange('hra', e.target.value)}
-                    />
+
+                  {/* Section 3: Baseline Monthly Salary Structure */}
+                  <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                      <h4 style={{ fontSize: '0.9rem', color: 'var(--accent-cyan)', margin: 0 }}>
+                        3. Baseline Monthly Salary ({currencySymbol})
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setIsCtcModalOpen(true)}
+                        className="btn btn-secondary btn-sm"
+                      >
+                        <Calculator size={14} />
+                        <span>Auto CTC Deconstructor</span>
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                      <div className="form-group">
+                        <label className="form-label">Basic Salary</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={formData.baselineSalary.basicPay}
+                          onChange={(e) => handleSalaryChange('basicPay', e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">House Rent Allowance (HRA)</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={formData.baselineSalary.hra}
+                          onChange={(e) => handleSalaryChange('hra', e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Special Allowance</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={formData.baselineSalary.specialAllowance}
+                          onChange={(e) => handleSalaryChange('specialAllowance', e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Conveyance Allowance</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={formData.baselineSalary.conveyanceAllowance}
+                          onChange={(e) => handleSalaryChange('conveyanceAllowance', e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Medical Allowance</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={formData.baselineSalary.medicalAllowance}
+                          onChange={(e) => handleSalaryChange('medicalAllowance', e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Provident Fund (PF)</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={formData.baselineSalary.pfDeduction}
+                          onChange={(e) => handleSalaryChange('pfDeduction', e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Professional Tax (PT)</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={formData.baselineSalary.professionalTax}
+                          onChange={(e) => handleSalaryChange('professionalTax', e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">TDS / Income Tax</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={formData.baselineSalary.tds}
+                          onChange={(e) => handleSalaryChange('tds', e.target.value)}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Special Allowance</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={formData.baselineSalary.specialAllowance}
-                      onChange={(e) => handleSalaryChange('specialAllowance', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Conveyance Allowance</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={formData.baselineSalary.conveyanceAllowance}
-                      onChange={(e) => handleSalaryChange('conveyanceAllowance', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Medical Allowance</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={formData.baselineSalary.medicalAllowance}
-                      onChange={(e) => handleSalaryChange('medicalAllowance', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Provident Fund (PF)</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={formData.baselineSalary.pfDeduction}
-                      onChange={(e) => handleSalaryChange('pfDeduction', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Professional Tax (PT)</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={formData.baselineSalary.professionalTax}
-                      onChange={(e) => handleSalaryChange('professionalTax', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">TDS / Income Tax</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={formData.baselineSalary.tds}
-                      onChange={(e) => handleSalaryChange('tds', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
+                </>
+              )}
 
               {/* Form Action Buttons */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '2rem' }}>

@@ -77,9 +77,13 @@ export const ClassicTabularPayslip = ({
     return map[label] || label;
   };
 
+  const cfg = layoutConfig || company || {};
+  const minRows = cfg.minTableRows !== undefined ? Number(cfg.minTableRows) : 5;
   const earnings = draft.earnings || [];
   const deductions = draft.deductions || [];
-  const maxRows = Math.max(earnings.length, deductions.length, 5);
+  const maxRows = Math.max(earnings.length, deductions.length, minRows);
+  const extraSpacer = Number(cfg.extraSpacerHeight) || 0;
+  const rowHeightStyle = cfg.incomeDeductionHeight ? { minHeight: `${cfg.incomeDeductionHeight}px` } : undefined;
 
   const monthUpper = (draft.month || 'JANUARY').toUpperCase();
   const yearVal = draft.year || 2026;
@@ -192,7 +196,7 @@ export const ClassicTabularPayslip = ({
             }
 
             return (
-              <div key={idx} className="ct-fin-row">
+              <div key={idx} className="ct-fin-row" style={rowHeightStyle}>
                 {/* Earnings side */}
                 <div className="ct-col-earn-desc">
                   {isEditable && earn ? (
@@ -254,6 +258,9 @@ export const ClassicTabularPayslip = ({
             );
           })}
         </div>
+
+        {/* EXTRA BOTTOM WHITE SPACE SPACER */}
+        {extraSpacer > 0 && <div className="ct-bottom-spacer" style={{ height: `${extraSpacer}px` }} />}
 
         <div className="ct-divider" />
 

@@ -73,9 +73,11 @@ export const SushmaBuildtechPayslip = ({
   const yearVal = draft.year || 2025;
   const monthShort = monthName.substring(0, 3);
 
+  const minRows = cfg.minTableRows !== undefined ? Number(cfg.minTableRows) : 6;
   const earnings = draft.earnings || [];
   const deductions = draft.deductions || [];
-  const maxRows = Math.max(earnings.length, deductions.length, 5);
+  const maxRows = Math.max(earnings.length, deductions.length, minRows);
+  const extraSpacer = Number(cfg.extraSpacerHeight) || 0;
 
   const standardDays = dynamic.standardDays !== undefined ? Number(dynamic.standardDays).toFixed(2) : draft.workingDays !== undefined ? Number(draft.workingDays).toFixed(2) : '31.00';
   const lwopDays = dynamic.lwopDays !== undefined ? Number(dynamic.lwopDays).toFixed(2) : draft.lopDays !== undefined ? Number(draft.lopDays).toFixed(2) : '0.00';
@@ -310,6 +312,17 @@ export const SushmaBuildtechPayslip = ({
               </tr>
             );
           })}
+
+            {/* Extra bottom white space spacer */}
+            {extraSpacer > 0 && (
+              <tr className="sushma-spacer-row" style={{ height: `${extraSpacer}px` }}>
+                <td className="sushma-td-ern-desc"></td>
+                <td className="sushma-td-ern-rate"></td>
+                <td className="sushma-td-ern-amt"></td>
+                <td className="sushma-td-ded-desc"></td>
+                <td className="sushma-td-ded-amt"></td>
+              </tr>
+            )}
 
           {/* Gross Earnings & Deductions Row */}
           <tr className="sushma-totals-row">

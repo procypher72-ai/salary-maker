@@ -1636,12 +1636,30 @@ body {
   }
 
   .classic-tabular-wrapper,
-  .hcl-corporate-wrapper,
   .concentrix-daksh-wrapper,
   .sushma-buildtech-wrapper {
     box-shadow: none !important;
     border: 1px solid #000 !important;
     padding: 1rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  .dwps-payslip-wrapper {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .hcl-corporate-wrapper {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
     page-break-inside: avoid;
@@ -1670,6 +1688,7 @@ body {
   .canvas-table-input,
   .ct-inline-input,
   .hcl-canvas-input,
+  .hcl-plain-input,
   .aiims-canvas-input,
   .cnx-canvas-input,
   .sushma-canvas-input {
@@ -1680,28 +1699,48 @@ body {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   HCLTECH 3-COLUMN ENTERPRISE TEMPLATE STYLES
+   HCLTECH 3-COLUMN ENTERPRISE TEMPLATE STYLES (LANDSCAPE COMPACT)
 ───────────────────────────────────────────────────────────── */
 .hcl-corporate-wrapper {
   width: 100%;
-  max-width: 960px;
+  max-width: 1040px;
   background: #ffffff;
   color: #000000;
-  border: 1px solid #111111;
-  padding: 1.25rem 1.65rem;
+  padding: 0;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 0.785rem;
-  line-height: 1.35;
+  font-size: 0.74rem;
+  line-height: 1.25;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
-.hcl-header-box {
+/* 1. Main Unified Table: Complete Zero-Gap Boundary Guarantee */
+.hcl-table-sheet {
+  width: 100%;
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+  table-layout: fixed;
+  border: 1px solid #444444 !important;
+  background: #ffffff;
+  color: #000000;
+  font-size: 0.74rem;
+  line-height: 1.25;
+}
+
+/* Clean Header */
+.hcl-cell-header {
+  padding: 4px 10px 4px 10px !important;
+  border-bottom: 1px solid #444444 !important;
+  vertical-align: top;
+}
+
+.hcl-header-content {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   position: relative;
-  padding-bottom: 0.25rem;
+  width: 100%;
 }
 
 .hcl-header-center {
@@ -1714,19 +1753,22 @@ body {
   font-weight: bold;
   color: #000000;
   margin: 0;
+  line-height: 1.2;
 }
 
 .hcl-sub-period {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: #000000;
-  margin-top: 2px;
+  margin-top: 1px;
+  line-height: 1.2;
 }
 
 .hcl-emp-title {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: bold;
   color: #000000;
   margin-top: 2px;
+  line-height: 1.2;
 }
 
 .hcl-header-right {
@@ -1735,211 +1777,248 @@ body {
   top: 0;
 }
 
-.hcl-divider-line {
-  border-top: 1px solid #000000;
-  margin: 0.3rem 0;
+/* 2. Metadata Columns */
+.hcl-cell-meta-left {
+  width: 50%;
+  vertical-align: top;
+  padding: 2px 8px !important;
+  border-bottom: 1px solid #444444 !important;
+  border-right: 1px solid #444444 !important;
+}
+
+.hcl-cell-meta-right {
+  width: 50%;
+  vertical-align: top;
+  padding: 2px 8px !important;
+  border-bottom: 1px solid #444444 !important;
+}
+
+.hcl-meta-subtable {
   width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
 }
 
-/* Metadata Grid */
-.hcl-meta-grid {
-  display: flex;
-  padding: 0.25rem 0;
+.hcl-meta-subtable td {
+  padding: 1px 2px !important;
+  font-size: 0.74rem;
+  line-height: 1.3;
+  color: #000000;
+  vertical-align: middle;
 }
 
-.hcl-meta-col-left {
-  width: 50%;
-  padding-right: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+.hcl-meta-lbl {
+  width: 175px;
+  font-weight: bold;
+  white-space: nowrap;
 }
 
-.hcl-meta-vertical-sep {
-  width: 1px;
-  background: #000000;
-  margin: 0 0.5rem;
+.hcl-meta-colon {
+  width: 18px;
+  text-align: center;
 }
 
-.hcl-meta-col-right {
-  width: 50%;
-  padding-left: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+.hcl-meta-val {
+  color: #000000;
 }
 
-.hcl-meta-row {
-  display: flex;
-  align-items: center;
-  font-size: 0.775rem;
-}
-
-.hcl-label {
-  width: 160px;
-  flex-shrink: 0;
+/* 3. Financial Table Header (All centered, seamless section headers) */
+.hcl-tr-fin-header th {
+  padding: 2.5px 6px !important;
+  font-size: 0.75rem;
   font-weight: bold;
   color: #000000;
-}
-
-.hcl-colon {
-  width: 15px;
-  color: #000000;
-}
-
-.hcl-value {
-  color: #000000;
-  flex: 1;
-}
-
-/* 3-Column Financial Table Grid */
-.hcl-table-header-grid {
-  display: flex;
-  font-weight: bold;
-  font-size: 0.785rem;
-  padding: 0.2rem 0;
-  color: #000000;
-}
-
-.hcl-th-col.std-desc,
-.hcl-td-col.std-desc {
-  width: 20%;
-  padding-left: 0.2rem;
-}
-
-.hcl-th-col.std-val,
-.hcl-td-col.std-val {
-  width: 13%;
-  text-align: right;
-  padding-right: 1rem;
-  border-right: 1px solid #000000;
-}
-
-.hcl-th-col.ern-desc,
-.hcl-td-col.ern-desc {
-  width: 20%;
-  padding-left: 0.6rem;
-}
-
-.hcl-th-col.ern-val,
-.hcl-td-col.ern-val {
-  width: 14%;
-  text-align: right;
-  padding-right: 1rem;
-  border-right: 1px solid #000000;
-}
-
-.hcl-th-col.ded-desc,
-.hcl-td-col.ded-desc {
-  width: 20%;
-  padding-left: 0.6rem;
-}
-
-.hcl-th-col.ded-val,
-.hcl-td-col.ded-val {
-  width: 13%;
-  text-align: right;
-  padding-right: 0.2rem;
-}
-
-.hcl-table-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.2rem 0;
-}
-
-.hcl-table-row {
-  display: flex;
-  align-items: center;
-  font-size: 0.775rem;
-  color: #000000;
-}
-
-.hcl-canvas-input {
-  font-family: inherit;
-  font-size: 0.775rem;
+  border-bottom: 1px solid #444444 !important;
+  line-height: 1.25;
   background: transparent;
-  border: 1px solid transparent;
-  border-bottom: 1px dashed rgba(0, 0, 0, 0.25);
-  color: #000;
-  padding: 0.1rem 0.25rem;
-  width: 100%;
-  border-radius: 2px;
-  transition: all 0.15s ease;
+  text-align: center !important;
 }
 
-.hcl-canvas-input:hover {
-  background: rgba(99, 102, 241, 0.04);
-  border-bottom-color: rgba(99, 102, 241, 0.6);
+.hcl-th-std-lbl {
+  text-align: center !important;
+  border-right: none !important;
 }
 
-.hcl-canvas-input:focus {
-  background: #fff;
-  border: 1px solid #6366f1;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+.hcl-th-std-inr {
+  text-align: center !important;
+  border-right: 1px solid #444444 !important;
 }
 
-.hcl-canvas-input.num-right {
+.hcl-th-ern-lbl {
+  text-align: center !important;
+  border-right: none !important;
+}
+
+.hcl-th-ern-inr {
+  text-align: center !important;
+  border-right: 1px solid #444444 !important;
+}
+
+.hcl-th-ded-lbl {
+  text-align: center !important;
+  border-right: none !important;
+}
+
+.hcl-th-ded-inr {
+  text-align: center !important;
+  border-right: none !important;
+}
+
+/* 4. Financial Table Line Item Rows (Tight & Compact) */
+.hcl-tr-fin-body td {
+  padding: 1.5px 6px !important;
+  font-size: 0.74rem;
+  line-height: 1.25;
+  color: #000000;
+  border-top: none !important;
+  border-bottom: none !important;
+  vertical-align: middle;
+}
+
+.hcl-td-std-lbl {
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-right: 1px solid #444444 !important;
+}
+
+.hcl-td-std-inr {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  border-right: 1px solid #444444 !important;
+}
+
+.hcl-td-ern-lbl {
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-right: 1px solid #444444 !important;
+}
+
+.hcl-td-ern-inr {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  border-right: 1px solid #444444 !important;
+}
+
+.hcl-td-ded-lbl {
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-right: 1px solid #444444 !important;
+}
+
+.hcl-td-ded-inr {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-/* Totals & Summary */
-.hcl-totals-grid {
-  display: flex;
-  align-items: center;
-  font-size: 0.785rem;
-  padding: 0.2rem 0;
-  color: #000000;
-}
-
-.hcl-tot-col.std-desc { width: 20%; padding-left: 0.2rem; }
-.hcl-tot-col.std-val { width: 13%; text-align: right; padding-right: 1rem; border-right: 1px solid #000; }
-.hcl-tot-col.ern-desc { width: 20%; padding-left: 0.6rem; }
-.hcl-tot-col.ern-val { width: 14%; text-align: right; padding-right: 1rem; border-right: 1px solid #000; }
-.hcl-tot-col.ded-desc { width: 20%; padding-left: 0.6rem; }
-.hcl-tot-col.ded-val { width: 13%; text-align: right; padding-right: 0.2rem; }
-
-.hcl-totals-grid .bold,
-.hcl-netpay-grid .bold {
+/* 5. Totals Row */
+.hcl-tr-totals td {
+  padding: 2.5px 6px !important;
+  font-size: 0.75rem;
   font-weight: bold;
-}
-
-/* Net Pay Grid */
-.hcl-netpay-grid {
-  display: flex;
-  align-items: center;
-  font-size: 0.785rem;
-  padding: 0.2rem 0;
   color: #000000;
+  border-top: 1px solid #444444 !important;
+  border-bottom: 1px solid #444444 !important;
+  line-height: 1.25;
 }
 
-.hcl-net-blank {
-  width: 67%;
-  border-right: 1px solid #000000;
-  height: 100%;
+.hcl-tot-std-lbl {
+  text-align: left;
+  border-right: 1px solid #444444 !important;
 }
 
-.hcl-net-label {
-  width: 20%;
-  padding-left: 0.6rem;
-}
-
-.hcl-net-val {
-  width: 13%;
+.hcl-tot-std-inr {
   text-align: right;
-  padding-right: 0.2rem;
+  font-variant-numeric: tabular-nums;
+  border-right: 1px solid #444444 !important;
+}
+
+.hcl-tot-ern-lbl {
+  text-align: left;
+  border-right: 1px solid #444444 !important;
+}
+
+.hcl-tot-ern-inr {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  border-right: 1px solid #444444 !important;
+}
+
+.hcl-tot-ded-lbl {
+  text-align: left;
+  border-right: 1px solid #444444 !important;
+}
+
+.hcl-tot-ded-inr {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 6. Net Pay Row */
+.hcl-tr-netpay td {
+  padding: 2.5px 6px !important;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #000000;
+  line-height: 1.25;
+}
+
+.hcl-net-blank-cell {
+  border: none !important;
+  background: transparent !important;
+}
+
+.hcl-net-lbl {
+  border-left: 1px solid #444444 !important;
+  border-right: 1px solid #444444 !important;
+  border-bottom: 1px solid #444444 !important;
+  text-align: left;
+}
+
+.hcl-net-inr {
+  border-bottom: 1px solid #444444 !important;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 100% Solid Clean Inputs (Zero Dotted/Dashed borders) */
+.hcl-plain-input {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: inherit !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+.hcl-plain-input.text-right {
+  text-align: right !important;
+}
+
+.hcl-plain-input:focus {
+  background: rgba(99, 102, 241, 0.08) !important;
 }
 
 /* Footer Disclaimer */
 .hcl-footer-text {
   text-align: center;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: #000000;
-  margin-top: 0.85rem;
-  margin-bottom: 0.35rem;
+  padding-top: 10px;
+  padding-bottom: 4px;
+  margin: 0;
+  font-style: normal;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -2642,6 +2721,338 @@ body {
 }
 
 .sushma-canvas-input.num-right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DELHI WORLD PUBLIC SCHOOL (DWPS) TABULAR STYLES
+───────────────────────────────────────────────────────────── */
+.dwps-payslip-wrapper {
+  width: 100%;
+  max-width: 860px;
+  background: #ffffff;
+  color: #000000;
+  padding: 0 !important; /* Zero padding so dividers and tables touch outer border */
+  border: 1px solid #000000;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  margin: 0 auto;
+  box-sizing: border-box;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+.dwps-header-section {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.65rem 1.25rem 0.45rem 1.25rem;
+  box-sizing: border-box;
+}
+
+.dwps-logo-holder {
+  position: absolute;
+  left: 1.25rem;
+  right: 1.25rem;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.dwps-logo-holder .resizable-logo-wrapper {
+  pointer-events: none;
+}
+
+.dwps-logo-holder .resizable-logo-container {
+  pointer-events: auto;
+}
+
+.dwps-school-title-box {
+  text-align: center;
+  width: 100%;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.dwps-header-spacer {
+  display: none;
+}
+
+.dwps-school-name {
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: #000000;
+  margin: 0 0 2px 0;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+}
+
+.dwps-school-subline {
+  font-size: 0.82rem;
+  color: #000000;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.dwps-school-pincode {
+  font-size: 0.82rem;
+  color: #000000;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.dwps-payslip-for-row {
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.28rem 0.75rem;
+  color: #000000;
+  border-top: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dwps-emp-name-row {
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.98rem;
+  letter-spacing: 0.03em;
+  padding: 0.32rem 0.75rem;
+  color: #000000;
+  border-bottom: 1px solid #000000;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dwps-meta-section {
+  padding: 0.65rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  font-size: 0.82rem;
+}
+
+.dwps-meta-section.two-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 1.5rem;
+  row-gap: 0.25rem;
+}
+
+.dwps-meta-section.two-cols .dwps-meta-label {
+  width: 105px;
+}
+
+.dwps-meta-row {
+  display: flex;
+  align-items: baseline;
+  line-height: 1.3;
+}
+
+.dwps-meta-label {
+  width: 130px;
+  flex-shrink: 0;
+  font-weight: 700;
+  color: #000000;
+}
+
+.dwps-meta-colon {
+  width: 20px;
+  flex-shrink: 0;
+  font-weight: 700;
+  color: #000000;
+  text-align: center;
+}
+
+.dwps-meta-value {
+  flex: 1;
+  color: #000000;
+  font-weight: 500;
+}
+
+.dwps-fin-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-top: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  border-left: none;
+  border-right: none;
+  font-size: 0.82rem;
+}
+
+.dwps-fin-table th,
+.dwps-fin-table td {
+  border: 1px solid #000000;
+  padding: 0.28rem 0.65rem;
+  vertical-align: middle;
+}
+
+.dwps-fin-table th:first-child,
+.dwps-fin-table td:first-child {
+  border-left: none;
+  padding-left: 1.25rem;
+}
+
+.dwps-fin-table th:last-child,
+.dwps-fin-table td:last-child {
+  border-right: none;
+  padding-right: 1.25rem;
+}
+
+.dwps-fin-table th {
+  font-weight: 700;
+  color: #000000;
+}
+
+.dwps-th-ern,
+.dwps-td-ern {
+  width: 26%;
+  text-align: left;
+}
+
+.dwps-th-ern-amt,
+.dwps-td-ern-amt {
+  width: 24%;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.dwps-th-ded,
+.dwps-td-ded {
+  width: 26%;
+  text-align: left;
+}
+
+.dwps-th-ded-amt,
+.dwps-td-ded-amt {
+  width: 24%;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.dwps-totals-row td {
+  font-weight: 700;
+}
+
+.dwps-td-total-ern-label {
+  text-align: left;
+}
+
+.dwps-td-total-ern-val {
+  text-align: right;
+}
+
+.dwps-td-total-ded-label {
+  text-align: left;
+}
+
+.dwps-td-total-ded-val {
+  text-align: right;
+}
+
+.dwps-net-row td {
+  font-weight: 700;
+}
+
+.dwps-td-empty-left {
+  background: transparent;
+}
+
+.dwps-td-net-label {
+  text-align: left;
+}
+
+.dwps-td-net-val {
+  text-align: right;
+}
+
+.dwps-words-section {
+  padding: 0.65rem 1.25rem 0.35rem;
+  font-size: 0.82rem;
+  color: #000000;
+  line-height: 1.35;
+}
+
+.dwps-words-title {
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+}
+
+.dwps-words-text {
+  font-weight: 500;
+}
+
+.dwps-footer-section {
+  padding: 0.65rem 1.25rem 0.95rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.dwps-signatory-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 220px;
+}
+
+.dwps-footer-school-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #000000;
+  margin-bottom: 0.25rem;
+  text-align: center;
+}
+
+.dwps-signature-image-box {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.2rem;
+}
+
+.dwps-authorized-sign-text {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #000000;
+  text-align: center;
+}
+
+.dwps-canvas-input {
+  font-family: inherit;
+  font-size: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.25);
+  color: #000;
+  padding: 0.1rem 0.2rem;
+  width: 100%;
+  border-radius: 2px;
+  transition: all 0.15s ease;
+}
+
+.dwps-canvas-input:hover {
+  background: rgba(21, 128, 61, 0.04);
+  border-bottom-color: rgba(21, 128, 61, 0.6);
+}
+
+.dwps-canvas-input:focus {
+  background: #fff;
+  border: 1px solid #16a34a;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.15);
+}
+
+.dwps-canvas-input.num-right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }

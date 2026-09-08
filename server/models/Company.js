@@ -85,7 +85,7 @@ const companySchema = new mongoose.Schema(
     },
     templateKey: {
       type: String,
-      enum: ['corporate_detailed', 'minimalist_startup', 'standard_industrial', 'classic_tabular', 'hcl_corporate_tech', 'aiims_govt_medical', 'concentrix_daksh', 'sushma_buildtech'],
+      enum: ['corporate_detailed', 'minimalist_startup', 'standard_industrial', 'classic_tabular', 'hcl_corporate_tech', 'aiims_govt_medical', 'concentrix_daksh', 'sushma_buildtech', 'delhi_public_school'],
       default: 'corporate_detailed',
     },
     // Salary Slip Dimensions, Borders, and Income/Deduction Layout Customization
@@ -146,6 +146,14 @@ const companySchema = new mongoose.Schema(
     fontSizeScale: {
       type: Number,
       default: 100, // percentage font scale 80% - 130%
+    },
+    extraSpacerHeight: {
+      type: Number,
+      default: 0, // Extra bottom white space/spacer height in px after last row
+    },
+    minTableRows: {
+      type: Number,
+      default: 6, // Minimum financial table rows (including blank rows)
     },
     currency: {
       type: String,
@@ -227,10 +235,18 @@ const companySchema = new mongoose.Schema(
       enum: ['statutory_cap', 'actual_basic', 'opt_out'],
       default: 'statutory_cap',
     },
-    defaultTaxRegime: {
-      type: String,
-      enum: ['new', 'old'],
-      default: 'new',
+    // Custom metadata fields for DWPS & general templates
+    dwpsCustomFields: {
+      type: Array,
+      default: [],
+    },
+    dwpsMetaColumns: {
+      type: Number,
+      default: 1, // 1 or 2 columns
+    },
+    customMetaFields: {
+      type: Array,
+      default: [],
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,

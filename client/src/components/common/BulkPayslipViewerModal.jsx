@@ -166,9 +166,13 @@ export const BulkPayslipViewerModal = ({
       // Small tick for DOM reflow
       await new Promise((resolve) => setTimeout(resolve, 350));
 
+      // Auto-detect if slips are landscape
+      const targetEl = document.getElementById('bulk-payslips-multi-pdf-target');
+      const isLandscape = targetEl?.querySelector('.classic-tabular-wrapper, .hcl-corporate-wrapper, .landscape-slip') !== null;
+
       await exportElementToPdf('bulk-payslips-multi-pdf-target', filename, {
-        margin: [8, 8, 8, 8],
-        orientation: 'portrait',
+        margin: isLandscape ? [8, 8, 8, 8] : [8, 8, 8, 8],
+        orientation: isLandscape ? 'landscape' : 'portrait',
       });
 
       setViewMode(previousMode);

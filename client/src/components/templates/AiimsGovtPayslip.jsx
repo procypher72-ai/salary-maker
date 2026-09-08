@@ -106,9 +106,11 @@ export const AiimsGovtPayslip = ({
   const yearVal = draft.year || 2025;
   const reportTimeText = dynamic.reportDateTime || `02-Mar-${new Date().getFullYear()}&11:28 AM`;
 
+  const minRows = cfg.minTableRows !== undefined ? Number(cfg.minTableRows) : 10;
   const earnings = draft.earnings || [];
   const deductions = draft.deductions || [];
-  const maxRows = Math.max(earnings.length, deductions.length, 10);
+  const maxRows = Math.max(earnings.length, deductions.length, minRows);
+  const extraSpacer = Number(cfg.extraSpacerHeight) || 0;
 
   return (
     <div className="aiims-govt-wrapper" id="aiims-pdf-sheet" style={slipStyle}>
@@ -298,6 +300,16 @@ export const AiimsGovtPayslip = ({
               </tr>
             );
           })}
+
+          {/* Extra bottom white space spacer */}
+          {extraSpacer > 0 && (
+            <tr className="aiims-spacer-row" style={{ height: `${extraSpacer}px` }}>
+              <td className="td-desc"></td>
+              <td className="td-amt v-divider"></td>
+              <td className="td-desc"></td>
+              <td className="td-amt"></td>
+            </tr>
+          )}
         </tbody>
         <tfoot>
           <tr className="aiims-totals-row">

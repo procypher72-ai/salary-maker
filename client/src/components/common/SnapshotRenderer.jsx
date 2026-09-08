@@ -4,6 +4,7 @@ import { HclCorporatePayslip } from '../templates/HclCorporatePayslip';
 import { AiimsGovtPayslip } from '../templates/AiimsGovtPayslip';
 import { ConcentrixDakshPayslip } from '../templates/ConcentrixDakshPayslip';
 import { SushmaBuildtechPayslip } from '../templates/SushmaBuildtechPayslip';
+import { DelhiPublicSchoolPayslip } from '../templates/DelhiPublicSchoolPayslip';
 import { ResizableLogo } from './ResizableLogo';
 
 export const SnapshotRenderer = ({
@@ -57,6 +58,10 @@ export const SnapshotRenderer = ({
     tableBorderStyle: comp.tableBorderStyle || 'solid',
     tableBorderColor: comp.tableBorderColor || '#000000',
     fontSizeScale: comp.fontSizeScale || 100,
+    extraSpacerHeight: comp.extraSpacerHeight !== undefined ? comp.extraSpacerHeight : 0,
+    minTableRows: comp.minTableRows !== undefined ? comp.minTableRows : 6,
+    dwpsCustomFields: comp.dwpsCustomFields,
+    dwpsMetaColumns: comp.dwpsMetaColumns,
   };
 
   const draftData = {
@@ -158,6 +163,26 @@ export const SnapshotRenderer = ({
   if (tplKey === 'sushma_buildtech') {
     return (
       <SushmaBuildtechPayslip
+        company={comp}
+        employee={emp}
+        layoutConfig={layoutConfig}
+        draft={draftData}
+        isEditable={isEditable}
+        onEarningChange={onEarningChange}
+        onDeductionChange={onDeductionChange}
+        onAddEarning={onAddEarning}
+        onDeleteEarning={onDeleteEarning}
+        onAddDeduction={onAddDeduction}
+        onDeleteDeduction={onDeleteDeduction}
+        onDaysChange={onDaysChange}
+        onSizeSaved={onSizeSaved}
+      />
+    );
+  }
+
+  if (tplKey === 'delhi_public_school') {
+    return (
+      <DelhiPublicSchoolPayslip
         company={comp}
         employee={emp}
         layoutConfig={layoutConfig}

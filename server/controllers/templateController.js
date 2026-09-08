@@ -241,6 +241,27 @@ const DEFAULT_TEMPLATES = [
       { label: 'Income Tax', isFixed: true },
     ],
   },
+  {
+    templateKey: 'delhi_public_school',
+    name: 'Delhi World Public School (DWPS Format)',
+    description: 'School and Educational Institution layout featuring institutional crest branding, Function/Designation/Location/Bank metadata, clean 4-column bordered financial grid, and Authorized Signature footer.',
+    badge: 'School & Institutional',
+    colorScheme: { primary: '#15803d', secondary: '#14532d', accent: '#84cc16' },
+    requiredFields: [
+      { key: 'functionRole', label: 'Function / Department', type: 'text', required: true, section: 'job', placeholder: 'Management' },
+      { key: 'location', label: 'Location', type: 'text', required: true, section: 'job', placeholder: 'Ashta' },
+      { key: 'bankDetails', label: 'Bank Details (A/C, Bank, Branch)', type: 'text', required: true, section: 'banking', placeholder: '38570100006930,Bank of Baroda,Ashta' },
+      { key: 'dateOfJoiningStr', label: 'Date of Joining', type: 'text', required: true, section: 'personal', placeholder: '21/10/2021' },
+    ],
+    defaultEarnings: [
+      { label: 'Basic', isFixed: true },
+      { label: 'D.A', isFixed: true },
+      { label: 'H.R.A', isFixed: true },
+    ],
+    defaultDeductions: [
+      { label: 'Professional Tax', isFixed: true },
+    ],
+  },
 ];
 
 // Ensure templates are seeded in database without overwriting user-customized fields or names
@@ -250,6 +271,18 @@ const seedDefaultTemplates = async () => {
       const existing = await SalaryTemplate.findOne({ templateKey: t.templateKey });
       if (!existing) {
         await SalaryTemplate.create(t);
+      } else if (t.templateKey === 'delhi_public_school') {
+        // Ensure DWPS template has the clean required fields synced
+        await SalaryTemplate.updateOne(
+          { templateKey: t.templateKey },
+          {
+            $set: {
+              requiredFields: t.requiredFields,
+              defaultEarnings: t.defaultEarnings,
+              defaultDeductions: t.defaultDeductions,
+            },
+          }
+        );
       }
     }
     console.log('✅ Salary Templates seeded/verified');

@@ -2,13 +2,13 @@ import React from 'react';
 import { ResizableLogo } from '../common/ResizableLogo';
 import { SignatureStampBox } from '../common/SignatureStampBox';
 
-// HCL Tech Branding Icon / Text matching PDF
+// HCL Tech Branding Icon / Text matching Original PDF
 export const HclBrandLogo = () => (
-  <div style={{ textAlign: 'right' }}>
-    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0056b3', letterSpacing: '-0.02em', lineHeight: 1 }}>
+  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', whiteSpace: 'nowrap' }}>
+    <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0056b3', letterSpacing: '-0.02em', lineHeight: 1, fontFamily: 'Arial, sans-serif', whiteSpace: 'nowrap' }}>
       HCLTech
     </div>
-    <div style={{ fontSize: '0.65rem', color: '#111', fontWeight: 600, marginTop: '2px' }}>
+    <div style={{ fontSize: '0.62rem', color: '#000000', fontWeight: 600, marginTop: '2px', lineHeight: 1.1, whiteSpace: 'nowrap' }}>
       HCL Technologies Ltd.
     </div>
   </div>
@@ -35,20 +35,12 @@ export const HclCorporatePayslip = ({
   const slipStyle = {
     maxWidth: cfg.slipWidth ? `${cfg.slipWidth}px` : undefined,
     minHeight: cfg.slipMinHeight ? `${cfg.slipMinHeight}px` : undefined,
-    padding: cfg.slipPadding ? `${cfg.slipPadding}px` : undefined,
-    borderWidth: cfg.slipBorderWidth !== undefined ? `${cfg.slipBorderWidth}px` : undefined,
-    borderStyle: cfg.slipBorderStyle || undefined,
-    borderColor: cfg.slipBorderColor || undefined,
-    borderRadius: cfg.slipBorderRadius !== undefined ? `${cfg.slipBorderRadius}px` : undefined,
-    fontSize: cfg.fontSizeScale ? `${cfg.fontSizeScale * 0.00785}rem` : undefined,
+    fontSize: cfg.fontSizeScale ? `${cfg.fontSizeScale * 0.0075}rem` : undefined,
   };
-
-  const rowMinHeight = cfg.incomeDeductionHeight ? `${cfg.incomeDeductionHeight}px` : undefined;
-  const finTableMinHeight = cfg.incomeDeductionMinHeight ? `${cfg.incomeDeductionMinHeight}px` : undefined;
 
   // Formatter for Indian Currency string (e.g. 1,59,030.00)
   const formatAmount = (num) => {
-    if (num === undefined || num === null || isNaN(num)) return '0.00';
+    if (num === undefined || num === null || isNaN(num) || num === '') return '0.00';
     return Number(num).toLocaleString('en-IN', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -63,231 +55,283 @@ export const HclCorporatePayslip = ({
   const deductions = draft.deductions || [];
 
   // Derive Standard Salary line items from baseline or draft
-  const standardItems = [
+  const defaultStandardItems = [
     { label: 'Basic Salary', amount: 87450 },
     { label: 'HRA', amount: 34980 },
     { label: 'Travel Allowance', amount: 22600 },
     { label: 'Holiday Allowance', amount: 9500 },
     { label: 'Food Wallet', amount: 4500 },
   ];
-  const totalStandardSalary = standardItems.reduce((acc, curr) => acc + curr.amount, 0);
 
-  const maxRows = Math.max(standardItems.length, earnings.length, deductions.length, 6);
+  let standardItems = draft.standardItems || dynamic.standardSalaryItems;
+  if (!standardItems || standardItems.length === 0) {
+    const nonVariableEarnings = earnings.filter(
+      (e) => !/incentive|bonus|variable|arrear|one-time|reimbursement/i.test(e.label || '')
+    );
+    if (nonVariableEarnings.length > 0) {
+      standardItems = nonVariableEarnings;
+    } else {
+      standardItems = defaultStandardItems;
+    }
+  }
 
+  const totalStandardSalary = standardItems.reduce(
+    (acc, curr) => acc + (Number(curr.amount) || 0),
+    0
+  );
+
+  const minRows = cfg.minTableRows !== undefined ? Number(cfg.minTableRows) : 6;
+  const maxRows = Math.max(standardItems.length, earnings.length, deductions.length, minRows);
+  const extraSpacer = Number(cfg.extraSpacerHeight) || 0;
+  const rowHeightStyle = cfg.incomeDeductionHeight ? { height: `${cfg.incomeDeductionHeight}px` } : undefined;
   const daysWorked = draft.workingDays !== undefined ? draft.workingDays : 31;
 
+  // Helper to get formatted DOJ / Gender
+  const getDojGender = () => {
+    if (dynamic.dojGender) return dynamic.dojGender;
+    const doj = employee?.joiningDate
+      ? new Date(employee.joiningDate).toLocaleDateString('en-GB').replace(/\//g, '.')
+      : '01.11.2023';
+    const gender = dynamic.gender || 'Male';
+    return `${doj} / ${gender}`;
+  };
+
   return (
-    <div className="hcl-corporate-wrapper" id="hcl-pdf-sheet" style={slipStyle}>
+    <div className="hcl-corporate-wrapper landscape-slip" id="hcl-pdf-sheet" style={slipStyle}>
       
-      {/* 1. Header Section */}
-      <div className="hcl-header-box">
-        <div className="hcl-header-center">
-          <h1 className="hcl-main-title">Payslip for the Month of {monthName}-{yearVal}</h1>
-          <div className="hcl-sub-period">Pay Period {payPeriodString.includes('to') ? payPeriodString : `01.${monthName}.${yearVal} to 31.${monthName}.${yearVal}`}</div>
-          <div className="hcl-emp-title">{employee?.fullName || 'Hardeep Singh'}</div>
-        </div>
-        <div className="hcl-header-right">
-          <ResizableLogo
-            company={company}
-            isEditable={isEditable}
-            fallbackLogo={<HclBrandLogo />}
-            onSizeSaved={onSizeSaved}
-          />
-        </div>
-      </div>
-
-      <div className="hcl-divider-line" />
-
-      {/* 2. Metadata Grid (2 Columns with exact vertical line separation) */}
-      <div className="hcl-meta-grid">
-        {/* Left Column */}
-        <div className="hcl-meta-col-left">
-          <div className="hcl-meta-row">
-            <span className="hcl-label">Employee ID</span>
-            <span className="hcl-colon">:</span>
-            <span className="hcl-value">{employee?.empCode || 'S285679'}</span>
-          </div>
-          <div className="hcl-meta-row">
-            <span className="hcl-label">Designation</span>
-            <span className="hcl-colon">:</span>
-            <span className="hcl-value">{employee?.designation || 'Software Engineer'}</span>
-          </div>
-          <div className="hcl-meta-row">
-            <span className="hcl-label">DOJ / Gender</span>
-            <span className="hcl-colon">:</span>
-            <span className="hcl-value">{dynamic.dojGender || '01.11.2023 / Male'}</span>
-          </div>
-          <div className="hcl-meta-row">
-            <span className="hcl-label">PAN No</span>
-            <span className="hcl-colon">:</span>
-            <span className="hcl-value">{dynamic.panNumber || 'KEJPS3652M'}</span>
-          </div>
-          <div className="hcl-meta-row">
-            <span className="hcl-label">PF / Pension No*</span>
-            <span className="hcl-colon">:</span>
-            <span className="hcl-value">{dynamic.pfPensionNo || 'HIL EPF Trust-GN/GGN/5572/635481'}</span>
-          </div>
-          <div className="hcl-meta-row">
-            <span className="hcl-label">UAN No</span>
-            <span className="hcl-colon">:</span>
-            <span className="hcl-value">{dynamic.uanNumber || '100417097851'}</span>
-          </div>
-        </div>
-
-        {/* Vertical divider */}
-        <div className="hcl-meta-vertical-sep" />
-
-        {/* Right Column */}
-        <div className="hcl-meta-col-right">
-          <div className="hcl-meta-row">
-            <span className="hcl-label">Bank Name & Account No</span>
-            <span className="hcl-colon">:</span>
-            <span className="hcl-value">{dynamic.bankNameAccount || 'BOI BANK 600810110006820'}</span>
-          </div>
-          <div className="hcl-meta-row">
-            <span className="hcl-label">Location</span>
-            <span className="hcl-colon">:</span>
-            <span className="hcl-value">{dynamic.location || 'Chandigarh'}</span>
-          </div>
-          <div className="hcl-meta-row">
-            <span className="hcl-label">Department</span>
-            <span className="hcl-colon">:</span>
-            <span className="hcl-value">{dynamic.department || employee?.department || 'IT'}</span>
-          </div>
-          <div className="hcl-meta-row">
-            <span className="hcl-label">Band</span>
-            <span className="hcl-colon">:</span>
-            <span className="hcl-value">{dynamic.band || 'S2'}</span>
-          </div>
-          <div className="hcl-meta-row">
-            <span className="hcl-label">Days worked in month</span>
-            <span className="hcl-colon">:</span>
-            <span className="hcl-value">
-              {isEditable ? (
-                <input
-                  type="number"
-                  className="hcl-canvas-input"
-                  value={draft.workingDays || 31}
-                  onChange={(e) => onDaysChange('workingDays', e.target.value)}
-                  style={{ width: '55px' }}
-                />
-              ) : (
-                `${Number(daysWorked).toFixed(2)}`
-              )}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="hcl-divider-line" />
-
-      {/* 3. Three-Column Financials Header */}
-      <div className="hcl-table-header-grid">
-        <div className="hcl-th-col std-desc">Standard Monthly Salary</div>
-        <div className="hcl-th-col std-val">INR</div>
-        <div className="hcl-th-col ern-desc">Earnings</div>
-        <div className="hcl-th-col ern-val">INR</div>
-        <div className="hcl-th-col ded-desc">Deductions</div>
-        <div className="hcl-th-col ded-val">INR</div>
-      </div>
-
-      <div className="hcl-divider-line" />
-
-      {/* 4. Financial Line Items Rows */}
-      <div className="hcl-table-rows" style={{ minHeight: finTableMinHeight }}>
-        {Array.from({ length: maxRows }).map((_, idx) => {
-          const std = standardItems[idx];
-          const ern = earnings[idx];
-          const ded = deductions[idx];
-
-          return (
-            <div key={idx} className="hcl-table-row" style={{ minHeight: rowMinHeight }}>
-              {/* Standard Monthly Salary Column */}
-              <div className="hcl-td-col std-desc">{std ? std.label : ''}</div>
-              <div className="hcl-td-col std-val">{std ? formatAmount(std.amount) : ''}</div>
-
-              {/* Actual Earnings Column */}
-              <div className="hcl-td-col ern-desc">
-                {isEditable && ern ? (
-                  <input
-                    type="text"
-                    className="hcl-canvas-input"
-                    value={ern.label}
-                    onChange={(e) => onEarningChange(idx, 'label', e.target.value)}
+      {/* 1. Main Unified Table (Guarantees zero gaps and perfectly joined lines) */}
+      <table className="hcl-table-sheet">
+        <colgroup>
+          <col style={{ width: '20%' }} />
+          <col style={{ width: '13.33%' }} />
+          <col style={{ width: '20%' }} />
+          <col style={{ width: '13.33%' }} />
+          <col style={{ width: '20%' }} />
+          <col style={{ width: '13.34%' }} />
+        </colgroup>
+        <tbody>
+          
+          {/* HEADER ROW */}
+          <tr>
+            <td colSpan={6} className="hcl-cell-header">
+              <div className="hcl-header-content">
+                <div className="hcl-header-center">
+                  <div className="hcl-main-title">Payslip for the Month of {monthName}-{yearVal}</div>
+                  <div className="hcl-sub-period">
+                    Pay Period {payPeriodString.includes('to') ? payPeriodString : `01.${monthName}.${yearVal} to 31.${monthName}.${yearVal}`}
+                  </div>
+                  <div className="hcl-emp-title">{employee?.fullName || 'Hardeep Singh'}</div>
+                </div>
+                <div className="hcl-header-right">
+                  <ResizableLogo
+                    company={company}
+                    isEditable={isEditable}
+                    fallbackLogo={<HclBrandLogo />}
+                    onSizeSaved={onSizeSaved}
+                    defaultPosition="right"
                   />
-                ) : (
-                  ern?.label || ''
-                )}
+                </div>
               </div>
-              <div className="hcl-td-col ern-val">
-                {isEditable && ern ? (
-                  <input
-                    type="number"
-                    className="hcl-canvas-input num-right"
-                    value={ern.amount}
-                    onChange={(e) => onEarningChange(idx, 'amount', e.target.value)}
-                  />
-                ) : (
-                  ern ? formatAmount(ern.amount) : ''
-                )}
-              </div>
+            </td>
+          </tr>
 
-              {/* Deductions Column */}
-              <div className="hcl-td-col ded-desc">
-                {isEditable && ded ? (
-                  <input
-                    type="text"
-                    className="hcl-canvas-input"
-                    value={ded.label}
-                    onChange={(e) => onDeductionChange(idx, 'label', e.target.value)}
-                  />
-                ) : (
-                  ded?.label || ''
-                )}
-              </div>
-              <div className="hcl-td-col ded-val">
-                {isEditable && ded ? (
-                  <input
-                    type="number"
-                    className="hcl-canvas-input num-right"
-                    value={ded.amount}
-                    onChange={(e) => onDeductionChange(idx, 'amount', e.target.value)}
-                  />
-                ) : (
-                  ded ? formatAmount(ded.amount) : ''
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+          {/* METADATA ROW (2 Equal Columns with middle vertical divider) */}
+          <tr>
+            <td colSpan={3} className="hcl-cell-meta-left">
+              <table className="hcl-meta-subtable">
+                <tbody>
+                  <tr>
+                    <td className="hcl-meta-lbl">Employee ID</td>
+                    <td className="hcl-meta-colon">:</td>
+                    <td className="hcl-meta-val">{employee?.empCode || 'S285679'}</td>
+                  </tr>
+                  <tr>
+                    <td className="hcl-meta-lbl">Designation</td>
+                    <td className="hcl-meta-colon">:</td>
+                    <td className="hcl-meta-val">{employee?.designation || 'Software Engineer'}</td>
+                  </tr>
+                  <tr>
+                    <td className="hcl-meta-lbl">DOJ / Gender</td>
+                    <td className="hcl-meta-colon">:</td>
+                    <td className="hcl-meta-val">{getDojGender()}</td>
+                  </tr>
+                  <tr>
+                    <td className="hcl-meta-lbl">PAN No</td>
+                    <td className="hcl-meta-colon">:</td>
+                    <td className="hcl-meta-val">{dynamic.panNumber || employee?.pan || 'KEJPS3652M'}</td>
+                  </tr>
+                  <tr>
+                    <td className="hcl-meta-lbl">PF / Pension No*</td>
+                    <td className="hcl-meta-colon">:</td>
+                    <td className="hcl-meta-val">{dynamic.pfPensionNo || employee?.pfNumber || 'HIL EPF Trust-GN/GGN/5572/635481'}</td>
+                  </tr>
+                  <tr>
+                    <td className="hcl-meta-lbl">UAN No</td>
+                    <td className="hcl-meta-colon">:</td>
+                    <td className="hcl-meta-val">{dynamic.uanNumber || employee?.uan || '100417097851'}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+            <td colSpan={3} className="hcl-cell-meta-right">
+              <table className="hcl-meta-subtable">
+                <tbody>
+                  <tr>
+                    <td className="hcl-meta-lbl">Bank Name & Account No</td>
+                    <td className="hcl-meta-colon">:</td>
+                    <td className="hcl-meta-val">
+                      {dynamic.bankNameAccount ||
+                        (employee?.bankName ? `${employee.bankName} ${employee.bankAccountNo || ''}` : 'BOI BANK 600810110006820')}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="hcl-meta-lbl">Location</td>
+                    <td className="hcl-meta-colon">:</td>
+                    <td className="hcl-meta-val">{dynamic.location || 'Chandigarh'}</td>
+                  </tr>
+                  <tr>
+                    <td className="hcl-meta-lbl">Department</td>
+                    <td className="hcl-meta-colon">:</td>
+                    <td className="hcl-meta-val">{dynamic.department || employee?.department || 'IT'}</td>
+                  </tr>
+                  <tr>
+                    <td className="hcl-meta-lbl">Band</td>
+                    <td className="hcl-meta-colon">:</td>
+                    <td className="hcl-meta-val">{dynamic.band || 'S2'}</td>
+                  </tr>
+                  <tr>
+                    <td className="hcl-meta-lbl">Days worked in month</td>
+                    <td className="hcl-meta-colon">:</td>
+                    <td className="hcl-meta-val">
+                      {isEditable ? (
+                        <input
+                          type="number"
+                          className="hcl-plain-input"
+                          value={draft.workingDays !== undefined ? draft.workingDays : 31}
+                          onChange={(e) => onDaysChange && onDaysChange('workingDays', e.target.value)}
+                          style={{ width: '45px' }}
+                        />
+                      ) : (
+                        `${Number(daysWorked).toFixed(2)}`
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
 
-      <div className="hcl-divider-line" />
+          {/* FINANCIAL TABLE HEADERS */}
+          <tr className="hcl-tr-fin-header">
+            <th className="hcl-th-col hcl-th-std-lbl">Standard Monthly Salary</th>
+            <th className="hcl-th-col hcl-th-std-inr">INR</th>
+            <th className="hcl-th-col hcl-th-ern-lbl">Earnings</th>
+            <th className="hcl-th-col hcl-th-ern-inr">INR</th>
+            <th className="hcl-th-col hcl-th-ded-lbl">Deductions</th>
+            <th className="hcl-th-col hcl-th-ded-inr">INR</th>
+          </tr>
 
-      {/* 5. Summary & Totals Rows */}
-      <div className="hcl-totals-grid">
-        <div className="hcl-tot-col std-desc bold">Total Standard Salary</div>
-        <div className="hcl-tot-col std-val bold">{formatAmount(totalStandardSalary)}</div>
-        <div className="hcl-tot-col ern-desc bold">Gross Earnings</div>
-        <div className="hcl-tot-col ern-val bold">{formatAmount(draft.grossEarnings)}</div>
-        <div className="hcl-tot-col ded-desc bold">Gross Deductions</div>
-        <div className="hcl-tot-col ded-val bold">{formatAmount(draft.totalDeductions)}</div>
-      </div>
+          {/* FINANCIAL LINE ITEM ROWS */}
+          {Array.from({ length: maxRows }).map((_, idx) => {
+            const std = standardItems[idx];
+            const ern = earnings[idx];
+            const ded = deductions[idx];
 
-      <div className="hcl-divider-line" />
+            return (
+              <tr key={idx} className="hcl-tr-fin-body" style={rowHeightStyle}>
+                {/* Standard Monthly Salary */}
+                <td className="hcl-td-col hcl-td-std-lbl">{std ? std.label : ''}</td>
+                <td className="hcl-td-col hcl-td-std-inr">{std ? formatAmount(std.amount) : ''}</td>
 
-      {/* 6. Net Pay Row */}
-      <div className="hcl-netpay-grid">
-        <div className="hcl-net-blank" />
-        <div className="hcl-net-label bold">Net Pay</div>
-        <div className="hcl-net-val bold">{formatAmount(draft.netSalary)}</div>
-      </div>
+                {/* Earnings */}
+                <td className="hcl-td-col hcl-td-ern-lbl">
+                  {isEditable && ern ? (
+                    <input
+                      type="text"
+                      className="hcl-plain-input"
+                      value={ern.label}
+                      onChange={(e) => onEarningChange && onEarningChange(idx, 'label', e.target.value)}
+                    />
+                  ) : (
+                    ern?.label || ''
+                  )}
+                </td>
+                <td className="hcl-td-col hcl-td-ern-inr">
+                  {isEditable && ern ? (
+                    <input
+                      type="number"
+                      className="hcl-plain-input text-right"
+                      value={ern.amount}
+                      onChange={(e) => onEarningChange && onEarningChange(idx, 'amount', e.target.value)}
+                    />
+                  ) : (
+                    ern ? formatAmount(ern.amount) : ''
+                  )}
+                </td>
 
-      <div className="hcl-divider-line" />
+                {/* Deductions */}
+                <td className="hcl-td-col hcl-td-ded-lbl">
+                  {isEditable && ded ? (
+                    <input
+                      type="text"
+                      className="hcl-plain-input"
+                      value={ded.label}
+                      onChange={(e) => onDeductionChange && onDeductionChange(idx, 'label', e.target.value)}
+                    />
+                  ) : (
+                    ded?.label || ''
+                  )}
+                </td>
+                <td className="hcl-td-col hcl-td-ded-inr">
+                  {isEditable && ded ? (
+                    <input
+                      type="number"
+                      className="hcl-plain-input text-right"
+                      value={ded.amount}
+                      onChange={(e) => onDeductionChange && onDeductionChange(idx, 'amount', e.target.value)}
+                    />
+                  ) : (
+                    ded ? formatAmount(ded.amount) : ''
+                  )}
+                </td>
+              </tr>
+            );
+          })}
 
-      {/* Signature & Stamp Row */}
-      {(company?.showSignature !== false || company?.showStamp !== false) && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 16px 8px' }}>
+          {/* EXTRA BOTTOM WHITE SPACE SPACER ROW */}
+          {extraSpacer > 0 && (
+            <tr className="hcl-tr-spacer" style={{ height: `${extraSpacer}px` }}>
+              <td className="hcl-td-col hcl-td-std-lbl"></td>
+              <td className="hcl-td-col hcl-td-std-inr"></td>
+              <td className="hcl-td-col hcl-td-ern-lbl"></td>
+              <td className="hcl-td-col hcl-td-ern-inr"></td>
+              <td className="hcl-td-col hcl-td-ded-lbl"></td>
+              <td className="hcl-td-col hcl-td-ded-inr"></td>
+            </tr>
+          )}
+
+          {/* TOTALS ROW */}
+          <tr className="hcl-tr-totals">
+            <td className="hcl-td-col hcl-tot-std-lbl">Total Standard Salary</td>
+            <td className="hcl-td-col hcl-tot-std-inr">{formatAmount(totalStandardSalary)}</td>
+            <td className="hcl-td-col hcl-tot-ern-lbl">Gross Earnings</td>
+            <td className="hcl-td-col hcl-tot-ern-inr">{formatAmount(draft.grossEarnings)}</td>
+            <td className="hcl-td-col hcl-tot-ded-lbl">Gross Deductions</td>
+            <td className="hcl-td-col hcl-tot-ded-inr">{formatAmount(draft.totalDeductions)}</td>
+          </tr>
+
+          {/* NET PAY ROW */}
+          <tr className="hcl-tr-netpay">
+            <td colSpan={4} className="hcl-net-blank-cell"></td>
+            <td className="hcl-td-col hcl-net-lbl">Net Pay</td>
+            <td className="hcl-td-col hcl-net-inr">{formatAmount(draft.netSalary)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* Optional Signature & Stamp (rendered only if explicitly enabled in company preferences) */}
+      {company?.showSignature === true && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 12px 2px' }}>
           <SignatureStampBox
             company={company}
             signatoryTitle={company?.signatoryName || 'Authorized Signatory'}
@@ -297,9 +341,9 @@ export const HclCorporatePayslip = ({
         </div>
       )}
 
-      {/* 7. Bottom Disclaimer */}
+      {/* FOOTER DISCLAIMER */}
       <div className="hcl-footer-text">
-        *This is a computer generated payslip and doesn't require manual signature unless stamped.
+        *This is a computer generated payslip and doesn't require signature or any company seal.
       </div>
 
     </div>

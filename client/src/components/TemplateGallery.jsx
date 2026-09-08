@@ -6,6 +6,7 @@ import { HclCorporatePayslip } from './templates/HclCorporatePayslip';
 import { AiimsGovtPayslip } from './templates/AiimsGovtPayslip';
 import { ConcentrixDakshPayslip } from './templates/ConcentrixDakshPayslip';
 import { SushmaBuildtechPayslip } from './templates/SushmaBuildtechPayslip';
+import { DelhiPublicSchoolPayslip } from './templates/DelhiPublicSchoolPayslip';
 import { ResizableLogo } from './common/ResizableLogo';
 import {
   LayoutTemplate,
@@ -796,6 +797,49 @@ export const TemplateGallery = ({
                   totalDeductions: 19570,
                   netSalary: 127660,
                   netSalaryInWords: 'One Lakh Twenty Seven Thousand Six Hundred Sixty Only',
+                }}
+              />
+            ) : selectedPreviewTemplate.templateKey === 'delhi_public_school' ? (
+              <DelhiPublicSchoolPayslip
+                company={activeCompany || {
+                  name: 'Delhi World Public School, Ashta',
+                  fullAddress: 'Shujalpur Road Ashta, Dist. Sehore (M.P)',
+                  pinCode: 'Pin Code - 466116',
+                }}
+                isEditable={true}
+                onSizeSaved={handlePreviewLogoUpdated}
+                employee={{
+                  empCode: 'DWPS-1021',
+                  fullName: 'SUNAINA SHARMA',
+                  designation: 'Principal',
+                  department: 'Management',
+                  joiningDate: new Date('2021-10-21'),
+                  dynamicFields: {
+                    functionRole: 'Management',
+                    designation: 'Principal',
+                    location: 'Ashta',
+                    bankDetails: '38570100006930,Bank of Baroda,Ashta',
+                    dateOfJoiningStr: '21/10/2021',
+                  },
+                }}
+                draft={{
+                  month: 'April',
+                  year: 2022,
+                  workingDays: 30,
+                  paidDays: 30,
+                  lopDays: 0,
+                  earnings: [
+                    { label: 'Basic', amount: 20000 },
+                    { label: 'D.A', amount: 10000 },
+                    { label: 'H.R.A', amount: 20000 },
+                  ],
+                  deductions: [
+                    { label: 'Professsional Tax', amount: 212 },
+                  ],
+                  grossEarnings: 50000,
+                  totalDeductions: 212,
+                  netSalary: 49788,
+                  netSalaryInWords: 'Fourty nine thousand seven hunderd and eighty eighty only.',
                 }}
               />
             ) : (

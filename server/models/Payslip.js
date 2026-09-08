@@ -101,6 +101,8 @@ const payslipSchema = new mongoose.Schema(
         tableBorderStyle: String,
         tableBorderColor: String,
         fontSizeScale: Number,
+        extraSpacerHeight: Number,
+        minTableRows: Number,
       },
       employee: {
         empCode: String,

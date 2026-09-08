@@ -1,0 +1,49 @@
+<svg viewBox="0 0 350 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer Light Blue Halo / Trim on Swoosh -->
+  <path
+    d="M 68 15 C 48 7, 13 11, 9 34 C 5 60, 40 83, 76 78"
+    stroke="#7dd3fc"
+    stroke-width="3.2"
+    stroke-linecap="round"
+    fill="none"
+  />
+  <!-- Main Coral-Red Dynamic Swoosh -->
+  <path
+    d="M 69 18 C 50 10, 19 13, 14 34 C 10 56, 40 80, 75 76 C 61 77, 25 61, 22 40 C 19 20, 50 16, 69 18 Z"
+    fill="#dc2626"
+  />
+  <path
+    d="M 67 17 C 48 9, 18 13, 14 34 C 10 53, 38 77, 73 74 C 74 74, 74 77, 72 77 C 35 81, 8 57, 12 33 C 16 11, 48 8, 68 16 Z"
+    fill="#ef4444"
+  />
+
+  <!-- JP Monogram (Sky Blue) -->
+  <g fill="#38bdf8" font-family="'Arial Black', 'Montserrat', 'Segoe UI Black', 'Trebuchet MS', sans-serif" font-weight="900">
+    <text x="21" y="55" font-size="36" letter-spacing="-2">J</text>
+    <text x="41" y="55" font-size="36" letter-spacing="-1">P</text>
+  </g>
+
+  <!-- Company Name Typography -->
+  <text
+    x="90"
+    y="37"
+    fill="#d9384a"
+    font-family="'Arial Black', 'Montserrat', 'Segoe UI Black', 'Trebuchet MS', sans-serif"
+    font-weight="900"
+    font-size="21"
+    letter-spacing="1.2"
+  >
+    JEYAAR POLYMER
+  </text>
+  <text
+    x="90"
+    y="65"
+    fill="#d9384a"
+    font-family="'Arial Black', 'Montserrat', 'Segoe UI Black', 'Trebuchet MS', sans-serif"
+    font-weight="900"
+    font-size="21"
+    letter-spacing="1.2"
+  >
+    PVT. LTD
+  </text>
+</svg>

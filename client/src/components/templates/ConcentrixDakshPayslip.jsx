@@ -82,9 +82,11 @@ export const ConcentrixDakshPayslip = ({
   const monthName = draft.month || 'April';
   const yearVal = draft.year || 2025;
 
+  const minRows = cfg.minTableRows !== undefined ? Number(cfg.minTableRows) : 5;
   const earnings = draft.earnings || [];
   const deductions = draft.deductions || [];
-  const maxRows = Math.max(earnings.length, deductions.length, 5);
+  const maxRows = Math.max(earnings.length, deductions.length, minRows);
+  const extraSpacer = Number(cfg.extraSpacerHeight) || 0;
 
   const effectiveWorkDays = draft.paidDays !== undefined ? draft.paidDays : draft.workingDays !== undefined ? draft.workingDays : 30;
   const lopDays = draft.lopDays !== undefined ? draft.lopDays : 0;
@@ -324,6 +326,9 @@ export const ConcentrixDakshPayslip = ({
                 </div>
               );
             })}
+
+            {/* Extra bottom white space spacer */}
+            {extraSpacer > 0 && <div className="cnx-spacer-row" style={{ height: `${extraSpacer}px` }} />}
           </div>
 
           <div className="cnx-divider-table" />
