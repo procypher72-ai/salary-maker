@@ -607,20 +607,7 @@ export const BulkPayslipViewerModal = ({
                       breakAfter: idx < filteredSlips.length - 1 ? 'page' : 'auto',
                     }}
                   >
-                    <SnapshotRenderer payslip={slip} isEditable={false} />
-
-                    {/* Dedicated html2pdf page break marker */}
-                    {idx < filteredSlips.length - 1 && (
-                      <div
-                        className="html2pdf__page-break"
-                        style={{
-                          height: '0px',
-                          width: '100%',
-                          pageBreakAfter: 'always',
-                          breakAfter: 'page',
-                        }}
-                      />
-                    )}
+                    <SnapshotRenderer payslip={slip} company={company} isEditable={false} />
                   </div>
                 ))
               ) : (
@@ -630,7 +617,7 @@ export const BulkPayslipViewerModal = ({
                     className="bulk-slip-sheet-item"
                     style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                   >
-                    <SnapshotRenderer payslip={filteredSlips[currentPageIndex]} isEditable={false} />
+                    <SnapshotRenderer payslip={filteredSlips[currentPageIndex]} company={company} isEditable={false} />
                   </div>
                 )
               )}

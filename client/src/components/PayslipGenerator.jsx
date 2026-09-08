@@ -321,11 +321,20 @@ export const PayslipGenerator = ({
         rate: item.rate,
       }));
     } else if (templateKey === 'delhi_public_school') {
+      const basicVal = (base.basicPay !== undefined && base.basicPay !== '' && !isNaN(base.basicPay)) ? Number(base.basicPay) : 20000;
+      const daVal = (base.specialAllowance !== undefined && base.specialAllowance !== '' && !isNaN(base.specialAllowance))
+        ? Number(base.specialAllowance)
+        : ((base.da !== undefined && base.da !== '' && !isNaN(base.da)) ? Number(base.da) : 10000);
+      const hraVal = (base.hra !== undefined && base.hra !== '' && !isNaN(base.hra)) ? Number(base.hra) : 20000;
+
       const dwpsBaseEarnings = [
-        { label: 'Basic', amount: 20000 },
-        { label: 'D.A', amount: 10000 },
-        { label: 'H.R.A', amount: 20000 },
+        { label: 'Basic', amount: basicVal },
+        { label: 'D.A', amount: daVal },
+        { label: 'H.R.A', amount: hraVal },
       ];
+      if (base.otherAllowances && Number(base.otherAllowances) > 0) {
+        dwpsBaseEarnings.push({ label: 'Other Allowance', amount: Number(base.otherAllowances) });
+      }
       updatedEarnings = dwpsBaseEarnings.map((item) => ({
         label: item.label,
         amount: Math.round(item.amount * payRatio),
@@ -431,9 +440,18 @@ export const PayslipGenerator = ({
     }
 
     if (templateKey === 'delhi_public_school') {
+      const ptVal = (base.professionalTax !== undefined && base.professionalTax !== '' && !isNaN(base.professionalTax))
+        ? Number(base.professionalTax)
+        : 212;
       const updatedDeductions = [
-        { label: 'Professsional Tax', amount: 212 },
+        { label: 'Professsional Tax', amount: ptVal },
       ];
+      if (base.tds && Number(base.tds) > 0) {
+        updatedDeductions.push({ label: 'Income Tax / TDS', amount: Number(base.tds) });
+      }
+      if (base.pfDeduction && Number(base.pfDeduction) > 0) {
+        updatedDeductions.push({ label: 'Provident Fund (PF)', amount: Number(base.pfDeduction) });
+      }
       const updated = {
         ...draft,
         deductions: updatedDeductions,
@@ -479,11 +497,30 @@ export const PayslipGenerator = ({
     if (!draft) return;
     setIsSaving(true);
     try {
+      const payloadDraft = {
+        ...draft,
+        snapshotData: {
+          ...(draft.snapshotData || {}),
+          company: {
+            ...(draft.snapshotData?.company || {}),
+            ...activeCompany,
+            ...layoutConfig,
+            dwpsCustomFields: layoutConfig.dwpsCustomFields || activeCompany?.dwpsCustomFields,
+            dwpsMetaColumns: layoutConfig.dwpsMetaColumns !== undefined ? layoutConfig.dwpsMetaColumns : activeCompany?.dwpsMetaColumns,
+          },
+          employee: {
+            ...(draft.snapshotData?.employee || {}),
+            ...(selectedEmployeeObj || {}),
+          },
+          templateKey,
+        },
+      };
+
       if (existingPayslipRecord?._id) {
-        const res = await api.updatePayslip(existingPayslipRecord._id, draft);
+        const res = await api.updatePayslip(existingPayslipRecord._id, payloadDraft);
         showToast(res.message || 'Existing salary slip updated successfully!', 'success');
       } else {
-        const res = await api.createPayslip(draft);
+        const res = await api.createPayslip(payloadDraft);
         showToast(res.message || 'Payslip saved & finalized!', 'success');
       }
       if (onPayslipGenerated) onPayslipGenerated();
@@ -510,6 +547,23 @@ export const PayslipGenerator = ({
         startYear: Number(startYear),
         endMonth,
         endYear: Number(endYear),
+        workingDays: draft?.workingDays !== undefined ? draft.workingDays : 30,
+        paidDays: draft?.paidDays !== undefined ? draft.paidDays : (draft?.workingDays || 30),
+        lopDays: draft?.lopDays !== undefined ? draft.lopDays : 0,
+        earnings: draft?.earnings,
+        deductions: draft?.deductions,
+        snapshotData: {
+          company: {
+            ...activeCompany,
+            ...layoutConfig,
+            dwpsCustomFields: layoutConfig.dwpsCustomFields || activeCompany?.dwpsCustomFields,
+            dwpsMetaColumns: layoutConfig.dwpsMetaColumns !== undefined ? layoutConfig.dwpsMetaColumns : activeCompany?.dwpsMetaColumns,
+          },
+          employee: {
+            ...(selectedEmployeeObj || {}),
+          },
+          templateKey,
+        },
       });
       showToast(res.message || 'Bulk payslips generated successfully!', 'success');
       if (onPayslipGenerated) onPayslipGenerated();
@@ -555,6 +609,12 @@ export const PayslipGenerator = ({
         ...activeCompany,
         ...logoData,
       });
+    }
+    if (logoData) {
+      setLayoutConfig((prev) => ({
+        ...prev,
+        ...(logoData.company || logoData),
+      }));
     }
   };
 

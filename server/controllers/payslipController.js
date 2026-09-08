@@ -82,6 +82,21 @@ const computePayslipFinancials = (employee, company, customOverrides = {}) => {
       { label: 'SPECIAL ALLOWANCE', amount: Math.round(13619 * payRatio), rate: 13619 },
       { label: 'PERFORMANCE BONUS', amount: Math.round(10000 * payRatio), rate: 10000 },
     ];
+  } else if (company?.templateKey === 'delhi_public_school') {
+    const basicVal = (base.basicPay !== undefined && base.basicPay !== '' && !isNaN(base.basicPay)) ? Number(base.basicPay) : 20000;
+    const daVal = (base.specialAllowance !== undefined && base.specialAllowance !== '' && !isNaN(base.specialAllowance))
+      ? Number(base.specialAllowance)
+      : ((base.da !== undefined && base.da !== '' && !isNaN(base.da)) ? Number(base.da) : 10000);
+    const hraVal = (base.hra !== undefined && base.hra !== '' && !isNaN(base.hra)) ? Number(base.hra) : 20000;
+
+    earnings = [
+      { label: 'Basic', amount: Math.round(basicVal * payRatio) },
+      { label: 'D.A', amount: Math.round(daVal * payRatio) },
+      { label: 'H.R.A', amount: Math.round(hraVal * payRatio) },
+    ];
+    if (base.otherAllowances && Number(base.otherAllowances) > 0) {
+      earnings.push({ label: 'Other Allowance', amount: Math.round(Number(base.otherAllowances) * payRatio) });
+    }
   } else {
     // Standard corporate earnings list based on baseline salary
     if (base.basicPay) earnings.push({ label: 'Basic Salary', amount: Math.round(base.basicPay * payRatio) });
@@ -143,6 +158,19 @@ const computePayslipFinancials = (employee, company, customOverrides = {}) => {
       { label: 'PROFESSIONAL TAX', amount: 200 },
       { label: 'TDS', amount: 2500 },
     ];
+  } else if (company?.templateKey === 'delhi_public_school') {
+    const ptVal = (base.professionalTax !== undefined && base.professionalTax !== '' && !isNaN(base.professionalTax))
+      ? Number(base.professionalTax)
+      : 212;
+    deductions = [
+      { label: 'Professsional Tax', amount: ptVal },
+    ];
+    if (base.tds && Number(base.tds) > 0) {
+      deductions.push({ label: 'Income Tax / TDS', amount: Number(base.tds) });
+    }
+    if (base.pfDeduction && Number(base.pfDeduction) > 0) {
+      deductions.push({ label: 'Provident Fund (PF)', amount: Number(base.pfDeduction) });
+    }
   } else {
     // Standard deductions list based on baseline salary
     if (base.pfDeduction) deductions.push({ label: 'Provident Fund (PF)', amount: Number(base.pfDeduction) });
@@ -228,6 +256,9 @@ const createSnapshot = (company, employee) => {
       fontSizeScale: company.fontSizeScale !== undefined ? company.fontSizeScale : 100,
       extraSpacerHeight: company.extraSpacerHeight !== undefined ? company.extraSpacerHeight : 0,
       minTableRows: company.minTableRows !== undefined ? company.minTableRows : 6,
+      dwpsCustomFields: Array.isArray(company.dwpsCustomFields) ? company.dwpsCustomFields : [],
+      dwpsMetaColumns: company.dwpsMetaColumns !== undefined ? Number(company.dwpsMetaColumns) : 1,
+      customMetaFields: Array.isArray(company.customMetaFields) ? company.customMetaFields : [],
     },
     employee: {
       empCode: employee.empCode,
@@ -237,6 +268,14 @@ const createSnapshot = (company, employee) => {
       designation: employee.designation,
       department: employee.department,
       joiningDate: employee.joiningDate,
+      pan: employee.pan,
+      panNumber: employee.pan || employee.panNumber,
+      pfNumber: employee.pfNumber,
+      uanNumber: employee.uanNumber,
+      esiNumber: employee.esiNumber,
+      bankAccount: employee.bankAccount,
+      bankName: employee.bankName,
+      location: employee.location,
       dynamicFields: employee.dynamicFields ? (employee.dynamicFields instanceof Map ? Object.fromEntries(employee.dynamicFields) : employee.dynamicFields) : {},
       taxRegime: employee.taxRegime || 'new',
       ptState: employee.ptState || 'maharashtra',
@@ -446,7 +485,7 @@ const updatePayslip = async (req, res) => {
           'stampWidth', 'stampHeight', 'stampOffsetX', 'stampOffsetY', 'stampOpacity',
           'templateKey', 'slipWidth', 'slipMinHeight', 'slipPadding', 'slipBorderWidth', 'slipBorderStyle', 'slipBorderColor', 'slipBorderRadius',
           'incomeDeductionHeight', 'incomeDeductionMinHeight', 'incomeColumnWidth', 'tableBorderWidth', 'tableBorderStyle', 'tableBorderColor', 'fontSizeScale',
-          'extraSpacerHeight', 'minTableRows'
+          'extraSpacerHeight', 'minTableRows', 'dwpsCustomFields', 'dwpsMetaColumns', 'customMetaFields'
         ];
         const compUpdates = {};
         const allSlipsSync = {};
@@ -490,6 +529,12 @@ const generateBulkPayslips = async (req, res) => {
       endMonth,
       endYear,
       workingDays = 30,
+      paidDays,
+      lopDays,
+      earnings,
+      deductions,
+      customOverrides = {},
+      snapshotData: clientSnapshot,
     } = req.body;
 
     if (!employeeId || !startMonth || !startYear || !endMonth || !endYear) {
@@ -527,7 +572,25 @@ const generateBulkPayslips = async (req, res) => {
     }
 
     const createdPayslips = [];
-    const snapshotData = createSnapshot(company, employee);
+    const baseSnapshot = createSnapshot(company, employee);
+    const finalSnapshot = clientSnapshot ? {
+      ...baseSnapshot,
+      ...clientSnapshot,
+      company: { ...baseSnapshot.company, ...(clientSnapshot.company || {}) },
+      employee: { ...baseSnapshot.employee, ...(clientSnapshot.employee || {}) },
+    } : baseSnapshot;
+
+    const actualPaidDays = paidDays !== undefined ? Number(paidDays) : workingDays;
+    const actualLopDays = lopDays !== undefined ? Number(lopDays) : Math.max(0, workingDays - actualPaidDays);
+
+    const mergedOverrides = {
+      workingDays,
+      paidDays: actualPaidDays,
+      lopDays: actualLopDays,
+      ...(earnings ? { earnings } : {}),
+      ...(deductions ? { deductions } : {}),
+      ...customOverrides,
+    };
 
     for (let current = startTotalMonths; current <= endTotalMonths; current++) {
       const year = Math.floor(current / 12);
@@ -535,7 +598,7 @@ const generateBulkPayslips = async (req, res) => {
       const month = MONTH_NAMES[monthIdx];
       const payPeriod = `${month} ${year}`;
 
-      const financials = computePayslipFinancials(employee, company, { workingDays, paidDays: workingDays, lopDays: 0 });
+      const financials = computePayslipFinancials(employee, company, mergedOverrides);
 
       // Upsert payslip for this month/year for the employee
       const payslip = await Payslip.findOneAndUpdate(
@@ -548,15 +611,15 @@ const generateBulkPayslips = async (req, res) => {
           payPeriod,
           paymentDate: new Date(year, monthIdx + 1, 0), // Last day of month
           workingDays,
-          paidDays: workingDays,
-          lopDays: 0,
+          paidDays: actualPaidDays,
+          lopDays: actualLopDays,
           earnings: financials.earnings,
           deductions: financials.deductions,
           grossEarnings: financials.grossEarnings,
           totalDeductions: financials.totalDeductions,
           netSalary: financials.netSalary,
           netSalaryInWords: financials.netSalaryInWords,
-          snapshotData,
+          snapshotData: finalSnapshot,
           status: 'generated',
         },
         { upsert: true, new: true }

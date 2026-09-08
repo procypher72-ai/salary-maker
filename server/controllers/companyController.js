@@ -102,7 +102,7 @@ const updateCompany = async (req, res) => {
       'stampWidth', 'stampHeight', 'stampOffsetX', 'stampOffsetY', 'stampOpacity',
       'templateKey', 'slipWidth', 'slipMinHeight', 'slipPadding', 'slipBorderWidth', 'slipBorderStyle', 'slipBorderColor', 'slipBorderRadius',
       'incomeDeductionHeight', 'incomeDeductionMinHeight', 'incomeColumnWidth', 'tableBorderWidth', 'tableBorderStyle', 'tableBorderColor', 'fontSizeScale',
-      'extraSpacerHeight', 'minTableRows'
+      'extraSpacerHeight', 'minTableRows', 'dwpsCustomFields', 'dwpsMetaColumns', 'customMetaFields'
     ];
 
     const updateSet = {};

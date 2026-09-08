@@ -9,6 +9,7 @@ import { ResizableLogo } from './ResizableLogo';
 
 export const SnapshotRenderer = ({
   payslip,
+  company = null,
   isEditable = false,
   onEarningChange,
   onDeductionChange,
@@ -25,20 +26,30 @@ export const SnapshotRenderer = ({
   const tplKey =
     payslip?.snapshotData?.templateKey ||
     payslip?.snapshotData?.company?.templateKey ||
+    company?.templateKey ||
     payslip?.templateKey ||
     'corporate_detailed';
 
   const companyId =
     payslip?.companyId?._id ||
     payslip?.companyId ||
+    company?._id ||
+    company?.companyId ||
     payslip?.snapshotData?.company?._id ||
     payslip?.snapshotData?.company?.companyId ||
     localStorage.getItem('salarymaker_active_company_id');
 
   const comp = {
+    ...(company || {}),
     ...(payslip?.snapshotData?.company || {}),
     _id: companyId,
     companyId: companyId,
+    dwpsCustomFields: (payslip?.snapshotData?.company?.dwpsCustomFields && payslip.snapshotData.company.dwpsCustomFields.length > 0)
+      ? payslip.snapshotData.company.dwpsCustomFields
+      : (company?.dwpsCustomFields || payslip?.snapshotData?.company?.dwpsCustomFields),
+    dwpsMetaColumns: payslip?.snapshotData?.company?.dwpsMetaColumns !== undefined
+      ? payslip.snapshotData.company.dwpsMetaColumns
+      : (company?.dwpsMetaColumns !== undefined ? company.dwpsMetaColumns : 1),
   };
 
   const emp = payslip?.snapshotData?.employee || payslip?.employeeId || {};

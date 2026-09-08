@@ -1794,6 +1794,7 @@ export const EmployeeManager = ({
             <div className="payslip-canvas-scroll-wrapper" id="employee-payslip-canvas-view">
               <SnapshotRenderer
                 payslip={isEditingPayslip ? editSlipDraft : viewingPayslip}
+                company={activeCompany}
                 isEditable={isEditingPayslip}
                 onEarningChange={handleEditSlipEarningChange}
                 onDeductionChange={handleEditSlipDeductionChange}

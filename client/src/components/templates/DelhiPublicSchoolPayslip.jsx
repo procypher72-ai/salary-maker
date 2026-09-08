@@ -4,23 +4,23 @@ import { ResizableLogo } from '../common/ResizableLogo';
 import { SignatureStampBox } from '../common/SignatureStampBox';
 
 const DEFAULT_DWPS_FIELDS = [
-  { id: 'f_function', label: 'Function', key: 'functionRole', defaultValue: 'Management' },
-  { id: 'f_designation', label: 'Designation', key: 'designation', defaultValue: 'Principal' },
-  { id: 'f_location', label: 'Location', key: 'location', defaultValue: 'Ashta' },
-  { id: 'f_bank_details', label: 'Bank Details', key: 'bankDetails', defaultValue: '38570100006930,Bank of Baroda,Ashta' },
-  { id: 'f_doj', label: 'Date of Joining', key: 'dateOfJoiningStr', defaultValue: '21/10/2021' },
+  { id: 'f_function', label: 'Function', key: 'functionRole', defaultValue: '' },
+  { id: 'f_designation', label: 'Designation', key: 'designation', defaultValue: '' },
+  { id: 'f_location', label: 'Location', key: 'location', defaultValue: '' },
+  { id: 'f_bank_details', label: 'Bank Details', key: 'bankDetails', defaultValue: '' },
+  { id: 'f_doj', label: 'Date of Joining', key: 'dateOfJoiningStr', defaultValue: '' },
 ];
 
 const QUICK_FIELD_PRESETS = [
-  { label: 'PAN Number', key: 'panNumber', defaultValue: 'ABCDE1234F' },
-  { label: 'PF Number', key: 'pfNumber', defaultValue: 'MH/BAN/12345/678' },
-  { label: 'UAN Number', key: 'uanNumber', defaultValue: '101719643698' },
-  { label: 'ESI Number', key: 'esiNumber', defaultValue: '31001234560000101' },
-  { label: 'Bank A/C No', key: 'bankAccount', defaultValue: '38570100006930' },
-  { label: 'IFSC Code', key: 'ifscCode', defaultValue: 'BARB0ASHTAX' },
-  { label: 'Aadhar Number', key: 'aadharNumber', defaultValue: 'XXXX-XXXX-1234' },
-  { label: 'Employee Code', key: 'empCode', defaultValue: 'EMP-1001' },
-  { label: 'Department', key: 'department', defaultValue: 'Academics' },
+  { label: 'PAN Number', key: 'panNumber', defaultValue: '' },
+  { label: 'PF Number', key: 'pfNumber', defaultValue: '' },
+  { label: 'UAN Number', key: 'uanNumber', defaultValue: '' },
+  { label: 'ESI Number', key: 'esiNumber', defaultValue: '' },
+  { label: 'Bank A/C No', key: 'bankAccount', defaultValue: '' },
+  { label: 'IFSC Code', key: 'ifscCode', defaultValue: '' },
+  { label: 'Aadhar Number', key: 'aadharNumber', defaultValue: '' },
+  { label: 'Employee Code', key: 'empCode', defaultValue: '' },
+  { label: 'Department', key: 'department', defaultValue: '' },
 ];
 
 // High-fidelity Jeyaar Polymer Full Logo (Emblem + Typography, 100% transparent vector)
@@ -80,30 +80,6 @@ export const JeyaarPolymerLogo = () => (
 
 export const DwpsLogo = JeyaarPolymerLogo;
 
-// High-fidelity Signature Vector Fallback
-export const DefaultDwpsSignature = () => (
-  <svg width="130" height="42" viewBox="0 0 200 65" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path
-      d="M15 50 Q45 10 70 45 T115 25 Q135 15 150 40 T185 30"
-      stroke="#0f172a"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M40 38 L95 18"
-      stroke="#0f172a"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <path
-      d="M60 48 L170 36"
-      stroke="#0f172a"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-    />
-  </svg>
-);
 
 export const DelhiPublicSchoolPayslip = ({
   company = {},
@@ -148,15 +124,29 @@ export const DelhiPublicSchoolPayslip = ({
 
   const monthName = draft.month || 'April';
   const yearVal = draft.year || 2022;
-  const payPeriodDisplay = `Pay Slip for ${monthName},${yearVal}`;
+  const payPeriodDisplay = `Pay Slip for ${monthName}, ${yearVal}`;
+
+  const baseSal = employee?.baselineSalary || {};
+  const defaultBasic = (baseSal.basicPay !== undefined && baseSal.basicPay !== '' && !isNaN(baseSal.basicPay))
+    ? Number(baseSal.basicPay)
+    : 20000;
+  const defaultDa = (baseSal.specialAllowance !== undefined && baseSal.specialAllowance !== '' && !isNaN(baseSal.specialAllowance))
+    ? Number(baseSal.specialAllowance)
+    : ((baseSal.da !== undefined && baseSal.da !== '' && !isNaN(baseSal.da)) ? Number(baseSal.da) : 10000);
+  const defaultHra = (baseSal.hra !== undefined && baseSal.hra !== '' && !isNaN(baseSal.hra))
+    ? Number(baseSal.hra)
+    : 20000;
+  const defaultPt = (baseSal.professionalTax !== undefined && baseSal.professionalTax !== '' && !isNaN(baseSal.professionalTax))
+    ? Number(baseSal.professionalTax)
+    : 212;
 
   const earnings = draft.earnings && draft.earnings.length > 0 ? draft.earnings : [
-    { label: 'Basic', amount: 20000 },
-    { label: 'D.A', amount: 10000 },
-    { label: 'H.R.A', amount: 20000 },
+    { label: 'Basic', amount: defaultBasic },
+    { label: 'D.A', amount: defaultDa },
+    { label: 'H.R.A', amount: defaultHra },
   ];
   const deductions = draft.deductions && draft.deductions.length > 0 ? draft.deductions : [
-    { label: 'Professsional Tax', amount: 212 },
+    { label: 'Professsional Tax', amount: defaultPt },
   ];
   const maxRows = Math.max(earnings.length, deductions.length);
   const extraSpacer = Number(cfg.extraSpacerHeight) || 0;
@@ -178,13 +168,22 @@ export const DelhiPublicSchoolPayslip = ({
     const parts = [];
     if (dynamic.bankAccount || employee?.bankAccount) parts.push(dynamic.bankAccount || employee?.bankAccount);
     if (dynamic.bankName || employee?.bankName) parts.push(dynamic.bankName || employee?.bankName);
-    if (dynamic.bankBranch || dynamic.location) parts.push(dynamic.bankBranch || dynamic.location);
-    if (parts.length > 0) return parts.join(',');
-    return '38570100006930,Bank of Baroda,Ashta';
+    if (dynamic.bankBranch || dynamic.location || employee?.location) parts.push(dynamic.bankBranch || dynamic.location || employee?.location);
+    if (parts.length > 0) return parts.join(', ');
+    return '';
   };
 
   const getDateOfJoining = () => {
     if (dynamic.dateOfJoiningStr) return dynamic.dateOfJoiningStr;
+    if (dynamic.joiningDate) {
+      const d = new Date(dynamic.joiningDate);
+      if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+    }
     if (employee?.joiningDate) {
       const d = new Date(employee.joiningDate);
       if (!isNaN(d.getTime())) {
@@ -193,36 +192,50 @@ export const DelhiPublicSchoolPayslip = ({
         const year = d.getFullYear();
         return `${day}/${month}/${year}`;
       }
+      return String(employee.joiningDate);
     }
-    return '21/10/2021';
+    return '';
   };
 
   // Custom Metadata Fields Configuration & Dynamic Synchronization
+  const sanitizeFields = (rawFields) => {
+    if (!Array.isArray(rawFields) || rawFields.length === 0) {
+      const initial = [...DEFAULT_DWPS_FIELDS];
+      if (dynamic.panNumber || employee?.pan || employee?.panNumber) {
+        initial.push({ id: 'f_pan', label: 'PAN Number', key: 'panNumber', defaultValue: '' });
+      }
+      if (dynamic.pfNumber || employee?.pfNumber) {
+        initial.push({ id: 'f_pf', label: 'PF Number', key: 'pfNumber', defaultValue: '' });
+      }
+      if (dynamic.uanNumber || employee?.uanNumber) {
+        initial.push({ id: 'f_uan', label: 'UAN Number', key: 'uanNumber', defaultValue: '' });
+      }
+      if (dynamic.esiNumber || employee?.esiNumber) {
+        initial.push({ id: 'f_esi', label: 'ESI Number', key: 'esiNumber', defaultValue: '' });
+      }
+      return initial;
+    }
+    return rawFields.map((f) => {
+      let defVal = f.defaultValue !== undefined && f.defaultValue !== null ? f.defaultValue : (f.customValue || '');
+      // Clear legacy dummy placeholders
+      if (defVal === 'Principal' && (f.key === 'designation' || f.label === 'Designation')) defVal = '';
+      if (defVal === 'Ashta' && (f.key === 'location' || f.label === 'Location')) defVal = '';
+      if (defVal === '21/10/2021' && (f.key === 'dateOfJoiningStr' || f.key === 'doj' || f.label === 'Date of Joining')) defVal = '';
+      if (defVal === '38570100006930,Bank of Baroda,Ashta' && (f.key === 'bankDetails' || f.label === 'Bank Details')) defVal = '';
+      return {
+        ...f,
+        defaultValue: defVal,
+      };
+    });
+  };
+
   const configuredFields = cfg.dwpsCustomFields || company?.dwpsCustomFields;
-  const [fields, setFields] = useState(() => {
-    if (Array.isArray(configuredFields) && configuredFields.length > 0) {
-      return configuredFields;
-    }
-    const initial = [...DEFAULT_DWPS_FIELDS];
-    if (dynamic.panNumber || employee?.pan || employee?.panNumber) {
-      initial.push({ id: 'f_pan', label: 'PAN Number', key: 'panNumber', defaultValue: '' });
-    }
-    if (dynamic.pfNumber || employee?.pfNumber) {
-      initial.push({ id: 'f_pf', label: 'PF Number', key: 'pfNumber', defaultValue: '' });
-    }
-    if (dynamic.uanNumber || employee?.uanNumber) {
-      initial.push({ id: 'f_uan', label: 'UAN Number', key: 'uanNumber', defaultValue: '' });
-    }
-    if (dynamic.esiNumber || employee?.esiNumber) {
-      initial.push({ id: 'f_esi', label: 'ESI Number', key: 'esiNumber', defaultValue: '' });
-    }
-    return initial;
-  });
+  const [fields, setFields] = useState(() => sanitizeFields(configuredFields));
 
   useEffect(() => {
     const cf = cfg.dwpsCustomFields || company?.dwpsCustomFields;
     if (Array.isArray(cf) && cf.length > 0) {
-      setFields(cf);
+      setFields(sanitizeFields(cf));
     }
   }, [company?.dwpsCustomFields, cfg.dwpsCustomFields]);
 
@@ -295,11 +308,16 @@ export const DelhiPublicSchoolPayslip = ({
       setShowAddMenu(false);
       return;
     }
+    const initialVal =
+      preset.key === 'department'
+        ? (employee?.department || dynamic.department || preset.defaultValue || '')
+        : (employee?.[preset.key] || dynamic[preset.key] || preset.defaultValue || '');
+
     const newField = {
       id: 'f_' + Date.now(),
       label: preset.label,
       key: preset.key,
-      defaultValue: preset.defaultValue || '',
+      defaultValue: initialVal,
     };
     const updated = [...fields, newField];
     persistFields(updated);
@@ -334,58 +352,69 @@ export const DelhiPublicSchoolPayslip = ({
   };
 
   const getFieldValue = (field) => {
-    const k = (field.key || field.label || '').toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
-    
-    if (k === 'function' || k === 'functionrole') {
-      return dynamic.functionRole || dynamic.function || employee?.department || field.defaultValue || 'Management';
-    }
-    if (k === 'designation') {
-      return dynamic.designation || employee?.designation || field.defaultValue || 'Principal';
-    }
-    if (k === 'location') {
-      return dynamic.location || employee?.location || field.defaultValue || 'Ashta';
-    }
-    if (k === 'bankdetails') {
-      return getBankDetails();
-    }
-    if (k === 'dateofjoining' || k === 'doj' || k === 'joiningdate') {
-      return getDateOfJoining();
-    }
-    if (k === 'pannumber' || k === 'pan' || k === 'panno') {
-      return dynamic.panNumber || dynamic.pan || employee?.pan || employee?.panNumber || field.defaultValue || '';
-    }
-    if (k === 'pfnumber' || k === 'pf' || k === 'pfno' || k === 'providentfund') {
-      return dynamic.pfNumber || dynamic.pf || employee?.pfNumber || field.defaultValue || '';
-    }
-    if (k === 'uannumber' || k === 'uan' || k === 'uanno') {
-      return dynamic.uanNumber || dynamic.uan || employee?.uanNumber || field.defaultValue || '';
-    }
-    if (k === 'esinumber' || k === 'esi' || k === 'esic' || k === 'esino') {
-      return dynamic.esiNumber || dynamic.esi || employee?.esiNumber || field.defaultValue || '';
-    }
-    if (k === 'bankaccount' || k === 'accountnumber' || k === 'bankac' || k === 'bankacno') {
-      return dynamic.bankAccount || employee?.bankAccount || field.defaultValue || '';
-    }
-    if (k === 'ifsccode' || k === 'ifsc') {
-      return dynamic.ifscCode || employee?.ifscCode || field.defaultValue || '';
-    }
-    if (k === 'aadharnumber' || k === 'aadhar' || k === 'aadharno') {
-      return dynamic.aadharNumber || dynamic.aadhar || employee?.aadharNumber || field.defaultValue || '';
-    }
-    if (k === 'empcode' || k === 'employeecode' || k === 'empid') {
-      return employee?.empCode || dynamic.empCode || field.defaultValue || '';
-    }
-    if (k === 'department') {
-      return employee?.department || dynamic.department || field.defaultValue || '';
+    // 1. If user set an explicit non-empty defaultValue (e.g. customized Department), prioritize it!
+    if (
+      field.defaultValue !== undefined &&
+      field.defaultValue !== null &&
+      String(field.defaultValue).trim() !== '' &&
+      !(field.defaultValue === 'Principal' && (field.key === 'designation' || field.label === 'Designation')) &&
+      !(field.defaultValue === 'Ashta' && (field.key === 'location' || field.label === 'Location')) &&
+      !(field.defaultValue === '21/10/2021' && (field.key === 'dateOfJoiningStr' || field.key === 'doj' || field.label === 'Date of Joining')) &&
+      !(field.defaultValue === '38570100006930,Bank of Baroda,Ashta' && (field.key === 'bankDetails' || field.label === 'Bank Details'))
+    ) {
+      return String(field.defaultValue);
     }
 
-    return (
-      dynamic[field.key] ||
-      dynamic[field.label] ||
-      employee?.[field.key] ||
-      field.defaultValue ||
-      ''
-    );
+    const k = (field.key || field.label || '').toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
+
+    // 2. Check real employee profile & dynamicFields
+    let empVal = null;
+    if (k === 'function' || k === 'functionrole') {
+      empVal = dynamic.functionRole || dynamic.function || employee?.department;
+    } else if (k === 'designation') {
+      empVal = dynamic.designation || employee?.designation;
+    } else if (k === 'location') {
+      empVal = dynamic.location || employee?.location;
+    } else if (k === 'bankdetails') {
+      const bd = getBankDetails();
+      if (bd) empVal = bd;
+    } else if (k === 'dateofjoining' || k === 'doj' || k === 'joiningdate' || k === 'dateofjoiningstr') {
+      const doj = getDateOfJoining();
+      if (doj) empVal = doj;
+    } else if (k === 'pannumber' || k === 'pan' || k === 'panno') {
+      empVal = dynamic.panNumber || dynamic.pan || employee?.pan || employee?.panNumber;
+    } else if (k === 'pfnumber' || k === 'pf' || k === 'pfno' || k === 'providentfund') {
+      empVal = dynamic.pfNumber || dynamic.pf || employee?.pfNumber;
+    } else if (k === 'uannumber' || k === 'uan' || k === 'uanno') {
+      empVal = dynamic.uanNumber || dynamic.uan || employee?.uanNumber;
+    } else if (k === 'esinumber' || k === 'esi' || k === 'esic' || k === 'esino') {
+      empVal = dynamic.esiNumber || dynamic.esi || employee?.esiNumber;
+    } else if (k === 'bankaccount' || k === 'accountnumber' || k === 'bankac' || k === 'bankacno') {
+      empVal = dynamic.bankAccount || employee?.bankAccount;
+    } else if (k === 'ifsccode' || k === 'ifsc') {
+      empVal = dynamic.ifscCode || employee?.ifscCode;
+    } else if (k === 'aadharnumber' || k === 'aadhar' || k === 'aadharno') {
+      empVal = dynamic.aadharNumber || dynamic.aadhar || employee?.aadharNumber;
+    } else if (k === 'empcode' || k === 'employeecode' || k === 'empid') {
+      empVal = employee?.empCode || dynamic.empCode;
+    } else if (k === 'department') {
+      empVal = employee?.department || dynamic.department;
+    } else {
+      empVal = dynamic[field.key] || dynamic[field.label] || employee?.[field.key] || employee?.[field.label];
+    }
+
+    if (empVal !== undefined && empVal !== null && String(empVal).trim() !== '') {
+      return String(empVal);
+    }
+
+    // 3. Fallback dummy placeholders (only when previewing template without employee)
+    if (k === 'function' || k === 'functionrole') return 'Management';
+    if (k === 'designation') return 'Principal';
+    if (k === 'location') return 'Ashta';
+    if (k === 'bankdetails') return '38570100006930,Bank of Baroda,Ashta';
+    if (k === 'dateofjoining' || k === 'doj' || k === 'joiningdate' || k === 'dateofjoiningstr') return '21/10/2021';
+
+    return '';
   };
 
   const schoolName = company?.name || 'Delhi World Public School, Ashta';
@@ -500,7 +529,7 @@ export const DelhiPublicSchoolPayslip = ({
                     type="text"
                     className="dwps-canvas-input"
                     style={{ flex: 1, minWidth: '40px', padding: '2px 4px', fontSize: '11px' }}
-                    value={val}
+                    value={field.defaultValue !== undefined && field.defaultValue !== '' ? field.defaultValue : (val || '')}
                     placeholder="Enter value"
                     onChange={(e) => handleFieldChange(idx, 'defaultValue', e.target.value)}
                   />
@@ -846,13 +875,13 @@ export const DelhiPublicSchoolPayslip = ({
           </div>
         </div>
 
-        {/* 7. Footer / School Signatory */}
-        <div className="dwps-footer-section">
-          <div className="dwps-signatory-container">
-            <div className="dwps-footer-school-name">{schoolName}</div>
-            
-            <div className="dwps-signature-image-box">
-              {company?.signatureUrl ? (
+        {/* 7. Footer / School Signatory (Rendered ONLY if enabled in company settings AND signature is uploaded) */}
+        {company?.showSignature === true && Boolean(company?.signatureUrl) && (
+          <div className="dwps-footer-section">
+            <div className="dwps-signatory-container">
+              <div className="dwps-footer-school-name">{schoolName}</div>
+              
+              <div className="dwps-signature-image-box">
                 <img
                   src={company.signatureUrl}
                   alt="Authorized Signature"
@@ -862,16 +891,14 @@ export const DelhiPublicSchoolPayslip = ({
                     objectFit: 'contain',
                   }}
                 />
-              ) : (
-                <DefaultDwpsSignature />
-              )}
-            </div>
+              </div>
 
-            <div className="dwps-authorized-sign-text">
-              Authorized Signature:
+              <div className="dwps-authorized-sign-text">
+                {company?.signatoryName || 'Authorized Signature:'}
+              </div>
             </div>
           </div>
-        </div>
+        )}
     </div>
   );
 };

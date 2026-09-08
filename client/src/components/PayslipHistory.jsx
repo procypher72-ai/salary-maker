@@ -221,7 +221,17 @@ export const PayslipHistory = ({
     window.print();
   };
 
-  // Group payslips by distinct employee
+  const MONTHS_CHRONO = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const getMonthVal = (mName, yNum) => {
+    const idx = MONTHS_CHRONO.indexOf(mName);
+    return (Number(yNum) || 0) * 12 + (idx >= 0 ? idx : 0);
+  };
+
+  // Group payslips by distinct employee & sort in chronological order (e.g. April, May, June...)
   const employeeGroups = useMemo(() => {
     const map = new Map();
     payslips.forEach((p) => {
@@ -237,7 +247,13 @@ export const PayslipHistory = ({
       }
       map.get(key).payslips.push(p);
     });
-    return Array.from(map.values());
+
+    const groups = Array.from(map.values());
+    groups.forEach((g) => {
+      g.payslips.sort((a, b) => getMonthVal(a.month, a.year) - getMonthVal(b.month, b.year));
+    });
+
+    return groups;
   }, [payslips]);
 
   // Filtered payslips according to search and employee dropdown
@@ -727,6 +743,7 @@ export const PayslipHistory = ({
             <div className="payslip-canvas-scroll-wrapper" id="single-payslip-canvas-view">
               <SnapshotRenderer
                 payslip={isEditingPayslip ? editSlipDraft : selectedPayslip}
+                company={activeCompany}
                 isEditable={isEditingPayslip}
                 onEarningChange={handleEditSlipEarningChange}
                 onDeductionChange={handleEditSlipDeductionChange}
@@ -815,15 +832,19 @@ export const PayslipHistory = ({
             </div>
 
             {/* List of All Consecutive Payslips */}
-            <div className="batch-payslips-container" id="batch-print-canvas-area">
+            <div className="batch-payslips-container" id="batch-print-canvas-area" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2.5rem' }}>
               {batchModalEmployee.payslips.map((slip, index) => (
                 <div
                   key={slip._id || index}
                   className="batch-payslip-page"
                   style={{
-                    marginBottom: '2.5rem',
-                    paddingBottom: '2.5rem',
-                    borderBottom: index < batchModalEmployee.payslips.length - 1 ? '2px dashed rgba(255,255,255,0.1)' : 'none',
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    marginBottom: '1rem',
+                    pageBreakAfter: index < batchModalEmployee.payslips.length - 1 ? 'always' : 'auto',
+                    breakAfter: index < batchModalEmployee.payslips.length - 1 ? 'page' : 'auto',
                   }}
                 >
                   <div
@@ -832,6 +853,8 @@ export const PayslipHistory = ({
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
+                      width: '100%',
+                      maxWidth: '860px',
                       marginBottom: '0.75rem',
                     }}
                   >
@@ -843,7 +866,7 @@ export const PayslipHistory = ({
                     </span>
                   </div>
 
-                  <SnapshotRenderer payslip={slip} />
+                  <SnapshotRenderer payslip={slip} company={activeCompany} />
                 </div>
               ))}
             </div>
