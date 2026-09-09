@@ -359,7 +359,7 @@ export const SushmaBuildtechPayslip = ({
       <div className="sushma-remarks-section">
         <div className="sushma-remarks-title bold">Remarks:</div>
         <div className="sushma-disclaimer">
-          ** This is a computer generated payslip and does not require signature and stamp unless authenticated.
+          *This is a computer generated payslip and doesn't require signature or any company seal.
         </div>
       </div>
 

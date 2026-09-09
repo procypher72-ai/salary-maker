@@ -85,7 +85,7 @@ const companySchema = new mongoose.Schema(
     },
     templateKey: {
       type: String,
-      enum: ['corporate_detailed', 'minimalist_startup', 'standard_industrial', 'classic_tabular', 'hcl_corporate_tech', 'aiims_govt_medical', 'concentrix_daksh', 'sushma_buildtech', 'delhi_public_school'],
+      enum: ['corporate_detailed', 'minimalist_startup', 'standard_industrial', 'classic_tabular', 'hcl_corporate_tech', 'aiims_govt_medical', 'concentrix_daksh', 'sushma_buildtech', 'delhi_public_school', 'new_aiims_template'],
       default: 'corporate_detailed',
     },
     // Salary Slip Dimensions, Borders, and Income/Deduction Layout Customization

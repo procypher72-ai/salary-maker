@@ -899,6 +899,11 @@ export const DelhiPublicSchoolPayslip = ({
             </div>
           </div>
         )}
+
+        {/* 8. Computer Generated Note */}
+        <div className="dwps-footer-note" style={{ textAlign: 'center', fontSize: '0.75rem', color: '#000000', padding: '0.65rem 1.25rem 0.85rem' }}>
+          *This is a computer generated payslip and doesn't require signature or any company seal.
+        </div>
     </div>
   );
 };

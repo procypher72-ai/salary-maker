@@ -324,7 +324,7 @@ export const ClassicTabularPayslip = ({
 
         {/* 9. Bottom Computer Generated Note */}
         <div className="ct-footer-note">
-          *This is a computer generated payslip and does not require signature.
+          *This is a computer generated payslip and doesn't require signature or any company seal.
         </div>
       </div>
     </div>

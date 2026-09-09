@@ -9,11 +9,46 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+// Helper to determine exact days in any given month and year
+const getDaysInMonth = (monthNameOrNum, yearVal) => {
+  const monthMap = {
+    january: 0, jan: 0,
+    february: 1, feb: 1,
+    march: 2, mar: 2,
+    april: 3, apr: 3,
+    may: 4,
+    june: 5, jun: 5,
+    july: 6, jul: 6,
+    august: 7, aug: 7,
+    september: 8, sep: 8, sept: 8,
+    october: 9, oct: 9,
+    november: 10, nov: 10,
+    december: 11, dec: 11
+  };
+  let m = monthNameOrNum;
+  if (typeof m === 'string') {
+    const clean = m.trim().toLowerCase();
+    if (monthMap[clean] !== undefined) {
+      m = monthMap[clean];
+    } else {
+      const parsed = parseInt(clean, 10);
+      m = !isNaN(parsed) ? parsed - 1 : 5;
+    }
+  } else if (typeof m === 'number') {
+    m = m > 0 && m <= 12 ? m - 1 : m;
+  } else {
+    m = 5;
+  }
+  const y = Number(yearVal) || new Date().getFullYear();
+  return new Date(y, m + 1, 0).getDate();
+};
+
 // Helper to calculate days and LOP pro-rata deduction
 const computePayslipFinancials = (employee, company, customOverrides = {}) => {
   const base = employee.baselineSalary || {};
-  const workingDays = customOverrides.workingDays !== undefined ? Number(customOverrides.workingDays) : 30;
-  const paidDays = customOverrides.paidDays !== undefined ? Number(customOverrides.paidDays) : 30;
+  const monthDays = getDaysInMonth(customOverrides.month, customOverrides.year);
+  const workingDays = customOverrides.workingDays !== undefined ? Number(customOverrides.workingDays) : monthDays;
+  const paidDays = customOverrides.paidDays !== undefined ? Number(customOverrides.paidDays) : workingDays;
   const lopDays = customOverrides.lopDays !== undefined ? Number(customOverrides.lopDays) : Math.max(0, workingDays - paidDays);
 
   // Pro-rata factor for loss of pay if paid days < working days
@@ -32,6 +67,19 @@ const computePayslipFinancials = (employee, company, customOverrides = {}) => {
       label: e.label,
       amount: Math.round((Number(e.amount) || 0) * payRatio),
     }));
+  } else if (company?.templateKey === 'new_aiims_template') {
+    // Official Earnings Breakdown matching Original AIIMS June 2026 PDF
+    earnings = [
+      { label: 'Basic', amount: Math.round(95500 * payRatio) },
+      { label: 'Dearness Allowance', amount: Math.round(57300 * payRatio) },
+      { label: 'House Rent Allowance', amount: Math.round(28650 * payRatio) },
+      { label: 'Transport Allowance', amount: Math.round(7200 * payRatio) },
+      { label: 'DA ON TPT', amount: Math.round(4320 * payRatio) },
+      { label: 'ICU Allowance', amount: Math.round(1360 * payRatio) },
+      { label: 'Tool Allowance', amount: Math.round(540 * payRatio) },
+      { label: 'Uniform Allowance', amount: Math.round(2250 * payRatio) },
+      { label: 'Nursing Allowance', amount: Math.round(9000 * payRatio) },
+    ];
   } else if (company?.templateKey === 'aiims_govt_medical') {
     // Official 10 Earnings Breakdown matching Original AIIMS PDF
     earnings = [
@@ -122,6 +170,15 @@ const computePayslipFinancials = (employee, company, customOverrides = {}) => {
       label: d.label,
       amount: Number(d.amount) || 0,
     }));
+  } else if (company?.templateKey === 'new_aiims_template') {
+    // Official Deductions/Recoveries Breakdown matching Original AIIMS June 2026 PDF
+    deductions = [
+      { label: 'Emp Health Scheme', amount: 650 },
+      { label: 'Emp Insurance Scheme', amount: 100 },
+      { label: 'General Provided Fund-A/C:G-11148', amount: 25000 },
+      { label: 'Income Tax', amount: 25155 },
+      { label: 'Society Recovery 7791.0', amount: 28730 },
+    ];
   } else if (company?.templateKey === 'aiims_govt_medical') {
     // Official 8 Deductions/Recoveries Breakdown matching Original AIIMS PDF
     deductions = [
@@ -329,7 +386,7 @@ const prepareDraftPayslip = async (req, res) => {
         netSalaryInWords: existingPayslip.netSalaryInWords,
       };
     } else {
-      financials = computePayslipFinancials(employee, company, customOverrides);
+      financials = computePayslipFinancials(employee, company, { ...customOverrides, month, year });
     }
 
     const snapshotData = existingPayslip?.snapshotData || createSnapshot(company, employee);
@@ -401,6 +458,11 @@ const createPayslip = async (req, res) => {
     const finalSnapshot = snapshotData || createSnapshot(company, employee);
     const calculatedWords = netSalaryInWords || numberToWords(netSalary, company.currencyCode === 'USD' ? 'Dollars' : 'Rupees');
 
+    const monthDays = getDaysInMonth(month, year);
+    const finalWorkingDays = workingDays !== undefined ? Number(workingDays) : monthDays;
+    const finalPaidDays = paidDays !== undefined ? Number(paidDays) : finalWorkingDays;
+    const finalLopDays = lopDays !== undefined ? Number(lopDays) : Math.max(0, finalWorkingDays - finalPaidDays);
+
     const payslip = await Payslip.create({
       companyId,
       employeeId,
@@ -408,9 +470,9 @@ const createPayslip = async (req, res) => {
       year: Number(year),
       payPeriod: payPeriod || `${month} ${year}`,
       paymentDate: paymentDate || Date.now(),
-      workingDays: Number(workingDays) || 30,
-      paidDays: Number(paidDays) || 30,
-      lopDays: Number(lopDays) || 0,
+      workingDays: finalWorkingDays,
+      paidDays: finalPaidDays,
+      lopDays: finalLopDays,
       earnings: earnings || [],
       deductions: deductions || [],
       grossEarnings: Number(grossEarnings) || 0,

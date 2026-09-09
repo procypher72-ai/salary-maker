@@ -607,7 +607,7 @@ export const BulkPayslipViewerModal = ({
                       breakAfter: idx < filteredSlips.length - 1 ? 'page' : 'auto',
                     }}
                   >
-                    <SnapshotRenderer payslip={slip} company={company} isEditable={false} />
+                    <SnapshotRenderer payslip={slip} company={company} isEditable={false} pageNumber={idx + 1} />
                   </div>
                 ))
               ) : (
@@ -617,7 +617,7 @@ export const BulkPayslipViewerModal = ({
                     className="bulk-slip-sheet-item"
                     style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                   >
-                    <SnapshotRenderer payslip={filteredSlips[currentPageIndex]} company={company} isEditable={false} />
+                    <SnapshotRenderer payslip={filteredSlips[currentPageIndex]} company={company} isEditable={false} pageNumber={currentPageIndex + 1} />
                   </div>
                 )
               )}

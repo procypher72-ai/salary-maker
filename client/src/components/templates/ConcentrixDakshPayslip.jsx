@@ -375,7 +375,7 @@ export const ConcentrixDakshPayslip = ({
 
       {/* 4. Footer Note */}
       <div className="cnx-footer-note">
-        This is a system generated payslip and does not require signature unless officially stamped.
+        *This is a computer generated payslip and doesn't require signature or any company seal.
       </div>
 
     </div>

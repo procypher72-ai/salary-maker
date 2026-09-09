@@ -2,6 +2,7 @@ import React from 'react';
 import { ClassicTabularPayslip } from '../templates/ClassicTabularPayslip';
 import { HclCorporatePayslip } from '../templates/HclCorporatePayslip';
 import { AiimsGovtPayslip } from '../templates/AiimsGovtPayslip';
+import { NewAiimsPayslip } from '../templates/NewAiimsPayslip';
 import { ConcentrixDakshPayslip } from '../templates/ConcentrixDakshPayslip';
 import { SushmaBuildtechPayslip } from '../templates/SushmaBuildtechPayslip';
 import { DelhiPublicSchoolPayslip } from '../templates/DelhiPublicSchoolPayslip';
@@ -11,6 +12,7 @@ export const SnapshotRenderer = ({
   payslip,
   company = null,
   isEditable = false,
+  pageNumber,
   onEarningChange,
   onDeductionChange,
   onAddEarning,
@@ -90,6 +92,27 @@ export const SnapshotRenderer = ({
     netSalary: payslip.netSalary,
     netSalaryInWords: payslip.netSalaryInWords,
   };
+
+  if (tplKey === 'new_aiims_template') {
+    return (
+      <NewAiimsPayslip
+        company={comp}
+        employee={emp}
+        layoutConfig={layoutConfig}
+        draft={draftData}
+        pageNumber={pageNumber || payslip.pageNumber || draftData.pageNumber || 1}
+        isEditable={isEditable}
+        onEarningChange={onEarningChange}
+        onDeductionChange={onDeductionChange}
+        onAddEarning={onAddEarning}
+        onDeleteEarning={onDeleteEarning}
+        onAddDeduction={onAddDeduction}
+        onDeleteDeduction={onDeleteDeduction}
+        onDaysChange={onDaysChange}
+        onSizeSaved={onSizeSaved}
+      />
+    );
+  }
 
   if (tplKey === 'aiims_govt_medical') {
     return (
@@ -498,6 +521,12 @@ export const SnapshotRenderer = ({
         {payslip.netSalaryInWords && (
           <div className="net-words">({payslip.netSalaryInWords})</div>
         )}
+      </div>
+
+      <div className="payslip-footer" style={{ marginTop: '16px', borderTop: '1px dashed #cbd5e1', paddingTop: '10px', textAlign: 'center' }}>
+        <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', fontStyle: 'italic' }}>
+          *This is a computer generated payslip and doesn't require signature or any company seal.
+        </p>
       </div>
     </div>
   );

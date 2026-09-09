@@ -342,6 +342,11 @@ export const AiimsGovtPayslip = ({
         </div>
       )}
 
+      {/* Computer Generated Note */}
+      <div className="aiims-footer-note" style={{ textAlign: 'center', fontSize: '0.75rem', color: '#000000', marginTop: '14px', paddingTop: '6px' }}>
+        *This is a computer generated payslip and doesn't require signature or any company seal.
+      </div>
+
     </div>
   );
 };

@@ -262,6 +262,45 @@ const DEFAULT_TEMPLATES = [
       { label: 'Professional Tax', isFixed: true },
     ],
   },
+  {
+    templateKey: 'new_aiims_template',
+    name: 'new AIIMS Template',
+    description: 'Exact replica of official AIIMS New Delhi salary slip with Times New Roman typography, 10% opacity circular emblem watermark, 8-row metadata box, and open-grid financial breakdown.',
+    badge: 'Official AIIMS Format',
+    colorScheme: { primary: '#0a2540', secondary: '#1e3a8a', accent: '#b91c1c' },
+    requiredFields: [
+      { key: 'department', label: 'Current Department', type: 'text', required: true, section: 'job', placeholder: 'IRCH' },
+      { key: 'dealingOffice', label: 'Dealing Office', type: 'text', required: true, section: 'job', placeholder: 'Dr. BR Ambedkar Institute Rotary Cancer Hospital' },
+      { key: 'payDetails', label: 'Pay Details', type: 'text', required: true, section: 'job', placeholder: 'Level 10(15600 - 5400 - 39100)' },
+      { key: 'oldSalaryCode', label: 'Old Salary Code', type: 'text', required: false, section: 'job', placeholder: 'IR75475' },
+      { key: 'panNumber', label: 'PAN Number', type: 'text', required: true, section: 'statutory', placeholder: '******098R' },
+      { key: 'bankAccount', label: 'Bank Account No.', type: 'text', required: true, section: 'banking', placeholder: '*******0688' },
+      { key: 'pfmsNo', label: 'PFMS-NO', type: 'text', required: true, section: 'statutory', placeholder: '**********9541' },
+      { key: 'bankName', label: 'Bank Name', type: 'text', required: true, section: 'banking', placeholder: 'STATE BANK OF INDIA' },
+      { key: 'ifscCode', label: 'IFSC Code', type: 'text', required: true, section: 'banking', placeholder: '*******1536' },
+      { key: 'nextIncrementDate', label: 'Date Of Next Increment', type: 'text', required: false, section: 'job', placeholder: '01/JUL/2026' },
+      { key: 'pranGpfNo', label: 'PRAN No/GPF No', type: 'text', required: false, section: 'statutory', placeholder: '***1148' },
+      { key: 'reportDateTime', label: 'Date & Time', type: 'text', required: false, section: 'job', placeholder: '24-Jul-2026&11:48 PM' },
+    ],
+    defaultEarnings: [
+      { label: 'Basic', isFixed: true },
+      { label: 'Dearness Allowance', isFixed: true },
+      { label: 'House Rent Allowance', isFixed: true },
+      { label: 'Transport Allowance', isFixed: true },
+      { label: 'DA ON TPT', isFixed: true },
+      { label: 'ICU Allowance', isFixed: false },
+      { label: 'Tool Allowance', isFixed: false },
+      { label: 'Uniform Allowance', isFixed: false },
+      { label: 'Nursing Allowance', isFixed: false },
+    ],
+    defaultDeductions: [
+      { label: 'Emp Health Scheme', isFixed: true },
+      { label: 'Emp Insurance Scheme', isFixed: true },
+      { label: 'General Provided Fund-A/C:G-11148', isFixed: true },
+      { label: 'Income Tax', isFixed: true },
+      { label: 'Society Recovery 7791.0', isFixed: false },
+    ],
+  },
 ];
 
 // Ensure templates are seeded in database without overwriting user-customized fields or names
@@ -271,12 +310,14 @@ const seedDefaultTemplates = async () => {
       const existing = await SalaryTemplate.findOne({ templateKey: t.templateKey });
       if (!existing) {
         await SalaryTemplate.create(t);
-      } else if (t.templateKey === 'delhi_public_school') {
-        // Ensure DWPS template has the clean required fields synced
+      } else if (t.templateKey === 'delhi_public_school' || t.templateKey === 'new_aiims_template') {
         await SalaryTemplate.updateOne(
           { templateKey: t.templateKey },
           {
             $set: {
+              name: t.name,
+              badge: t.badge,
+              description: t.description,
               requiredFields: t.requiredFields,
               defaultEarnings: t.defaultEarnings,
               defaultDeductions: t.defaultDeductions,

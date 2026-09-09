@@ -866,7 +866,7 @@ export const PayslipHistory = ({
                     </span>
                   </div>
 
-                  <SnapshotRenderer payslip={slip} company={activeCompany} />
+                  <SnapshotRenderer payslip={slip} company={activeCompany} pageNumber={index + 1} />
                 </div>
               ))}
             </div>

@@ -2267,6 +2267,375 @@ body {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   NEW AIIMS EXACT SALARY SLIP REPLICA STYLES
+───────────────────────────────────────────────────────────── */
+.new-aiims-wrapper {
+  position: relative;
+  width: 794px;
+  max-width: 100%;
+  min-height: 1123px;
+  height: 1123px;
+  background: #ffffff;
+  color: #000000;
+  border: none;
+  padding: 24px 28px 20px 28px;
+  font-family: 'Times New Roman', Times, 'Liberation Serif', serif;
+  font-size: 13.5px;
+  line-height: 1.3;
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  margin: 0 auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.new-aiims-watermark-container {
+  position: absolute;
+  top: 205px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 440px;
+  max-width: 80%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.new-aiims-watermark-img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.new-aiims-header-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.new-aiims-header-top-row {
+  position: relative;
+  width: 100%;
+  min-height: 85px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.new-aiims-header-left {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  z-index: 2;
+}
+
+.new-aiims-header-right {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  z-index: 2;
+}
+
+.new-aiims-header-center {
+  width: 100%;
+  text-align: center;
+  margin: 0 auto;
+  padding: 0 135px;
+  box-sizing: border-box;
+}
+
+.new-aiims-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #000000;
+  margin: 0;
+  font-family: inherit;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+}
+
+.new-aiims-subtitle {
+  font-size: 16px;
+  font-weight: bold;
+  color: #000000;
+  margin: 2px 0 0 0;
+  line-height: 1.35;
+  font-family: inherit;
+}
+
+.new-aiims-phone {
+  font-size: 16px;
+  font-weight: bold;
+  color: #000000;
+  margin: 2px 0 0 0;
+  line-height: 1.35;
+  font-family: inherit;
+}
+
+.new-aiims-payslip-tag {
+  text-align: center;
+  font-size: 16px;
+  font-weight: bold;
+  color: #000000;
+  margin-top: 1.25rem;
+  margin-bottom: 0.45rem;
+  font-family: inherit;
+}
+
+.new-aiims-timestamp-bar {
+  position: relative;
+  z-index: 1;
+  text-align: right;
+  font-size: 11px;
+  font-weight: bold;
+  color: #000000;
+  margin-bottom: 0.35rem;
+  font-family: inherit;
+}
+
+/* 8-Row Employee Metadata Box */
+.new-aiims-meta-grid {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #000000;
+  margin-bottom: 0;
+  table-layout: fixed;
+  font-size: 13.5px;
+  color: #000000;
+  font-family: inherit;
+}
+
+.new-aiims-meta-grid tr td {
+  border: none;
+  border-bottom: 1px solid #000000;
+  padding: 3.5px 6px;
+  vertical-align: middle;
+  line-height: 1.28;
+}
+
+.new-aiims-meta-grid tr:last-child td {
+  border-bottom: none;
+}
+
+.new-aiims-meta-grid .meta-v-divider,
+.new-aiims-meta-grid tr td:nth-child(3) {
+  border-right: 1px solid #000000 !important;
+}
+
+.new-aiims-meta-grid .meta-cell-lbl {
+  font-weight: bold;
+  width: 23%;
+  white-space: normal;
+  padding-right: 2px;
+}
+
+.new-aiims-meta-grid .meta-cell-colon {
+  width: 14px;
+  text-align: center;
+  font-weight: bold;
+  padding: 3.5px 0;
+}
+
+.new-aiims-meta-grid .meta-cell-val {
+  color: #000000;
+  width: 27%;
+  word-break: break-word;
+  font-weight: normal;
+  padding-left: 6px;
+}
+
+.new-aiims-meta-grid .meta-cell-val.multiline {
+  line-height: 1.22;
+}
+
+/* Financials Two-Column Boxed Table */
+.new-aiims-fin-table {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #000000;
+  border-top: none;
+  font-size: 13.5px;
+  color: #000000;
+  table-layout: fixed;
+  font-family: inherit;
+}
+
+.new-aiims-fin-table thead tr.new-aiims-fin-head-main th {
+  border-bottom: 1px solid #000000;
+  font-weight: bold;
+  padding: 4.5px 6px;
+  color: #000000;
+  text-align: center;
+  font-size: 13.5px;
+}
+
+.new-aiims-fin-table thead tr.new-aiims-fin-head-main th.th-side-left {
+  border-right: 1px solid #000000;
+}
+
+.new-aiims-fin-table thead tr.new-aiims-fin-head-sub th {
+  border-bottom: 1px solid #000000;
+  font-weight: bold;
+  padding: 3px 6px;
+  color: #000000;
+  font-size: 13.5px;
+}
+
+.new-aiims-fin-table thead tr.new-aiims-fin-head-sub th.th-desc {
+  width: 34%;
+}
+
+.new-aiims-fin-table thead tr.new-aiims-fin-head-sub th.th-rs {
+  text-align: right;
+  width: 16%;
+  padding-right: 8px;
+}
+
+.new-aiims-fin-table .th-div-center,
+.new-aiims-fin-table .td-div-center {
+  border-right: 1px solid #000000;
+}
+
+.new-aiims-fin-table tbody.new-aiims-fin-body tr.new-aiims-data-row td {
+  padding: 2px 6px;
+  vertical-align: middle;
+  border-bottom: none;
+  border-top: none;
+  height: 20.5px;
+  font-size: 13.5px;
+}
+
+.new-aiims-fin-table tbody.new-aiims-fin-body tr.new-aiims-data-row td.td-desc {
+  width: 34%;
+  text-align: left;
+  padding-left: 6px;
+  white-space: nowrap;
+}
+
+.new-aiims-fin-table tbody.new-aiims-fin-body tr.new-aiims-data-row td.td-amt {
+  width: 16%;
+  text-align: right;
+  padding-right: 8px;
+  white-space: nowrap;
+}
+
+.new-aiims-fin-table tfoot tr.new-aiims-totals-row td {
+  border-top: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  padding: 4.5px 6px;
+  vertical-align: middle;
+  font-size: 13.5px;
+}
+
+.new-aiims-fin-table tfoot tr.new-aiims-totals-row td.tot-lbl {
+  width: 34%;
+  text-align: left;
+  font-weight: bold;
+  padding-left: 6px;
+  white-space: nowrap;
+}
+
+.new-aiims-fin-table tfoot tr.new-aiims-totals-row td.tot-val {
+  width: 16%;
+  text-align: right;
+  font-weight: normal;
+  padding-right: 8px;
+  white-space: nowrap;
+}
+
+.new-aiims-fin-table .tot-prefix {
+  margin-right: 4px;
+}
+
+.new-aiims-netpay-line {
+  position: relative;
+  z-index: 1;
+  margin-top: 1.5rem;
+  font-size: 13.5px;
+  font-weight: bold;
+  color: #000000;
+  font-family: inherit;
+}
+
+.new-aiims-footer-box {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+  padding-bottom: 8px;
+  text-align: center;
+  width: 100%;
+}
+
+.new-aiims-footer-rule {
+  height: 1px;
+  background: #000000;
+  width: 100%;
+}
+
+.new-aiims-footer-text {
+  font-size: 13.5px;
+  color: #000000;
+  padding: 0.35rem 0;
+  font-family: inherit;
+}
+
+.new-aiims-canvas-input {
+  font-family: inherit;
+  font-size: 13.5px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.25);
+  color: #000000;
+  padding: 0.1rem 0.2rem;
+  width: 100%;
+  border-radius: 2px;
+  transition: all 0.15s ease;
+}
+
+.new-aiims-canvas-input:hover {
+  background: rgba(99, 102, 241, 0.04);
+  border-bottom-color: rgba(99, 102, 241, 0.6);
+}
+
+.new-aiims-canvas-input:focus {
+  background: #ffffff;
+  border: 1px solid #6366f1;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+.new-aiims-canvas-input.text-right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-del-subtle {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 3px;
+  line-height: 1;
+}
+
+/* ─────────────────────────────────────────────────────────────
    CONCENTRIX DAKSH SERVICES TABULAR MATRIX STYLES
 ───────────────────────────────────────────────────────────── */
 .concentrix-daksh-wrapper {

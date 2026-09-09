@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { ClassicTabularPayslip } from './templates/ClassicTabularPayslip';
 import { HclCorporatePayslip } from './templates/HclCorporatePayslip';
 import { AiimsGovtPayslip } from './templates/AiimsGovtPayslip';
+import { NewAiimsPayslip } from './templates/NewAiimsPayslip';
 import { ConcentrixDakshPayslip } from './templates/ConcentrixDakshPayslip';
 import { SushmaBuildtechPayslip } from './templates/SushmaBuildtechPayslip';
 import { DelhiPublicSchoolPayslip } from './templates/DelhiPublicSchoolPayslip';
@@ -262,7 +263,23 @@ export const PayslipGenerator = ({
     const base = selectedEmployeeObj.baselineSalary || {};
 
     let updatedEarnings = [];
-    if (templateKey === 'aiims_govt_medical') {
+    if (templateKey === 'new_aiims_template') {
+      const newAiimsBaseEarnings = [
+        { label: 'Basic', amount: 95500 },
+        { label: 'Dearness Allowance', amount: 57300 },
+        { label: 'House Rent Allowance', amount: 28650 },
+        { label: 'Transport Allowance', amount: 7200 },
+        { label: 'DA ON TPT', amount: 4320 },
+        { label: 'ICU Allowance', amount: 1360 },
+        { label: 'Tool Allowance', amount: 540 },
+        { label: 'Uniform Allowance', amount: 2250 },
+        { label: 'Nursing Allowance', amount: 9000 },
+      ];
+      updatedEarnings = newAiimsBaseEarnings.map((item) => ({
+        label: item.label,
+        amount: Math.round(item.amount * payRatio),
+      }));
+    } else if (templateKey === 'aiims_govt_medical') {
       const aiimsBaseEarnings = [
         { label: 'Basic', amount: 67400 },
         { label: 'Dearness Allowance', amount: 26960 },
@@ -373,6 +390,23 @@ export const PayslipGenerator = ({
   // Statutory Deductions Autofill (EPF, ESIC, PT, TDS, AIIMS Recoveries, HCL, Concentrix, Sushma)
   const handleStatutoryAutofill = () => {
     if (!draft || !selectedEmployeeObj) return;
+
+    if (templateKey === 'new_aiims_template') {
+      const updatedDeductions = [
+        { label: 'Emp Health Scheme', amount: 650 },
+        { label: 'Emp Insurance Scheme', amount: 100 },
+        { label: 'General Provided Fund-A/C:G-11148', amount: 25000 },
+        { label: 'Income Tax', amount: 25155 },
+        { label: 'Society Recovery 7791.0', amount: 28730 },
+      ];
+      const updated = {
+        ...draft,
+        deductions: updatedDeductions,
+      };
+      recalculateTotals(updated);
+      showToast('Autofilled new AIIMS statutory deductions & recoveries!', 'success');
+      return;
+    }
 
     if (templateKey === 'aiims_govt_medical') {
       const updatedDeductions = [
@@ -976,7 +1010,23 @@ export const PayslipGenerator = ({
           </div>
 
           <div className="payslip-canvas-scroll-wrapper" id="live-payslip-print-target">
-          {templateKey === 'aiims_govt_medical' ? (
+          {templateKey === 'new_aiims_template' ? (
+            <NewAiimsPayslip
+              company={activeCompany}
+              employee={selectedEmployeeObj}
+              draft={draft}
+              isEditable={true}
+              layoutConfig={layoutConfig}
+              onEarningChange={handleEarningChange}
+              onDeductionChange={handleDeductionChange}
+              onAddEarning={handleAddEarning}
+              onDeleteEarning={handleDeleteEarning}
+              onAddDeduction={handleAddDeduction}
+              onDeleteDeduction={handleDeleteDeduction}
+              onDaysChange={handleDaysChange}
+              onSizeSaved={handleLogoSaved}
+            />
+          ) : templateKey === 'aiims_govt_medical' ? (
             <AiimsGovtPayslip
               company={activeCompany}
               employee={selectedEmployeeObj}
@@ -1354,7 +1404,7 @@ export const PayslipGenerator = ({
             {/* Signatures & Footer Note */}
             <div className="payslip-footer">
               <div className="footer-note">
-                <p>This is a system-generated salary slip and preserves immutable payroll compliance records.</p>
+                <p>*This is a computer generated payslip and doesn't require signature or any company seal.</p>
                 <p>Generated on: {new Date().toLocaleDateString()}</p>
               </div>
 

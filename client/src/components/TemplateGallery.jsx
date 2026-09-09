@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { ClassicTabularPayslip } from './templates/ClassicTabularPayslip';
 import { HclCorporatePayslip } from './templates/HclCorporatePayslip';
 import { AiimsGovtPayslip } from './templates/AiimsGovtPayslip';
+import { NewAiimsPayslip } from './templates/NewAiimsPayslip';
 import { ConcentrixDakshPayslip } from './templates/ConcentrixDakshPayslip';
 import { SushmaBuildtechPayslip } from './templates/SushmaBuildtechPayslip';
 import { DelhiPublicSchoolPayslip } from './templates/DelhiPublicSchoolPayslip';
@@ -538,7 +539,64 @@ export const TemplateGallery = ({
 
             {/* Render sample sheet in this template */}
             <div className="payslip-canvas-scroll-wrapper">
-            {selectedPreviewTemplate.templateKey === 'aiims_govt_medical' ? (
+            {selectedPreviewTemplate.templateKey === 'new_aiims_template' ? (
+              <NewAiimsPayslip
+                company={activeCompany || {
+                  name: 'All India Institute of Medical Sciences',
+                  fullAddress: 'Ansari Nagar East',
+                  phone: '011 2658 8500',
+                }}
+                isEditable={true}
+                onSizeSaved={handlePreviewLogoUpdated}
+                employee={{
+                  empCode: 'E0000195',
+                  fullName: 'Mrs. Paramjit Kaur',
+                  designation: 'Assistant Nursing Superintendent',
+                  department: 'IRCH',
+                  dynamicFields: {
+                    dealingOffice: 'Dr. BR Ambedkar Institute Rotary Cancer Hospital',
+                    payDetails: 'Level 10(15600 - 5400 - 39100)',
+                    oldSalaryCode: 'IR75475',
+                    panNumber: '******098R',
+                    bankAccount: '*******0688',
+                    pfmsNo: '**********9541',
+                    bankName: 'STATE BANK OF INDIA',
+                    ifscCode: '*******1536',
+                    nextIncrementDate: '01/JUL/2026',
+                    pranGpfNo: '***1148',
+                    reportDateTime: '24-Jul-2026&11:48 PM',
+                  },
+                }}
+                draft={{
+                  month: 'June',
+                  year: 2026,
+                  workingDays: 30,
+                  paidDays: 30,
+                  earnings: [
+                    { label: 'Basic', amount: 95500 },
+                    { label: 'Dearness Allowance', amount: 57300 },
+                    { label: 'House Rent Allowance', amount: 28650 },
+                    { label: 'Transport Allowance', amount: 7200 },
+                    { label: 'DA ON TPT', amount: 4320 },
+                    { label: 'ICU Allowance', amount: 1360 },
+                    { label: 'Tool Allowance', amount: 540 },
+                    { label: 'Uniform Allowance', amount: 2250 },
+                    { label: 'Nursing Allowance', amount: 9000 },
+                  ],
+                  deductions: [
+                    { label: 'Emp Health Scheme', amount: 650 },
+                    { label: 'Emp Insurance Scheme', amount: 100 },
+                    { label: 'General Provided Fund-A/C:G-11148', amount: 25000 },
+                    { label: 'Income Tax', amount: 25155 },
+                    { label: 'Society Recovery 7791.0', amount: 28730 },
+                  ],
+                  grossEarnings: 206120,
+                  totalDeductions: 79635,
+                  netSalary: 126485,
+                  netSalaryInWords: 'One Lakh Twenty Six Thousand Four Hundred Eighty Five  Rupees Only',
+                }}
+              />
+            ) : selectedPreviewTemplate.templateKey === 'aiims_govt_medical' ? (
               <AiimsGovtPayslip
                 company={activeCompany || {
                   name: 'All India Institute Of Medical Sciences',
@@ -992,7 +1050,7 @@ export const TemplateGallery = ({
 
               <div className="payslip-footer">
                 <div className="footer-note">
-                  <p>Sample demonstration of {selectedPreviewTemplate.name}.</p>
+                  <p>*This is a computer generated payslip and doesn't require signature or any company seal.</p>
                 </div>
                 <div className="signature-box">
                   <div className="signature-line" />

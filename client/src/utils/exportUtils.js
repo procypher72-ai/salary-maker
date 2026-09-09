@@ -40,6 +40,18 @@ const sanitizeClonedDocument = (clonedDoc) => {
     payslipSheet.style.maxWidth = '100%';
   });
 
+  // Dedicated handling for New AIIMS Template: enforce exact A4 portrait dimensions
+  clonedDoc.querySelectorAll('.new-aiims-wrapper').forEach((aiimsSheet) => {
+    aiimsSheet.style.boxShadow = 'none';
+    aiimsSheet.style.margin = '0 auto';
+    aiimsSheet.style.width = '794px';
+    aiimsSheet.style.minHeight = '1123px';
+    aiimsSheet.style.height = '1123px';
+    aiimsSheet.style.display = 'flex';
+    aiimsSheet.style.flexDirection = 'column';
+    aiimsSheet.style.boxSizing = 'border-box';
+  });
+
   // 4. Convert all input elements into clean, crisp typography spans
   clonedDoc.querySelectorAll('input, select, textarea').forEach((input) => {
     if (input.type === 'file' || input.type === 'hidden') {
@@ -101,7 +113,7 @@ export const exportElementToPdf = async (elementOrId, filename = 'SalarySlip.pdf
   }
 
   // Find all individual sheet elements within the target
-  const selector = '.dwps-payslip-wrapper, .classic-tabular-wrapper, .payslip-sheet, .hcl-corporate-wrapper, .aiims-govt-wrapper, .concentrix-daksh-wrapper, .sushma-buildtech-wrapper';
+  const selector = '.dwps-payslip-wrapper, .new-aiims-wrapper, .classic-tabular-wrapper, .payslip-sheet, .hcl-corporate-wrapper, .aiims-govt-wrapper, .concentrix-daksh-wrapper, .sushma-buildtech-wrapper';
   let sheets = Array.from(rootElement.querySelectorAll(selector));
 
   if (sheets.length === 0) {
@@ -140,6 +152,8 @@ export const exportElementToPdf = async (elementOrId, filename = 'SalarySlip.pdf
 
   for (let i = 0; i < targetElements.length; i++) {
     const sheetEl = targetElements[i];
+    const isNewAiims = sheetEl.classList.contains('new-aiims-wrapper');
+    const pageNum = i + 1;
 
     const canvas = await html2canvas(sheetEl, {
       scale: options.scale || 2,
@@ -147,8 +161,18 @@ export const exportElementToPdf = async (elementOrId, filename = 'SalarySlip.pdf
       letterRendering: true,
       logging: false,
       scrollY: 0,
+      windowWidth: isNewAiims ? 850 : undefined,
       onclone: (clonedDoc) => {
         sanitizeClonedDocument(clonedDoc);
+        if (targetElements.length > 1) {
+          const aiimsSheets = Array.from(clonedDoc.querySelectorAll('.new-aiims-wrapper'));
+          if (aiimsSheets[i]) {
+            const footerText = aiimsSheets[i].querySelector('.new-aiims-footer-text');
+            if (footerText) {
+              footerText.textContent = `Page No. ${pageNum}`;
+            }
+          }
+        }
       },
     });
 
@@ -165,8 +189,10 @@ export const exportElementToPdf = async (elementOrId, filename = 'SalarySlip.pdf
     }
 
     const xPos = margin + (printableWidth - finalWidth) / 2;
-    // Align cleanly to the top of the A4 page (default 8mm top margin)
-    const yPos = options.topMargin !== undefined ? options.topMargin : Math.max(margin, 8);
+    // For new AIIMS slip, balance top and bottom margins so it fills the full page vertically
+    const yPos = isNewAiims
+      ? Math.max(margin, margin + (printableHeight - finalHeight) / 2)
+      : (options.topMargin !== undefined ? options.topMargin : Math.max(margin, 8));
 
     if (i > 0) {
       pdf.addPage(options.format || 'a4', orientation);
