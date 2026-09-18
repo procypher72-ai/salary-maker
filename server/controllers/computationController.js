@@ -337,14 +337,20 @@ exports.aggregateEmployeeSalaryForFY = async (req, res) => {
         monthsIncluded,
         personalDetails: {
           name: employee.fullName,
-          fathersName: dynamicFields.fathersName || dynamicFields.fatherName || '',
-          officeAddress: company.fullAddress || '',
-          residentialAddress: dynamicFields.residentialAddress || dynamicFields.address || '',
-          pan: dynamicFields.panNumber || dynamicFields.pan || employee.panNumber || '',
-          dob: dynamicFields.dob || dynamicFields.dateOfBirth || '',
+          fathersName: employee.fatherName || dynamicFields.fathersName || dynamicFields.fatherName || '',
+          officeAddress: company.name
+            ? (company.fullAddress
+                ? (company.fullAddress.startsWith(company.name)
+                    ? company.fullAddress
+                    : `${company.name}, ${company.fullAddress}`)
+                : company.name)
+            : (company.fullAddress || ''),
+          residentialAddress: employee.residentialAddress || dynamicFields.residentialAddress || dynamicFields.address || '',
+          pan: employee.panNumber || dynamicFields.panNumber || dynamicFields.pan || '',
+          dob: employee.dob || dynamicFields.dob || dynamicFields.dateOfBirth || '',
           gender: dynamicFields.gender || 'Male',
           status: 'Individual',
-          residentStatus: 'Resident',
+          residentStatus: employee.residentStatus || 'Resident',
         },
         salaryDetails: {
           employerName: company.name || '',

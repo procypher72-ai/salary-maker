@@ -145,6 +145,43 @@ const computePayslipFinancials = (employee, company, customOverrides = {}) => {
     if (base.otherAllowances && Number(base.otherAllowances) > 0) {
       earnings.push({ label: 'Other Allowance', amount: Math.round(Number(base.otherAllowances) * payRatio) });
     }
+  } else if (company?.templateKey === 'haryana_education') {
+    const basicVal = (base.basicPay !== undefined && base.basicPay !== '' && !isNaN(base.basicPay) && Number(base.basicPay) !== 77900) ? Number(base.basicPay) : 64600;
+    const daVal = (base.da !== undefined && base.da !== '' && !isNaN(base.da) && Number(base.da) !== 32718) ? Number(base.da) : 27132;
+    const hraVal = (base.hra !== undefined && base.hra !== '' && !isNaN(base.hra) && Number(base.hra) !== 6232) ? Number(base.hra) : 5058;
+    const medVal = (base.medicalAllowance !== undefined && base.medicalAllowance !== '' && !isNaN(base.medicalAllowance)) ? Number(base.medicalAllowance) : 1000;
+
+    earnings = [
+      { label: 'Basic Pay', amount: Math.round(basicVal * payRatio) },
+      { label: 'DP', amount: 0 },
+      { label: 'GP', amount: 0 },
+      { label: 'D.A.', amount: Math.round(daVal * payRatio) },
+      { label: 'Spe. Pay', amount: 0 },
+      { label: 'Pers. Pay', amount: 0 },
+      { label: 'C.C.A.', amount: 0 },
+      { label: 'H.R.A.', amount: Math.round(hraVal * payRatio) },
+      { label: 'Medical All.', amount: Math.round(medVal * payRatio) },
+      { label: 'Convey. All.', amount: 0 },
+      { label: 'Wash. All.', amount: 0 },
+      { label: 'Ration', amount: 0 },
+      { label: 'M.All.', amount: 0 },
+      { label: 'Kit Main.All.', amount: 0 },
+      { label: 'Handi.All.', amount: 0 },
+      { label: 'Non-Prac.All.', amount: 0 },
+      { label: 'SafaiKar/Spl.A.', amount: 0 },
+      { label: 'Morni Hill All.', amount: 0 },
+      { label: 'Rural Health All.', amount: 0 },
+      { label: 'Trans/SplTA/FTA', amount: 0 },
+      { label: 'Deputation All.', amount: 0 },
+      { label: 'Flying/Crpnter All.', amount: 0 },
+      { label: 'Hrdshp/Fly.CerAll', amount: 0 },
+      { label: 'Sumptry/DietMny', amount: 0 },
+      { label: 'Off.Exps/Instrl Al.', amount: 0 },
+      { label: 'Consti/Risk All.', amount: 0 },
+      { label: 'Tele./Cashier All.', amount: 0 },
+      { label: 'Pol.Med/Super A.', amount: 0 },
+      { label: 'Other Allowance', amount: 0 },
+    ];
   } else {
     // Standard corporate earnings list based on baseline salary
     if (base.basicPay) earnings.push({ label: 'Basic Salary', amount: Math.round(base.basicPay * payRatio) });
@@ -228,6 +265,40 @@ const computePayslipFinancials = (employee, company, customOverrides = {}) => {
     if (base.pfDeduction && Number(base.pfDeduction) > 0) {
       deductions.push({ label: 'Provident Fund (PF)', amount: Number(base.pfDeduction) });
     }
+  } else if (company?.templateKey === 'haryana_education') {
+    const gpfVal = (base.pfDeduction !== undefined && base.pfDeduction !== '' && !isNaN(base.pfDeduction)) ? Number(base.pfDeduction) : 10000;
+    const itVal = (base.tds !== undefined && base.tds !== '' && !isNaN(base.tds)) ? Number(base.tds) : 5000;
+    deductions = [
+      { label: 'GPF Subs.', amount: gpfVal },
+      { label: 'NPS Subs.', amount: 0 },
+      { label: 'NPS Arrear', amount: 0 },
+      { label: 'G.I.S.', amount: 0 },
+      { label: 'L.I.C.', amount: 0 },
+      { label: 'Car Usage', amount: 0 },
+      { label: 'Income Tax', amount: itVal },
+      { label: 'Lic.Fee (St)', amount: 0 },
+      { label: 'Lic.Fee (Ce)', amount: 0 },
+      { label: 'Lic.Fee (De)', amount: 0 },
+      { label: 'PLI', amount: 0 },
+      { label: 'CTD', amount: 0 },
+      { label: 'Relief Fund', amount: 0 },
+      { label: 'FTC', amount: 0 },
+      { label: 'Wel. Fund Sub.', amount: 0 },
+      { label: 'Wel. Loan Ded', amount: 0 },
+      { label: 'Sports Fund Sub', amount: 0 },
+      { label: 'Main.Fund Sub', amount: 0 },
+      { label: 'Electricity Char.', amount: 0 },
+      { label: 'Water Charges', amount: 0 },
+      { label: 'Other TOBT', amount: 0 },
+      { label: 'Other AGBT', amount: 0 },
+      { label: 'Other Ded.', amount: 0 },
+      { label: 'Bank LOANS', amount: 0 },
+      { label: 'SctrAd.', amount: 0 },
+      { label: 'CarAdv', amount: 0 },
+      { label: 'HBA', amount: 0 },
+      { label: 'MarAdv', amount: 0 },
+      { label: 'ComAd', amount: 0 },
+    ];
   } else {
     // Standard deductions list based on baseline salary
     if (base.pfDeduction) deductions.push({ label: 'Provident Fund (PF)', amount: Number(base.pfDeduction) });
@@ -330,7 +401,13 @@ const createSnapshot = (company, employee) => {
       pfNumber: employee.pfNumber,
       uanNumber: employee.uanNumber,
       esiNumber: employee.esiNumber,
-      bankAccount: employee.bankAccount,
+      bankAccount:
+        employee.bankAccount ||
+        (employee.dynamicFields
+          ? (employee.dynamicFields instanceof Map
+              ? employee.dynamicFields.get('bankAccount')
+              : employee.dynamicFields.bankAccount)
+          : ''),
       bankName: employee.bankName,
       location: employee.location,
       dynamicFields: employee.dynamicFields ? (employee.dynamicFields instanceof Map ? Object.fromEntries(employee.dynamicFields) : employee.dynamicFields) : {},
@@ -654,13 +731,58 @@ const generateBulkPayslips = async (req, res) => {
       ...customOverrides,
     };
 
+    // Base voucher number initialization
+    let baseVoucherNum = 1734;
+    const candidateVoucher =
+      customOverrides?.voucherNo ||
+      clientSnapshot?.employee?.dynamicFields?.voucherNo ||
+      employee?.dynamicFields?.voucherNo ||
+      (employee?.dynamicFields instanceof Map ? employee.dynamicFields.get('voucherNo') : null);
+
+    if (candidateVoucher) {
+      const parsed = parseInt(String(candidateVoucher).replace(/\D/g, ''), 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        baseVoucherNum = parsed;
+      }
+    }
+
+    let currentVoucher = baseVoucherNum;
+
     for (let current = startTotalMonths; current <= endTotalMonths; current++) {
       const year = Math.floor(current / 12);
       const monthIdx = current % 12;
       const month = MONTH_NAMES[monthIdx];
       const payPeriod = `${month} ${year}`;
 
+      // Calculate last date of this month for Voucher Date in DD-MM-YYYY format
+      const lastDay = new Date(year, monthIdx + 1, 0).getDate();
+      const dd = String(lastDay).padStart(2, '0');
+      const mm = String(monthIdx + 1).padStart(2, '0');
+      const voucherDateStr = `${dd}-${mm}-${year}`;
+
+      // Calculate voucher number for this month:
+      // First month receives base voucher (e.g. 001734)
+      // Each subsequent month increases by a random gap strictly > 100 (101 to 250)
+      if (current > startTotalMonths) {
+        const randomGap = 101 + Math.floor(Math.random() * 150);
+        currentVoucher += randomGap;
+      }
+      const voucherNoStr = String(currentVoucher).padStart(6, '0');
+
       const financials = computePayslipFinancials(employee, company, mergedOverrides);
+
+      // Snapshot with month-specific voucher number & voucher date
+      const monthSnapshot = {
+        ...finalSnapshot,
+        employee: {
+          ...finalSnapshot.employee,
+          dynamicFields: {
+            ...(finalSnapshot.employee?.dynamicFields || {}),
+            voucherNo: voucherNoStr,
+            voucherDate: voucherDateStr,
+          },
+        },
+      };
 
       // Upsert payslip for this month/year for the employee
       const payslip = await Payslip.findOneAndUpdate(
@@ -681,7 +803,7 @@ const generateBulkPayslips = async (req, res) => {
           totalDeductions: financials.totalDeductions,
           netSalary: financials.netSalary,
           netSalaryInWords: financials.netSalaryInWords,
-          snapshotData: finalSnapshot,
+          snapshotData: monthSnapshot,
           status: 'generated',
         },
         { upsert: true, new: true }
@@ -915,4 +1037,5 @@ module.exports = {
   deletePayslip,
   getBankAdviceReport,
   getEpfEcrReport,
+  computePayslipFinancials,
 };

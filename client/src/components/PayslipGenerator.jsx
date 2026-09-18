@@ -8,6 +8,7 @@ import { NewAiimsPayslip } from './templates/NewAiimsPayslip';
 import { ConcentrixDakshPayslip } from './templates/ConcentrixDakshPayslip';
 import { SushmaBuildtechPayslip } from './templates/SushmaBuildtechPayslip';
 import { DelhiPublicSchoolPayslip } from './templates/DelhiPublicSchoolPayslip';
+import { HaryanaEducationPayslip } from './templates/HaryanaEducationPayslip';
 import { ResizableLogo } from './common/ResizableLogo';
 import { SlipLayoutToolbar } from './common/SlipLayoutToolbar';
 import { SignatureStampBox } from './common/SignatureStampBox';
@@ -187,13 +188,20 @@ export const PayslipGenerator = ({
     recalculateTotals(updated);
   };
 
-  const handleEarningChange = (index, field, val) => {
+  const handleEarningChange = (index, field, val, labelIfNew) => {
     if (!draft) return;
-    const updatedEarnings = [...draft.earnings];
-    updatedEarnings[index] = {
-      ...updatedEarnings[index],
-      [field]: field === 'amount' ? Number(val) || 0 : val,
-    };
+    let updatedEarnings = [...(draft.earnings || [])];
+    if (index >= 0 && index < updatedEarnings.length) {
+      updatedEarnings[index] = {
+        ...updatedEarnings[index],
+        [field]: field === 'amount' ? Number(val) || 0 : val,
+      };
+    } else if (labelIfNew) {
+      updatedEarnings.push({
+        label: labelIfNew,
+        [field]: field === 'amount' ? Number(val) || 0 : val,
+      });
+    }
     const updated = { ...draft, earnings: updatedEarnings };
     recalculateTotals(updated);
   };
@@ -214,13 +222,20 @@ export const PayslipGenerator = ({
     recalculateTotals(updated);
   };
 
-  const handleDeductionChange = (index, field, val) => {
+  const handleDeductionChange = (index, field, val, labelIfNew) => {
     if (!draft) return;
-    const updatedDeductions = [...draft.deductions];
-    updatedDeductions[index] = {
-      ...updatedDeductions[index],
-      [field]: field === 'amount' ? Number(val) || 0 : val,
-    };
+    let updatedDeductions = [...(draft.deductions || [])];
+    if (index >= 0 && index < updatedDeductions.length) {
+      updatedDeductions[index] = {
+        ...updatedDeductions[index],
+        [field]: field === 'amount' ? Number(val) || 0 : val,
+      };
+    } else if (labelIfNew) {
+      updatedDeductions.push({
+        label: labelIfNew,
+        [field]: field === 'amount' ? Number(val) || 0 : val,
+      });
+    }
     const updated = { ...draft, deductions: updatedDeductions };
     recalculateTotals(updated);
   };
@@ -353,6 +368,47 @@ export const PayslipGenerator = ({
         dwpsBaseEarnings.push({ label: 'Other Allowance', amount: Number(base.otherAllowances) });
       }
       updatedEarnings = dwpsBaseEarnings.map((item) => ({
+        label: item.label,
+        amount: Math.round(item.amount * payRatio),
+      }));
+    } else if (templateKey === 'haryana_education') {
+      const basicVal = (base.basicPay !== undefined && base.basicPay !== '' && !isNaN(base.basicPay) && Number(base.basicPay) !== 77900) ? Number(base.basicPay) : 64600;
+      const daVal = (base.da !== undefined && base.da !== '' && !isNaN(base.da) && Number(base.da) !== 32718) ? Number(base.da) : 27132;
+      const hraVal = (base.hra !== undefined && base.hra !== '' && !isNaN(base.hra) && Number(base.hra) !== 6232) ? Number(base.hra) : 5058;
+      const medVal = (base.medicalAllowance !== undefined && base.medicalAllowance !== '' && !isNaN(base.medicalAllowance)) ? Number(base.medicalAllowance) : 1000;
+
+      const haryanaBaseEarnings = [
+        { label: 'Basic Pay', amount: basicVal },
+        { label: 'DP', amount: 0 },
+        { label: 'GP', amount: 0 },
+        { label: 'D.A.', amount: daVal },
+        { label: 'Spe. Pay', amount: 0 },
+        { label: 'Pers. Pay', amount: 0 },
+        { label: 'C.C.A.', amount: 0 },
+        { label: 'H.R.A.', amount: hraVal },
+        { label: 'Medical All.', amount: medVal },
+        { label: 'Convey. All.', amount: 0 },
+        { label: 'Wash. All.', amount: 0 },
+        { label: 'Ration', amount: 0 },
+        { label: 'M.All.', amount: 0 },
+        { label: 'Kit Main.All.', amount: 0 },
+        { label: 'Handi.All.', amount: 0 },
+        { label: 'Non-Prac.All.', amount: 0 },
+        { label: 'SafaiKar/Spl.A.', amount: 0 },
+        { label: 'Morni Hill All.', amount: 0 },
+        { label: 'Rural Health All.', amount: 0 },
+        { label: 'Trans/SplTA/FTA', amount: 0 },
+        { label: 'Deputation All.', amount: 0 },
+        { label: 'Flying/Crpnter All.', amount: 0 },
+        { label: 'Hrdshp/Fly.CerAll', amount: 0 },
+        { label: 'Sumptry/DietMny', amount: 0 },
+        { label: 'Off.Exps/Instrl Al.', amount: 0 },
+        { label: 'Consti/Risk All.', amount: 0 },
+        { label: 'Tele./Cashier All.', amount: 0 },
+        { label: 'Pol.Med/Super A.', amount: 0 },
+        { label: 'Other Allowance', amount: 0 },
+      ];
+      updatedEarnings = haryanaBaseEarnings.map((item) => ({
         label: item.label,
         amount: Math.round(item.amount * payRatio),
       }));
@@ -495,6 +551,49 @@ export const PayslipGenerator = ({
       return;
     }
 
+    if (templateKey === 'haryana_education') {
+      const gpfVal = (base.pfDeduction !== undefined && base.pfDeduction !== '' && !isNaN(base.pfDeduction)) ? Number(base.pfDeduction) : 10000;
+      const itVal = (base.tds !== undefined && base.tds !== '' && !isNaN(base.tds)) ? Number(base.tds) : 5000;
+      const updatedDeductions = [
+        { label: 'GPF Subs.', amount: gpfVal },
+        { label: 'NPS Subs.', amount: 0 },
+        { label: 'NPS Arrear', amount: 0 },
+        { label: 'G.I.S.', amount: 0 },
+        { label: 'L.I.C.', amount: 0 },
+        { label: 'Car Usage', amount: 0 },
+        { label: 'Income Tax', amount: itVal },
+        { label: 'Lic.Fee (St)', amount: 0 },
+        { label: 'Lic.Fee (Ce)', amount: 0 },
+        { label: 'Lic.Fee (De)', amount: 0 },
+        { label: 'PLI', amount: 0 },
+        { label: 'CTD', amount: 0 },
+        { label: 'Relief Fund', amount: 0 },
+        { label: 'FTC', amount: 0 },
+        { label: 'Wel. Fund Sub.', amount: 0 },
+        { label: 'Wel. Loan Ded', amount: 0 },
+        { label: 'Sports Fund Sub', amount: 0 },
+        { label: 'Main.Fund Sub', amount: 0 },
+        { label: 'Electricity Char.', amount: 0 },
+        { label: 'Water Charges', amount: 0 },
+        { label: 'Other TOBT', amount: 0 },
+        { label: 'Other AGBT', amount: 0 },
+        { label: 'Other Ded.', amount: 0 },
+        { label: 'Bank LOANS', amount: 0 },
+        { label: 'SctrAd.', amount: 0 },
+        { label: 'CarAdv', amount: 0 },
+        { label: 'HBA', amount: 0 },
+        { label: 'MarAdv', amount: 0 },
+        { label: 'ComAd', amount: 0 },
+      ];
+      const updated = {
+        ...draft,
+        deductions: updatedDeductions,
+      };
+      recalculateTotals(updated);
+      showToast('Autofilled Haryana Education statutory deductions!', 'success');
+      return;
+    }
+
     const gross = draft.grossEarnings || 0;
     const basicItem = draft.earnings.find((e) => e.label.toLowerCase().includes('basic'));
     const basicPay = basicItem ? Number(basicItem.amount) || 0 : Math.round(gross * 0.4);
@@ -609,6 +708,7 @@ export const PayslipGenerator = ({
   };
 
   const handlePrint = () => {
+    showToast('Print dialog opened. Select "Destination: Save as PDF" for an editable vector PDF.', 'info');
     window.print();
   };
 
@@ -773,11 +873,11 @@ export const PayslipGenerator = ({
                 <button
                   onClick={handlePrint}
                   className="btn btn-secondary"
-                  title="Print or Export to PDF via browser dialog"
+                  title="Print or Save as PDF via browser dialog (Produces 100% editable vector PDF)"
                   id="print-payslip-btn"
                 >
                   <Printer size={16} />
-                  <span>Print</span>
+                  <span>Print / Save as PDF</span>
                 </button>
               </div>
             </div>
@@ -1109,6 +1209,22 @@ export const PayslipGenerator = ({
             />
           ) : templateKey === 'delhi_public_school' ? (
             <DelhiPublicSchoolPayslip
+              company={activeCompany}
+              employee={selectedEmployeeObj}
+              draft={draft}
+              isEditable={true}
+              layoutConfig={layoutConfig}
+              onEarningChange={handleEarningChange}
+              onDeductionChange={handleDeductionChange}
+              onAddEarning={handleAddEarning}
+              onDeleteEarning={handleDeleteEarning}
+              onAddDeduction={handleAddDeduction}
+              onDeleteDeduction={handleDeleteDeduction}
+              onDaysChange={handleDaysChange}
+              onSizeSaved={handleLogoSaved}
+            />
+          ) : templateKey === 'haryana_education' ? (
+            <HaryanaEducationPayslip
               company={activeCompany}
               employee={selectedEmployeeObj}
               draft={draft}

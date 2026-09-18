@@ -8,6 +8,7 @@ import { NewAiimsPayslip } from './templates/NewAiimsPayslip';
 import { ConcentrixDakshPayslip } from './templates/ConcentrixDakshPayslip';
 import { SushmaBuildtechPayslip } from './templates/SushmaBuildtechPayslip';
 import { DelhiPublicSchoolPayslip } from './templates/DelhiPublicSchoolPayslip';
+import { HaryanaEducationPayslip } from './templates/HaryanaEducationPayslip';
 import { ResizableLogo } from './common/ResizableLogo';
 import {
   LayoutTemplate,
@@ -898,6 +899,47 @@ export const TemplateGallery = ({
                   totalDeductions: 212,
                   netSalary: 49788,
                   netSalaryInWords: 'Fourty nine thousand seven hunderd and eighty eighty only.',
+                }}
+              />
+            ) : selectedPreviewTemplate.templateKey === 'haryana_education' ? (
+              <HaryanaEducationPayslip
+                company={activeCompany || {
+                  name: 'Haryana School Education Department',
+                  department: 'Education (Secondary)',
+                }}
+                isEditable={true}
+                employee={{
+                  empCode: '0F3RPK',
+                  fullName: 'PARBHAT',
+                  designation: 'P.G.T. In History',
+                  pfNumber: 'HREDU 111745',
+                  aadharNo: '********4272',
+                  bankAccount: '*******4255',
+                  dynamicFields: {
+                    educationWing: 'Education (Secondary)',
+                    gpfPranNo: 'HREDU 111745',
+                    aadharNo: '********4272',
+                    voucherNo: '001734',
+                    voucherDate: '31-08-2026',
+                    printDateTime: 'Tuesday, February 24, 2026 5:02 PM',
+                    totalLoans: 0,
+                  },
+                }}
+                draft={{
+                  payPeriod: 'August,2025-26',
+                  month: 'August',
+                  year: 2025,
+                  totalLoans: 0,
+                  earnings: [
+                    { label: 'Basic Pay', amount: 64600 },
+                    { label: 'D.A.', amount: 27132 },
+                    { label: 'H.R.A.', amount: 5058 },
+                    { label: 'Medical All.', amount: 1000 },
+                  ],
+                  deductions: [
+                    { label: 'GPF Subs.', amount: 10000 },
+                    { label: 'Income Tax', amount: 5000 },
+                  ],
                 }}
               />
             ) : (

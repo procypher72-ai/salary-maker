@@ -10,6 +10,8 @@ import { PayslipGenerator } from './components/PayslipGenerator';
 import { PayslipHistory } from './components/PayslipHistory';
 import { CtcCalculatorModal } from './components/CtcCalculatorModal';
 import { ComputationManager } from './components/computation/ComputationManager';
+import { IncomeTaxCalculator } from './components/IncomeTaxCalculator';
+import { PdfEditor } from './components/PdfEditor';
 import { api } from './services/api';
 import {
   CheckCircle2,
@@ -19,7 +21,7 @@ import {
   DollarSign,
 } from 'lucide-react';
 
-const VALID_TABS = ['dashboard', 'templates', 'companies', 'employees', 'generator', 'computations', 'history'];
+const VALID_TABS = ['dashboard', 'templates', 'companies', 'employees', 'generator', 'computations', 'history', 'taxcalc', 'pdfeditor'];
 
 const getInitialTab = () => {
   const hash = window.location.hash.replace('#', '').trim();
@@ -243,6 +245,14 @@ export function App() {
                 employees={employees}
                 onOpenGlobalCtcModal={() => setIsGlobalCtcModalOpen(true)}
               />
+            )}
+
+            {activeTab === 'taxcalc' && (
+              <IncomeTaxCalculator />
+            )}
+
+            {activeTab === 'pdfeditor' && (
+              <PdfEditor />
             )}
           </main>
         </>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { ResizableLogo } from '../common/ResizableLogo';
-import aiimsLogoOfficial from '../../assets/aiims-logo-official.png';
+import aiimsLogoOfficial from '../../assets/aiims logo.jpeg';
 import g20OfficialLogo from '../../assets/g20-official-logo.png';
 import aiimsSealWatermark from '../../assets/aiims-seal-watermark.png';
 
@@ -167,13 +167,13 @@ export const NewAiimsPayslip = ({
   const dedVal = draft.totalDeductions !== undefined ? draft.totalDeductions : calculatedDeductions;
   const netVal = draft.netSalary !== undefined ? draft.netSalary : (grossVal - dedVal);
 
-  const fallbackAiimsLogo = (
+  const fallbackLeftLogo = (
     <div style={{ display: 'flex', alignItems: 'center' }}>
       <img
         src={aiimsLogoOfficial}
         alt="AIIMS New Delhi"
         style={{
-          width: '132px',
+          width: '135px',
           height: 'auto',
           maxHeight: '52px',
           objectFit: 'contain',
@@ -183,15 +183,15 @@ export const NewAiimsPayslip = ({
     </div>
   );
 
-  const fallbackG20Logo = (
+  const fallbackRightLogo = (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
       <img
         src={g20OfficialLogo}
         alt="G20 India 2023"
         style={{
-          width: '78px',
+          width: '82px',
           height: 'auto',
-          maxHeight: '85px',
+          maxHeight: '92px',
           objectFit: 'contain',
           display: 'block',
         }}
@@ -210,14 +210,14 @@ export const NewAiimsPayslip = ({
         />
       </div>
 
-      {/* Header with AIIMS Official Emblem, Addresses & G20 Emblem */}
+      {/* Header with Left & Right Emblems and Organization Details */}
       <div className="new-aiims-header-container">
         <div className="new-aiims-header-top-row">
           <div className="new-aiims-header-left">
             <ResizableLogo
               company={company}
               isEditable={isEditable}
-              fallbackLogo={fallbackAiimsLogo}
+              fallbackLogo={fallbackLeftLogo}
               onSizeSaved={onSizeSaved}
             />
           </div>
@@ -233,7 +233,7 @@ export const NewAiimsPayslip = ({
               company={company}
               fieldPrefix="secondaryLogo"
               isEditable={isEditable}
-              fallbackLogo={fallbackG20Logo}
+              fallbackLogo={fallbackRightLogo}
               onSizeSaved={onSizeSaved}
             />
           </div>

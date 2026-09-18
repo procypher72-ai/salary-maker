@@ -6,6 +6,7 @@ import { NewAiimsPayslip } from '../templates/NewAiimsPayslip';
 import { ConcentrixDakshPayslip } from '../templates/ConcentrixDakshPayslip';
 import { SushmaBuildtechPayslip } from '../templates/SushmaBuildtechPayslip';
 import { DelhiPublicSchoolPayslip } from '../templates/DelhiPublicSchoolPayslip';
+import { HaryanaEducationPayslip } from '../templates/HaryanaEducationPayslip';
 import { ResizableLogo } from './ResizableLogo';
 
 export const SnapshotRenderer = ({
@@ -91,6 +92,8 @@ export const SnapshotRenderer = ({
     totalDeductions: payslip.totalDeductions,
     netSalary: payslip.netSalary,
     netSalaryInWords: payslip.netSalaryInWords,
+    voucherNo: payslip.voucherNo || payslip.snapshotData?.employee?.dynamicFields?.voucherNo,
+    voucherDate: payslip.voucherDate || payslip.snapshotData?.employee?.dynamicFields?.voucherDate,
   };
 
   if (tplKey === 'new_aiims_template') {
@@ -217,6 +220,26 @@ export const SnapshotRenderer = ({
   if (tplKey === 'delhi_public_school') {
     return (
       <DelhiPublicSchoolPayslip
+        company={comp}
+        employee={emp}
+        layoutConfig={layoutConfig}
+        draft={draftData}
+        isEditable={isEditable}
+        onEarningChange={onEarningChange}
+        onDeductionChange={onDeductionChange}
+        onAddEarning={onAddEarning}
+        onDeleteEarning={onDeleteEarning}
+        onAddDeduction={onAddDeduction}
+        onDeleteDeduction={onDeleteDeduction}
+        onDaysChange={onDaysChange}
+        onSizeSaved={onSizeSaved}
+      />
+    );
+  }
+
+  if (tplKey === 'haryana_education') {
+    return (
+      <HaryanaEducationPayslip
         company={comp}
         employee={emp}
         layoutConfig={layoutConfig}

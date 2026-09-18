@@ -17,9 +17,11 @@ import {
   Sparkles,
   Receipt,
   FileCheck,
+  Download,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { ComputationModal } from './ComputationModal';
+import { BatchComputationDownloadModal } from './BatchComputationDownloadModal';
 
 export const ComputationManager = ({
   activeCompany,
@@ -33,6 +35,7 @@ export const ComputationManager = ({
   const [selectedFY, setSelectedFY] = useState('all');
   const [selectedRegime, setSelectedRegime] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [selectedComputation, setSelectedComputation] = useState(null);
 
   const fetchComputations = async () => {
@@ -109,7 +112,25 @@ export const ComputationManager = ({
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setIsBatchModalOpen(true)}
+            className="btn btn-secondary"
+            disabled={filteredComputations.length === 0}
+            id="download-all-computations-btn"
+            title="Download all computations in sequence (Ascending or Descending)"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              borderColor: 'var(--accent-emerald)',
+              color: '#34d399',
+            }}
+          >
+            <Download size={16} />
+            <span>Download All ({filteredComputations.length})</span>
+          </button>
+
           <button
             onClick={handleCreateNew}
             className="btn btn-primary"
@@ -251,6 +272,7 @@ export const ComputationManager = ({
                   const p = c.personalDetails || {};
                   const isNew = c.regime === 'new_115bac';
                   const taxPayable = c.taxCalculation?.taxRoundedOff || c.taxCalculation?.amountPayable || 0;
+                  const taxRefundable = c.taxCalculation?.amountRefundable || 0;
 
                   return (
                     <tr key={c._id} id={`computation-row-${c._id}`}>
@@ -286,8 +308,18 @@ export const ComputationManager = ({
                         ₹{(Number(c.grossTotalIncome) || 0).toLocaleString('en-IN')}
                       </td>
 
-                      <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent-emerald)' }}>
-                        ₹{Number(taxPayable).toLocaleString('en-IN')}
+                      <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                        {Number(taxRefundable) > 0 ? (
+                          <span style={{ color: 'var(--accent-emerald)' }}>
+                            Ref: ₹{Number(taxRefundable).toLocaleString('en-IN')}
+                          </span>
+                        ) : Number(taxPayable) > 0 ? (
+                          <span style={{ color: 'var(--accent-rose)' }}>
+                            ₹{Number(taxPayable).toLocaleString('en-IN')}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)' }}>₹0</span>
+                        )}
                       </td>
 
                       <td style={{ textAlign: 'center' }}>
@@ -349,6 +381,15 @@ export const ComputationManager = ({
         employees={employees}
         activeCompany={activeCompany}
         onSaved={fetchComputations}
+      />
+
+      {/* Batch Download in Sequence Modal */}
+      <BatchComputationDownloadModal
+        isOpen={isBatchModalOpen}
+        onClose={() => setIsBatchModalOpen(false)}
+        computations={filteredComputations}
+        companies={companies}
+        activeCompany={activeCompany}
       />
     </div>
   );

@@ -9,6 +9,7 @@ const employeeRoutes = require('./routes/employeeRoutes');
 const payslipRoutes = require('./routes/payslipRoutes');
 const statutoryRoutes = require('./routes/statutoryRoutes');
 const computationRoutes = require('./routes/computationRoutes');
+const pdfRoutes = require('./routes/pdfRoutes');
 
 const User = require('./models/User');
 const { seedDefaultTemplates } = require('./controllers/templateController');
@@ -56,6 +57,7 @@ app.use('/api/employees', employeeRoutes);
 app.use('/api/payslips', payslipRoutes);
 app.use('/api/statutory', statutoryRoutes);
 app.use('/api/computations', computationRoutes);
+app.use('/api/pdf', pdfRoutes);
 
 // Health Check
 app.get('/api/health', (req, res) => {

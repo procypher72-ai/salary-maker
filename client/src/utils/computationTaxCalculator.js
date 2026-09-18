@@ -101,17 +101,20 @@ export const calculateTaxOnNormalIncome = (taxableIncome = 0, regime = 'new_115b
 
 /**
  * Calculates Section 87A Tax Rebate
+ * Under Section 115BAC (New Regime): Available only if total taxable income <= 7,00,000 (Max rebate ₹25,000)
+ * Under Old Regime: Available only if total taxable income <= 5,00,000 (Max rebate ₹12,500)
  */
-export const calculateRebate87A = (taxableIncome = 0, baseTax = 0, regime = 'new_115bac', financialYear = '2025-2026') => {
+export const calculateRebate87A = (taxableIncome = 0, baseTax = 0, regime = 'new_115bac', financialYear = '2024-2025') => {
   const income = Number(taxableIncome) || 0;
   if (baseTax <= 0) return 0;
 
   if (regime === 'new_115bac') {
-    const threshold = (financialYear === '2025-2026' || financialYear === '2026-2027') ? 1200000 : 700000;
+    const threshold = 700000;
     if (income <= threshold) {
-      return baseTax;
+      return Math.min(baseTax, 25000);
     }
-    // Marginal relief under new regime
+    // Marginal relief under Section 87A for New Regime
+    // Tax payable on income cannot exceed the income in excess of 7,00,000
     const excessIncome = income - threshold;
     if (baseTax > excessIncome) {
       return baseTax - excessIncome;
@@ -124,6 +127,90 @@ export const calculateRebate87A = (taxableIncome = 0, baseTax = 0, regime = 'new
     }
     return 0;
   }
+};
+
+/**
+ * Calculates Interest u/s 234A, 234B, and 234C as per Income Tax Act & Rules
+ */
+export const calculateInterest234 = ({
+  totalTaxWithCess = 0,
+  tdsSalary = 0,
+  tdsOther = 0,
+  advanceTax = 0,
+  autoCalculate = true,
+  manualValues = {},
+}) => {
+  if (!autoCalculate) {
+    const interest234A = Number(manualValues.interest234A) || 0;
+    const interest234B = Number(manualValues.interest234B) || 0;
+    const interest234C = Number(manualValues.interest234C) || 0;
+    return {
+      interest234A,
+      interest234B,
+      interest234BDetails: manualValues.interest234BDetails || '',
+      interest234C,
+      interest234CDetails: manualValues.interest234CDetails || '',
+      totalInterest: interest234A + interest234B + interest234C,
+    };
+  }
+
+  // Assessed Tax under sections 234B and 234C = Total Tax with Cess - TDS
+  const assessedTax = Math.max(0, totalTaxWithCess - tdsSalary - tdsOther);
+
+  // If assessed tax < 10,000, Section 208 advance tax liability is Nil
+  if (assessedTax < 10000) {
+    return {
+      interest234A: Number(manualValues.interest234A) || 0,
+      interest234B: 0,
+      interest234BDetails: '',
+      interest234C: 0,
+      interest234CDetails: '',
+      totalInterest: Number(manualValues.interest234A) || 0,
+    };
+  }
+
+  // Under Rule 119A, any fraction of a hundred rupees is disregarded (round down to 100)
+  const shortfall = Math.max(0, assessedTax - advanceTax);
+  const shortfallBase = Math.floor(shortfall / 100) * 100;
+
+  // 1. Section 234B: 1% per month from April 1 to filing/payment (standard 3 months for July filing)
+  let interest234B = 0;
+  let interest234BDetails = '';
+  if (advanceTax < 0.90 * assessedTax && shortfallBase > 0) {
+    const months234B = 3;
+    interest234B = Math.round(shortfallBase * 0.01 * months234B);
+    interest234BDetails = `${interest234B}[${months234B}M]+0[0M]`;
+  }
+
+  // 2. Section 234C: Deferment of Advance Tax
+  // For non-corporate assessee:
+  // Q1 (by 15 June): 15% (3 months @ 1% = 0.45%)
+  // Q2 (by 15 Sept): 45% (3 months @ 1% = 1.35% = 3 * Q1)
+  // Q3 (by 15 Dec): 75% (3 months @ 1% = 2.25%)
+  // Q4 (by 15 Mar): 100% (1 month @ 1% = 1.00%)
+  let interest234C = 0;
+  let interest234CDetails = '';
+  if (shortfallBase > 0) {
+    const q1 = Math.floor(shortfallBase * 0.0045);
+    const q2 = q1 * 3;
+    const q3 = Math.round(shortfallBase * 0.0225);
+    const q4 = Math.round(shortfallBase * 0.01);
+
+    interest234C = q1 + q2 + q3 + q4;
+    interest234CDetails = `${q1}+${q2}+${q3}+${q4}`;
+  }
+
+  const interest234A = Number(manualValues.interest234A) || 0;
+  const totalInterest = interest234A + interest234B + interest234C;
+
+  return {
+    interest234A,
+    interest234B,
+    interest234BDetails,
+    interest234C,
+    interest234CDetails,
+    totalInterest,
+  };
 };
 
 export const calculateHouseProperty = (hp = {}, regime = 'new_115bac') => {
@@ -237,7 +324,6 @@ export const recalculateComputation = (data) => {
   // 5. Other Sources
   const os = data.headsOfIncome?.otherSources || {};
   const osBreakdown = Array.isArray(os.breakdown) ? os.breakdown : [];
-  let totalOtherSources = 0;
 
   const interestSavings = Number(os.interestSavings) || 0;
   const interestFdr = Number(os.interestFdr) || 0;
@@ -253,13 +339,62 @@ export const recalculateComputation = (data) => {
   const divQ5 = Number(os.dividendQ5) || 0;
   const dividendTotal = (divQ1 + divQ2 + divQ3 + divQ4 + divQ5) || Number(os.dividendIncome) || 0;
 
-  const structuredOtherSourcesSum = interestSavings + interestFdr + interestItRefund + interestKvp + interestNsc + otherInterest + dividendTotal + (Number(os.otherIncome) || 0);
+  const lotteryWinnings = Number(os.lotteryWinnings) || 0;
+  const commissionIncome = Number(os.commissionIncome) || 0;
+  const otherIncome = Number(os.otherIncome) || 0;
 
-  if (osBreakdown.length > 0) {
-    totalOtherSources = osBreakdown.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-  } else {
-    totalOtherSources = structuredOtherSourcesSum;
-  }
+  const structuredOtherSourcesSum = 
+    interestSavings + 
+    interestFdr + 
+    interestItRefund + 
+    interestKvp + 
+    interestNsc + 
+    otherInterest + 
+    dividendTotal + 
+    otherIncome + 
+    lotteryWinnings + 
+    commissionIncome;
+
+  const standardLabelKeys = new Set([
+    'interest on bank savings',
+    'saving bank interest',
+    'interest on bank fdr / term deposit',
+    'interest on bank fdr',
+    'interest on bank fdr / term deposits',
+    'interest on fdr / term deposit',
+    'other interest income',
+    'interest on income tax refund',
+    'interest on kvp',
+    'interest on nsc',
+    'dividend income',
+    'other income',
+    'other income / casual receipts',
+    'winning from lottery / puzzles',
+    'commission / brokerage',
+  ]);
+
+  // Keep any custom user-added or imported line items that aren't managed by standard structured inputs
+  const customBreakdown = osBreakdown.filter(
+    (item) => !standardLabelKeys.has((item.label || '').trim().toLowerCase())
+  );
+  const customSum = customBreakdown.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+  // Freshly compute structured breakdown entries from the current inputs
+  const computedStructuredItems = [
+    ...(interestSavings ? [{ label: 'Interest on Bank Savings', amount: interestSavings }] : []),
+    ...(interestFdr ? [{ label: 'Interest on Bank FDR / Term Deposit', amount: interestFdr }] : []),
+    ...(otherInterest ? [{ label: 'Other Interest Income', amount: otherInterest }] : []),
+    ...(interestItRefund ? [{ label: 'Interest on Income Tax Refund', amount: interestItRefund }] : []),
+    ...(interestKvp ? [{ label: 'Interest on KVP', amount: interestKvp }] : []),
+    ...(interestNsc ? [{ label: 'Interest on NSC', amount: interestNsc }] : []),
+    ...(dividendTotal ? [{ label: 'Dividend Income', amount: dividendTotal }] : []),
+    ...(otherIncome ? [{ label: 'Other Income / Casual Receipts', amount: otherIncome }] : []),
+    ...(lotteryWinnings ? [{ label: 'Winning from Lottery / Puzzles', amount: lotteryWinnings }] : []),
+    ...(commissionIncome ? [{ label: 'Commission / Brokerage', amount: commissionIncome }] : []),
+  ];
+
+  const breakdown = [...computedStructuredItems, ...customBreakdown];
+  const totalOtherSources = structuredOtherSourcesSum + customSum;
 
   // Gross Total Income
   const grossTotalIncome = taxableSalary + hpNet + bpNet + cgNet + totalOtherSources;
@@ -294,11 +429,27 @@ export const recalculateComputation = (data) => {
   const cess = Math.round(taxAfterRebate * 0.04);
   const totalTaxWithCess = taxAfterRebate + cess;
 
-  // Interest 234A/B/C
-  const interest234A = Number(data.taxCalculation?.interest234A) || 0;
-  const interest234B = Number(data.taxCalculation?.interest234B) || 0;
-  const interest234C = Number(data.taxCalculation?.interest234C) || 0;
-  const totalInterest = interest234A + interest234B + interest234C;
+  const tdsSalary = Number(data.taxCalculation?.tdsSalary) || 0;
+  const tdsOther = Number(data.taxCalculation?.tdsOther) || 0;
+  const advanceTax = Number(data.taxCalculation?.advanceTax) || 0;
+
+  // Interest 234A/B/C calculation
+  const isManualInterest = data.taxCalculation?.autoCalculateInterest === false;
+  const interestResult = calculateInterest234({
+    totalTaxWithCess,
+    tdsSalary,
+    tdsOther,
+    advanceTax,
+    autoCalculate: !isManualInterest,
+    manualValues: data.taxCalculation || {},
+  });
+
+  const interest234A = interestResult.interest234A;
+  const interest234B = interestResult.interest234B;
+  const interest234BDetails = interestResult.interest234BDetails;
+  const interest234C = interestResult.interest234C;
+  const interest234CDetails = interestResult.interest234CDetails;
+  const totalInterest = interestResult.totalInterest;
 
   const totalTaxAndInterest = totalTaxWithCess + totalInterest;
 
@@ -307,12 +458,9 @@ export const recalculateComputation = (data) => {
   const challans140A = challans.filter(c => c.type === '140A' || !c.type);
   const sumChallans140A = challans140A.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
 
-  const tdsSalary = Number(data.taxCalculation?.tdsSalary) || 0;
-  const tdsOther = Number(data.taxCalculation?.tdsOther) || 0;
-  const advanceTax = Number(data.taxCalculation?.advanceTax) || 0;
-  const taxDeposited140A = data.taxCalculation?.taxDeposited140A !== undefined 
-    ? Number(data.taxCalculation.taxDeposited140A) 
-    : sumChallans140A;
+  const taxDeposited140A = challans.length > 0
+    ? sumChallans140A
+    : (data.taxCalculation?.taxDeposited140A !== undefined ? Number(data.taxCalculation.taxDeposited140A) : 0);
 
   const totalTaxesPaid = tdsSalary + tdsOther + advanceTax + taxDeposited140A;
 
@@ -356,14 +504,11 @@ export const recalculateComputation = (data) => {
         interestNsc,
         otherInterest,
         dividendIncome: dividendTotal,
+        otherIncome,
+        lotteryWinnings,
+        commissionIncome,
         totalOtherSources,
-        breakdown: osBreakdown.length > 0 ? osBreakdown : [
-          ...(interestSavings ? [{ label: 'Interest on Bank Savings', amount: interestSavings }] : []),
-          ...(interestFdr ? [{ label: 'Interest on Bank FDR', amount: interestFdr }] : []),
-          ...(interestItRefund ? [{ label: 'Interest on Income Tax Refund', amount: interestItRefund }] : []),
-          ...(dividendTotal ? [{ label: 'Dividend Income', amount: dividendTotal }] : []),
-          ...(os.otherIncome ? [{ label: 'Other Income', amount: Number(os.otherIncome) }] : []),
-        ],
+        breakdown,
       },
     },
     grossTotalIncome,
@@ -385,7 +530,9 @@ export const recalculateComputation = (data) => {
       totalTaxWithCess,
       interest234A,
       interest234B,
+      interest234BDetails,
       interest234C,
+      interest234CDetails,
       totalInterest,
       totalTaxAndInterest,
       tdsSalary,

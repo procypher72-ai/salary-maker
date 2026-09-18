@@ -98,6 +98,10 @@ export const EmployeeManager = ({
   const initialForm = {
     empCode: '',
     fullName: '',
+    fatherName: '',
+    dob: '',
+    residentStatus: 'Resident',
+    residentialAddress: '',
     email: '',
     phone: '',
     designation: '',
@@ -131,6 +135,10 @@ export const EmployeeManager = ({
       setFormData({
         empCode: `DWPS-${Math.floor(1000 + Math.random() * 9000)}`,
         fullName: '',
+        fatherName: '',
+        dob: '',
+        residentStatus: 'Resident',
+        residentialAddress: '',
         email: '',
         phone: '',
         designation: '',
@@ -167,9 +175,18 @@ export const EmployeeManager = ({
 
   const handleOpenEdit = (emp) => {
     setEditingEmp(emp);
+    const dyn = emp.dynamicFields instanceof Map ? Object.fromEntries(emp.dynamicFields) : emp.dynamicFields || {};
+    let dobVal = emp.dob || dyn.dob || dyn.dateOfBirth || '';
+    if (dobVal && typeof dobVal === 'string' && dobVal.includes('T')) {
+      dobVal = dobVal.split('T')[0];
+    }
     setFormData({
       empCode: emp.empCode || '',
       fullName: emp.fullName || '',
+      fatherName: emp.fatherName || dyn.fatherName || dyn.fathersName || '',
+      dob: dobVal,
+      residentStatus: emp.residentStatus || 'Resident',
+      residentialAddress: emp.residentialAddress || dyn.residentialAddress || dyn.address || '',
       email: emp.email || '',
       phone: emp.phone || '',
       designation: emp.designation || '',
@@ -379,6 +396,38 @@ export const EmployeeManager = ({
         { label: 'D.A', amount: base.specialAllowance ? Number(base.specialAllowance) : 10000 },
         { label: 'H.R.A', amount: base.hra ? Number(base.hra) : 20000 },
       ];
+    } else if (tplKey === 'haryana_education') {
+      initialEarnings = [
+        { label: 'Basic Pay', amount: (base.basicPay && Number(base.basicPay) !== 77900) ? Number(base.basicPay) : 64600 },
+        { label: 'DP', amount: 0 },
+        { label: 'GP', amount: 0 },
+        { label: 'D.A.', amount: (base.da && Number(base.da) !== 32718) ? Number(base.da) : 27132 },
+        { label: 'Spe. Pay', amount: 0 },
+        { label: 'Pers. Pay', amount: 0 },
+        { label: 'C.C.A.', amount: 0 },
+        { label: 'H.R.A.', amount: (base.hra && Number(base.hra) !== 6232) ? Number(base.hra) : 5058 },
+        { label: 'Medical All.', amount: base.medicalAllowance ? Number(base.medicalAllowance) : 1000 },
+        { label: 'Convey. All.', amount: 0 },
+        { label: 'Wash. All.', amount: 0 },
+        { label: 'Ration', amount: 0 },
+        { label: 'M.All.', amount: 0 },
+        { label: 'Kit Main.All.', amount: 0 },
+        { label: 'Handi.All.', amount: 0 },
+        { label: 'Non-Prac.All.', amount: 0 },
+        { label: 'SafaiKar/Spl.A.', amount: 0 },
+        { label: 'Morni Hill All.', amount: 0 },
+        { label: 'Rural Health All.', amount: 0 },
+        { label: 'Trans/SplTA/FTA', amount: 0 },
+        { label: 'Deputation All.', amount: 0 },
+        { label: 'Flying/Crpnter All.', amount: 0 },
+        { label: 'Hrdshp/Fly.CerAll', amount: 0 },
+        { label: 'Sumptry/DietMny', amount: 0 },
+        { label: 'Off.Exps/Instrl Al.', amount: 0 },
+        { label: 'Consti/Risk All.', amount: 0 },
+        { label: 'Tele./Cashier All.', amount: 0 },
+        { label: 'Pol.Med/Super A.', amount: 0 },
+        { label: 'Other Allowance', amount: 0 },
+      ];
     } else {
       if (base.basicPay) initialEarnings.push({ label: 'Basic Salary', amount: Number(base.basicPay) });
       if (base.hra) initialEarnings.push({ label: 'House Rent Allowance (HRA)', amount: Number(base.hra) });
@@ -425,6 +474,38 @@ export const EmployeeManager = ({
     } else if (tplKey === 'delhi_public_school') {
       initialDeductions = [
         { label: 'Professsional Tax', amount: base.professionalTax ? Number(base.professionalTax) : 212 },
+      ];
+    } else if (tplKey === 'haryana_education') {
+      initialDeductions = [
+        { label: 'GPF Subs.', amount: base.pfDeduction ? Number(base.pfDeduction) : 10000 },
+        { label: 'NPS Subs.', amount: 0 },
+        { label: 'NPS Arrear', amount: 0 },
+        { label: 'G.I.S.', amount: 0 },
+        { label: 'L.I.C.', amount: 0 },
+        { label: 'Car Usage', amount: 0 },
+        { label: 'Income Tax', amount: base.tds ? Number(base.tds) : 5000 },
+        { label: 'Lic.Fee (St)', amount: 0 },
+        { label: 'Lic.Fee (Ce)', amount: 0 },
+        { label: 'Lic.Fee (De)', amount: 0 },
+        { label: 'PLI', amount: 0 },
+        { label: 'CTD', amount: 0 },
+        { label: 'Relief Fund', amount: 0 },
+        { label: 'FTC', amount: 0 },
+        { label: 'Wel. Fund Sub.', amount: 0 },
+        { label: 'Wel. Loan Ded', amount: 0 },
+        { label: 'Sports Fund Sub', amount: 0 },
+        { label: 'Main.Fund Sub', amount: 0 },
+        { label: 'Electricity Char.', amount: 0 },
+        { label: 'Water Charges', amount: 0 },
+        { label: 'Other TOBT', amount: 0 },
+        { label: 'Other AGBT', amount: 0 },
+        { label: 'Other Ded.', amount: 0 },
+        { label: 'Bank LOANS', amount: 0 },
+        { label: 'SctrAd.', amount: 0 },
+        { label: 'CarAdv', amount: 0 },
+        { label: 'HBA', amount: 0 },
+        { label: 'MarAdv', amount: 0 },
+        { label: 'ComAd', amount: 0 },
       ];
     } else {
       if (base.pfDeduction) initialDeductions.push({ label: 'Provident Fund (PF)', amount: Number(base.pfDeduction) });
@@ -1967,6 +2048,59 @@ export const EmployeeManager = ({
                           id="dwps-input-empcode"
                         />
                       </div>
+
+                      {/* Father's Name */}
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 700 }}>Father's Name</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. Baldev Singh"
+                          value={formData.fatherName || ''}
+                          onChange={(e) => setFormData({ ...formData, fatherName: e.target.value })}
+                          id="dwps-input-fathername"
+                        />
+                      </div>
+
+                      {/* Date of Birth */}
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 700 }}>Date of Birth</label>
+                        <input
+                          type="date"
+                          className="form-input"
+                          value={formData.dob || ''}
+                          onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                          id="dwps-input-dob"
+                        />
+                      </div>
+
+                      {/* Resident Status */}
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 700 }}>Resident Status</label>
+                        <select
+                          className="form-select"
+                          value={formData.residentStatus || 'Resident'}
+                          onChange={(e) => setFormData({ ...formData, residentStatus: e.target.value })}
+                          id="dwps-select-residentstatus"
+                        >
+                          <option value="Resident">Resident</option>
+                          <option value="Non-Resident">Non-Resident</option>
+                          <option value="Resident but not Ordinarily Resident (RNOR)">Resident but not Ordinarily Resident (RNOR)</option>
+                        </select>
+                      </div>
+
+                      {/* Residential Address */}
+                      <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                        <label className="form-label" style={{ fontWeight: 700 }}>Residential Address / Address(R)</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. Village Basantpura, Barara, Haryana"
+                          value={formData.residentialAddress || ''}
+                          onChange={(e) => setFormData({ ...formData, residentialAddress: e.target.value })}
+                          id="dwps-input-addressr"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -2097,6 +2231,53 @@ export const EmployeeManager = ({
                         className="form-input"
                         value={formData.joiningDate}
                         onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+                    <div className="form-group">
+                      <label className="form-label">Father's Name</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="e.g. Baldev Singh"
+                        value={formData.fatherName || ''}
+                        onChange={(e) => setFormData({ ...formData, fatherName: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Date of Birth</label>
+                      <input
+                        type="date"
+                        className="form-input"
+                        value={formData.dob || ''}
+                        onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Resident Status</label>
+                      <select
+                        className="form-select"
+                        value={formData.residentStatus || 'Resident'}
+                        onChange={(e) => setFormData({ ...formData, residentStatus: e.target.value })}
+                      >
+                        <option value="Resident">Resident</option>
+                        <option value="Non-Resident">Non-Resident</option>
+                        <option value="Resident but not Ordinarily Resident (RNOR)">Resident but not Ordinarily Resident (RNOR)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', marginTop: '1rem' }}>
+                    <div className="form-group">
+                      <label className="form-label">Residential Address / Address(R)</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="e.g. Village Basantpura, Barara, Haryana"
+                        value={formData.residentialAddress || ''}
+                        onChange={(e) => setFormData({ ...formData, residentialAddress: e.target.value })}
                       />
                     </div>
                   </div>

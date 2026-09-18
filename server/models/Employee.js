@@ -17,6 +17,31 @@ const employeeSchema = new mongoose.Schema(
       required: [true, 'Employee Full Name is required'],
       trim: true,
     },
+    fatherName: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    residentialAddress: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    dob: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    residentStatus: {
+      type: String,
+      enum: ['Resident', 'Non-Resident', 'Resident but not Ordinarily Resident (RNOR)'],
+      default: 'Resident',
+    },
+    panNumber: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     email: {
       type: String,
       trim: true,

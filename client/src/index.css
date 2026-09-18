@@ -5075,12 +5075,19 @@ body {
     max-height: none !important;
     overflow: visible !important;
   }
-  .paper-sheet, .kdk-zenit-paper {
+  .paper-sheet, .kdk-zenit-paper, .ca-audit-paper, .modern-executive-paper, .computation-page {
     box-shadow: none !important;
     padding: 0 !important;
-    margin: 0 !important;
+    margin: 0 auto 1.5rem !important;
     max-width: 100% !important;
     min-height: auto !important;
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+  .paper-sheet:last-child, .kdk-zenit-paper:last-child, .ca-audit-paper:last-child, .modern-executive-paper:last-child, .computation-page:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+    margin-bottom: 0 !important;
   }
 }
 
@@ -5241,4 +5248,1575 @@ body {
   color: var(--text-main);
 }
 
+
+/* ═══════════════════════════════════════════════════════════════════
+   INCOME TAX CALCULATOR — Premium Dark UI
+═══════════════════════════════════════════════════════════════════ */
+
+/* ── Page wrapper ─────────────────────────────────────────────── */
+.itc-page {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  animation: fadeInScale 0.3s ease both;
+}
+
+/* ── Header ───────────────────────────────────────────────────── */
+.itc-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.itc-header-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(168, 85, 247, 0.2) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-light);
+  flex-shrink: 0;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+}
+
+.itc-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--text-main) 0%, var(--primary-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 0.2rem;
+}
+
+.itc-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ── Two-column layout ────────────────────────────────────────── */
+.itc-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* ── Panel base ───────────────────────────────────────────────── */
+.itc-panel--inputs {
+  padding: 1.5rem;
+  border-radius: var(--radius-md);
+  position: sticky;
+  top: 80px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.itc-panel--results {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-height: 400px;
+}
+
+/* ── Sections inside panel ─────────────────────────────────────── */
+.itc-section {
+  margin-bottom: 1.5rem;
+}
+
+.itc-section-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.itc-section-badge {
+  font-size: 0.65rem;
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--accent-amber);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 9999px;
+  padding: 0.15rem 0.5rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: auto;
+}
+
+/* ── Form inputs ──────────────────────────────────────────────── */
+.itc-input-group {
+  margin-bottom: 0.9rem;
+}
+
+.itc-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.itc-label-cap {
+  font-size: 0.72rem;
+  color: var(--accent-amber);
+  font-weight: 500;
+}
+
+.itc-input-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.itc-input-wrap:focus-within {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.itc-input-prefix {
+  padding: 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-subtle);
+  font-weight: 600;
+  border-right: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.03);
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.itc-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text-main);
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0.6rem 0.75rem;
+  font-family: var(--font-mono);
+}
+
+.itc-input::placeholder {
+  color: var(--text-dim);
+}
+
+.itc-hint {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-top: 0.3rem;
+  line-height: 1.4;
+}
+
+.itc-select-wrap {
+  position: relative;
+}
+
+.itc-select {
+  width: 100%;
+  appearance: none;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 0.6rem 2rem 0.6rem 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.itc-select:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.itc-select option {
+  background: var(--bg-surface);
+}
+
+.itc-select-arrow {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-subtle);
+  pointer-events: none;
+}
+
+.itc-reset-btn {
+  width: 100%;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+/* ── View tabs ────────────────────────────────────────────────── */
+.itc-view-tabs {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.35rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.itc-view-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.itc-view-tab:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.itc-view-tab.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(168, 85, 247, 0.2));
+  color: var(--primary-light);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.15);
+}
+
+/* ── KPI row ──────────────────────────────────────────────────── */
+.itc-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+}
+
+.itc-kpi {
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  text-align: center;
+  border: 1px solid var(--border-subtle);
+  transition: transform 0.2s;
+}
+
+.itc-kpi:hover {
+  transform: translateY(-2px);
+}
+
+.itc-kpi--tax {
+  border-color: rgba(244, 63, 94, 0.3);
+  background: rgba(244, 63, 94, 0.05);
+}
+
+.itc-kpi--zero {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.itc-kpi-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
+}
+
+.itc-kpi-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--text-main);
+}
+
+/* ── Breakdown card ────────────────────────────────────────────── */
+.itc-breakdown-card,
+.itc-slab-card {
+  padding: 1.25rem 1.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.itc-breakdown-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.itc-fy-badge {
+  font-size: 0.7rem;
+  background: rgba(6, 182, 212, 0.12);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  border-radius: 9999px;
+  padding: 0.15rem 0.6rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ── Result rows ──────────────────────────────────────────────── */
+.itc-result-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.itc-result-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-xs);
+  transition: background 0.15s;
+}
+
+.itc-result-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.itc-result-row--highlight {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  margin: 0.25rem 0;
+}
+
+.itc-result-row--muted .itc-result-label,
+.itc-result-row--muted .itc-result-value {
+  color: var(--text-muted);
+  font-size: 0.83rem;
+}
+
+.itc-result-row--bold .itc-result-label,
+.itc-result-row--bold .itc-result-value {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.itc-result-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.itc-result-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--text-main);
+}
+
+/* ── Slab table ───────────────────────────────────────────────── */
+.itc-slab-table-wrap {
+  overflow-x: auto;
+}
+
+.itc-slab-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+}
+
+.itc-slab-table th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.itc-slab-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  vertical-align: middle;
+}
+
+.itc-slab-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.itc-rate-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.itc-rate-badge.itc-rate-0  { background: rgba(16,185,129,0.12); color: var(--accent-emerald); }
+.itc-rate-badge.itc-rate-5  { background: rgba(6,182,212,0.12);  color: var(--accent-cyan); }
+.itc-rate-badge.itc-rate-10 { background: rgba(99,102,241,0.12); color: var(--primary-light); }
+.itc-rate-badge.itc-rate-15 { background: rgba(168,85,247,0.12); color: var(--accent-purple); }
+.itc-rate-badge.itc-rate-20 { background: rgba(245,158,11,0.12); color: var(--accent-amber); }
+.itc-rate-badge.itc-rate-30 { background: rgba(244,63,94,0.12);  color: var(--accent-rose); }
+
+.itc-slab-tax { color: var(--accent-rose) !important; font-weight: 600; font-family: var(--font-mono); }
+.itc-slab-nil { color: var(--accent-emerald) !important; font-family: var(--font-mono); }
+
+/* ── Info note ────────────────────────────────────────────────── */
+.itc-info-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(6, 182, 212, 0.06);
+  border: 1px solid rgba(6, 182, 212, 0.15);
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.itc-info-note svg { color: var(--accent-cyan); flex-shrink: 0; margin-top: 1px; }
+
+/* ── Empty state ──────────────────────────────────────────────── */
+.itc-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem 2rem;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  min-height: 300px;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+/* ── Compare view ─────────────────────────────────────────────── */
+.itc-recommend-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-size: 0.87rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.itc-recommend--new_115bac {
+  background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(168,85,247,0.1));
+  border: 1px solid rgba(99,102,241,0.3);
+  color: var(--primary-light);
+}
+
+.itc-recommend--old {
+  background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(6,182,212,0.08));
+  border: 1px solid rgba(16,185,129,0.3);
+  color: var(--accent-emerald);
+}
+
+.itc-recommended-badge {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(255,255,255,0.08);
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+}
+
+.itc-compare-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.itc-compare-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.itc-compare-card {
+  padding: 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  transition: transform 0.2s;
+}
+
+.itc-compare-card--winner {
+  border-color: rgba(99, 102, 241, 0.35);
+  background: rgba(99, 102, 241, 0.06);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
+}
+
+.itc-compare-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.itc-winner-tag {
+  margin-left: auto;
+  font-size: 0.65rem;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  color: white;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 700;
+}
+
+.itc-compare-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0;
+  font-size: 0.82rem;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+.itc-compare-stat span { color: var(--text-muted); }
+.itc-compare-stat strong { font-family: var(--font-mono); font-size: 0.84rem; color: var(--text-main); }
+.itc-compare-stat--green strong { color: var(--accent-emerald); }
+
+.itc-compare-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.75rem;
+  background: rgba(255,255,255,0.05);
+  border-radius: var(--radius-xs);
+  margin-top: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.itc-compare-total span { color: var(--text-muted); }
+.itc-compare-total strong { font-family: var(--font-mono); font-size: 1rem; }
+
+.itc-compare-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
+
+.itc-compare-meta b { color: var(--text-muted); }
+
+.itc-result-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ── Utility colors ────────────────────────────────────────────── */
+.text-emerald { color: var(--accent-emerald) !important; }
+.text-rose    { color: var(--accent-rose) !important; }
+.text-amber   { color: var(--accent-amber) !important; }
+.text-cyan    { color: var(--accent-cyan) !important; }
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .itc-layout {
+    grid-template-columns: 340px 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .itc-layout {
+    grid-template-columns: 1fr;
+  }
+  .itc-panel--inputs {
+    position: static;
+    max-height: none;
+  }
+  .itc-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .itc-page { padding: 1rem 1rem 3rem; }
+  .itc-kpi-row { grid-template-columns: 1fr 1fr; }
+  .itc-compare-cards { grid-template-columns: 1fr; }
+  .itc-title { font-size: 1.25rem; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PDF EDITOR MODULE
+   ═══════════════════════════════════════════════════════════════ */
+
+.pdf-editor-root {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--navbar-h, 64px));
+  background: var(--bg-dark);
+  color: var(--text-main);
+  padding: 0;
+  overflow: hidden;
+}
+
+/* ── Header / upload screen ─────────────────────────────────── */
+.pdf-editor-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1.5rem 1rem;
+  text-align: center;
+}
+
+.pdf-editor-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.7rem;
+  font-weight: 700;
+  background: linear-gradient(120deg, var(--primary-light), var(--accent-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.pdf-editor-subtitle {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  max-width: 520px;
+}
+
+/* ── Upload Zone ─────────────────────────────────────────────── */
+.pdf-upload-zone {
+  position: relative;
+  margin: 1.5rem auto;
+  width: 100%;
+  max-width: 620px;
+  min-height: 260px;
+  border: 2.5px dashed var(--border-medium);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  cursor: pointer;
+  transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
+}
+
+.pdf-upload-zone:hover,
+.pdf-upload-zone:focus-visible {
+  border-color: var(--primary);
+  background: var(--bg-card-hover);
+  box-shadow: 0 0 32px rgba(99,102,241,0.18);
+  outline: none;
+}
+
+.pdf-upload-zone.dragging {
+  border-color: var(--accent-cyan);
+  background: rgba(6,182,212,0.06);
+  box-shadow: 0 0 40px rgba(6,182,212,0.25);
+  transform: scale(1.01);
+}
+
+.pdf-upload-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(6,182,212,0.15));
+  border: 1.5px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-light);
+  animation: float 3.5s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-8px); }
+}
+
+.pdf-upload-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.pdf-upload-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* ── Feature chips (upload screen) ──────────────────────────── */
+.pdf-features-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  max-width: 620px;
+  margin: 0 auto 2rem;
+  padding: 0 1rem;
+}
+
+.pdf-feature-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+
+.pdf-feature-chip:hover {
+  border-color: var(--primary);
+  color: var(--text-main);
+}
+
+/* ── Top bar (editor mode) ───────────────────────────────────── */
+.pdf-editor-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1.2rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.pdf-editor-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.pdf-file-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 260px;
+  color: var(--text-main);
+}
+
+.pdf-page-badge {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(99,102,241,0.15);
+  border: 1px solid rgba(99,102,241,0.3);
+  color: var(--primary-light);
+  flex-shrink: 0;
+}
+
+.pdf-editor-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* ── Action buttons ──────────────────────────────────────────── */
+.pdf-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.42rem 0.9rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+
+.pdf-action-btn.primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 10px rgba(99,102,241,0.35);
+}
+
+.pdf-action-btn.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(99,102,241,0.5);
+}
+
+.pdf-action-btn.secondary {
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border-color: var(--border-subtle);
+}
+
+.pdf-action-btn.secondary:hover {
+  border-color: var(--primary);
+  color: var(--text-main);
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────── */
+.pdf-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.55rem 1.1rem;
+  background: rgba(11,17,33,0.8);
+  border-bottom: 1px solid var(--border-subtle);
+  backdrop-filter: blur(12px);
+  flex-shrink: 0;
+}
+
+.pdf-tool-group {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pdf-tool-divider {
+  width: 1px;
+  height: 26px;
+  background: var(--border-subtle);
+  margin: 0 0.2rem;
+  flex-shrink: 0;
+}
+
+.pdf-tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--radius-xs);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.pdf-tool-btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-main);
+  border-color: var(--border-subtle);
+}
+
+.pdf-tool-btn.active {
+  background: rgba(99,102,241,0.18);
+  color: var(--primary-light);
+  border-color: rgba(99,102,241,0.4);
+}
+
+.pdf-tool-btn.danger {
+  color: var(--accent-rose);
+}
+
+.pdf-tool-btn.danger:hover {
+  background: rgba(244,63,94,0.12);
+  border-color: rgba(244,63,94,0.35);
+}
+
+/* ── Color picker strip ──────────────────────────────────────── */
+.pdf-color-picker-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-muted);
+}
+
+.pdf-color-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.pdf-color-dot:hover { transform: scale(1.2); }
+
+.pdf-color-dot.selected {
+  border-color: #fff;
+  transform: scale(1.25);
+  box-shadow: 0 0 6px rgba(255,255,255,0.4);
+}
+
+.pdf-color-custom {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 2px solid var(--border-subtle);
+  cursor: pointer;
+  background: none;
+  padding: 0;
+}
+
+.pdf-font-slider {
+  width: 80px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.pdf-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── Editor layout (sidebar + canvas) ───────────────────────── */
+.pdf-editor-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Sidebar (thumbnail strip) ───────────────────────────────── */
+.pdf-sidebar {
+  width: 110px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-subtle);
+  padding: 0.75rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.pdf-thumb-wrap {
+  border-radius: var(--radius-xs);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 2px;
+}
+
+.pdf-thumb-wrap:hover {
+  border-color: var(--border-medium);
+  transform: scale(1.03);
+}
+
+.pdf-thumb-wrap.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 12px rgba(99,102,241,0.35);
+}
+
+.pdf-thumb-img {
+  width: 100%;
+  display: block;
+  border-radius: 2px;
+  background: #fff;
+}
+
+.pdf-thumb-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+/* ── Canvas Wrapper ──────────────────────────────────────────── */
+.pdf-canvas-wrapper {
+  flex: 1;
+  overflow: auto;
+  background: #2a2a35;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 1.5rem;
+}
+
+.pdf-canvas-inner {
+  display: inline-block;
+  position: relative;
+  box-shadow: 0 10px 50px rgba(0,0,0,0.6);
+  border-radius: 2px;
+}
+
+.pdf-main-canvas {
+  display: block;
+  border-radius: 2px;
+}
+
+.pdf-draw-canvas {
+  pointer-events: none;
+  border-radius: 2px;
+}
+
+/* ── Annotation layer overlay ────────────────────────────────── */
+.pdf-annotation-layer {
+  border-radius: 2px;
+  user-select: none;
+}
+
+.pdf-cursor-select    { cursor: default; }
+.pdf-cursor-text      { cursor: text; }
+.pdf-cursor-highlight,
+.pdf-cursor-rectangle { cursor: crosshair; }
+.pdf-cursor-draw      { cursor: crosshair; }
+.pdf-cursor-signature { cursor: copy; }
+
+/* ── Ghost rect while dragging ───────────────────────────────── */
+.pdf-ghost-rect {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 2px;
+}
+
+.pdf-ghost-rect.rectangle {
+  border: 2px dashed var(--primary);
+  background: transparent;
+}
+
+.pdf-ghost-rect.highlight {
+  opacity: 0.32;
+  border: none;
+}
+
+/* ── Text annotation ─────────────────────────────────────────── */
+.pdf-text-box {
+  background: rgba(10,15,30,0.55);
+  border: 1.5px solid rgba(99,102,241,0.6);
+  border-radius: 4px;
+  color: inherit;
+  resize: both;
+  min-width: 90px;
+  min-height: 32px;
+  padding: 4px 6px;
+  font-family: var(--font-main);
+  outline: none;
+  backdrop-filter: blur(6px);
+}
+
+.pdf-text-label {
+  background: rgba(10,15,30,0.45);
+  border-radius: 3px;
+  padding: 3px 6px;
+  cursor: move;
+  min-width: 24px;
+  min-height: 20px;
+  backdrop-filter: blur(4px);
+}
+
+/* ── Page navigation bar ─────────────────────────────────────── */
+.pdf-page-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.65rem 1rem;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+}
+
+.pdf-nav-btn {
+  display: flex;
+  align-items: center;
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pdf-nav-btn:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary-light);
+}
+
+.pdf-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pdf-page-info {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* ── Signature Modal ─────────────────────────────────────────── */
+.pdf-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(6px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.18s ease;
+}
+
+.pdf-modal {
+  width: 500px;
+  max-width: 95vw;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-medium);
+  background: var(--bg-card);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: slideUp 0.22s ease;
+}
+
+.pdf-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pdf-modal-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.pdf-modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.pdf-modal-close:hover { color: var(--text-main); }
+
+.pdf-sig-canvas-wrap {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 2px solid var(--border-medium);
+  background: #fff;
+}
+
+.pdf-sig-canvas {
+  display: block;
+  width: 100% !important;
+  height: 180px !important;
+}
+
+.pdf-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .pdf-sidebar { width: 80px; }
+  .pdf-editor-topbar { padding: 0.5rem 0.75rem; }
+  .pdf-action-btn span { display: none; }
+  .pdf-tool-btn span { display: none; }
+  .pdf-canvas-wrapper { padding: 0.75rem; }
+  .pdf-features-grid { gap: 0.45rem; }
+}
+
+@media (max-width: 540px) {
+  .pdf-sidebar { display: none; }
+  .pdf-editor-topbar-right { gap: 0.3rem; }
+}
+
+/* ── Cursor modes ────────────────────────────────────────────── */
+.pdf-cursor-addText    { cursor: text; }
+.pdf-cursor-highlight,
+.pdf-cursor-rectangle  { cursor: crosshair; }
+.pdf-cursor-draw       { cursor: crosshair; }
+.pdf-cursor-signature  { cursor: copy; }
+.pdf-cursor-select     { cursor: default; }
+.pdf-cursor-editText   { cursor: default; }
+
+/* ── Edit count badge ────────────────────────────────────────── */
+.pdf-edit-count-badge {
+  font-size: 0.68rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: var(--accent-emerald);
+  flex-shrink: 0;
+}
+
+/* ── Active topbar button ────────────────────────────────────── */
+.pdf-action-btn.active-btn {
+  border-color: var(--primary);
+  color: var(--primary-light);
+  background: rgba(99, 102, 241, 0.12);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TEXT LAYER — clickable overlays for "Edit Text" mode
+   ══════════════════════════════════════════════════════════════ */
+
+.pdf-text-layer {
+  position: absolute;
+  top: 0; left: 0;
+  pointer-events: none; /* container is passthrough; children set their own */
+  z-index: 5;
+}
+
+/* Each extracted text item */
+.pdf-text-item {
+  position: absolute;
+  background: transparent;
+  border: 1.5px solid transparent;
+  border-radius: 2px;
+  transition: border-color 0.1s, background 0.1s;
+  overflow: visible;
+}
+
+/* Hover — light blue outline so user knows it's clickable */
+.pdf-text-item.hovered {
+  border-color: rgba(6, 182, 212, 0.55);
+  background:   rgba(6, 182, 212, 0.06);
+}
+
+/* Selected (single click) — stronger highlight */
+.pdf-text-item.selected {
+  border-color: var(--primary);
+  background:   rgba(99, 102, 241, 0.12);
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.25);
+}
+
+/* Edited — green tint to show it was changed */
+.pdf-text-item.edited {
+  border-color: rgba(16, 185, 129, 0.6);
+  background:   rgba(16, 185, 129, 0.08);
+}
+.pdf-text-item.edited.selected {
+  border-color: var(--accent-emerald);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.35);
+}
+
+/* Inline edit input shown when editing a text item */
+.pdf-inline-input {
+  position: absolute;
+  top: -2px; left: -2px;
+  background: #ffffff;
+  color: #000000;
+  border: 2px solid var(--primary);
+  border-radius: 3px;
+  padding: 1px 4px;
+  outline: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(99,102,241,0.2);
+  z-index: 100;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FORMAT PANEL — right side panel
+   ══════════════════════════════════════════════════════════════ */
+
+.pdf-format-panel {
+  width: 210px;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  font-size: 0.8rem;
+}
+
+.pdf-format-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid var(--border-subtle);
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--text-main);
+  background: var(--bg-card);
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.pdf-format-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+}
+
+.pdf-format-section {
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pdf-format-section-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.pdf-format-font-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-format-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.pdf-format-size-pill {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: var(--primary-light);
+  white-space: nowrap;
+}
+
+.pdf-format-badge-row {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.pdf-format-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  background: var(--bg-card);
+}
+
+.pdf-format-badge.bold {
+  font-weight: 800;
+  color: var(--text-main);
+  border-color: var(--border-medium);
+}
+
+.pdf-format-badge.italic {
+  font-style: italic;
+  color: var(--accent-cyan);
+  border-color: var(--border-cyan);
+}
+
+.pdf-format-text-preview {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  padding: 0.4rem 0.55rem;
+  word-break: break-word;
+  line-height: 1.4;
+  max-height: 60px;
+  overflow-y: auto;
+}
+
+.pdf-format-revert-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  border-radius: var(--radius-xs);
+  padding: 0.28rem 0.6rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: all 0.15s;
+}
+.pdf-format-revert-btn:hover {
+  border-color: var(--accent-rose);
+  color: var(--accent-rose);
+}
+
+.pdf-format-tip {
+  font-size: 0.68rem;
+  color: var(--text-subtle);
+  line-height: 1.5;
+  margin-top: 0.15rem;
+}
+
+.pdf-format-tip kbd {
+  background: var(--bg-card-active);
+  border: 1px solid var(--border-medium);
+  border-radius: 3px;
+  padding: 0 3px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.pdf-format-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  flex: 1;
+}
+
+.pdf-format-empty p {
+  font-size: 0.78rem;
+  line-height: 1.6;
+  max-width: 160px;
+}
+
+.pdf-format-edits-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  border-top: 1px solid var(--border-subtle);
+  background: rgba(16, 185, 129, 0.06);
+  font-size: 0.72rem;
+  color: var(--accent-emerald);
+  flex-shrink: 0;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .pdf-format-panel { width: 180px; }
+}
+
+@media (max-width: 768px) {
+  .pdf-format-panel { display: none; }
+}
+
+/* ==========================================================================
+   Haryana Education Salary Slip Template Exact Styles
+   ========================================================================== */
+.haryana-edu-wrapper {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.haryana-edu-wrapper * {
+  box-sizing: border-box;
+  color: #000000;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.haryana-editable-num:hover,
+.haryana-editable-num:focus {
+  outline: 1px dashed #3b82f6 !important;
+  background: rgba(59, 130, 246, 0.05) !important;
+}
+
+.haryana-editable-num::-webkit-inner-spin-button,
+.haryana-editable-num::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.haryana-editable-num {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+@media print {
+  .payslip-canvas-scroll-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  .haryana-edu-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .haryana-main-table {
+    width: 100% !important;
+    border: 1px solid #000000 !important;
+  }
+
+  .haryana-editable-num {
+    border: none !important;
+    background: transparent !important;
+    outline: none !important;
+  }
+}
 

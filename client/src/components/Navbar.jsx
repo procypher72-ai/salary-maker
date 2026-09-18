@@ -13,6 +13,8 @@ import {
   Calculator,
   Menu,
   X,
+  BadgePercent,
+  FileEdit,
 } from 'lucide-react';
 
 export const Navbar = ({
@@ -155,6 +157,24 @@ export const Navbar = ({
           >
             <History size={15} />
             <span>Archive</span>
+          </button>
+
+          <button
+            className={`nav-tab-btn ${activeTab === 'taxcalc' ? 'active' : ''}`}
+            onClick={() => handleTabClick('taxcalc')}
+            id="tab-taxcalc"
+          >
+            <BadgePercent size={15} />
+            <span>Tax Calculator</span>
+          </button>
+
+          <button
+            className={`nav-tab-btn ${activeTab === 'pdfeditor' ? 'active' : ''}`}
+            onClick={() => handleTabClick('pdfeditor')}
+            id="tab-pdfeditor"
+          >
+            <FileEdit size={15} />
+            <span>PDF Editor</span>
           </button>
         </nav>
 
@@ -322,6 +342,22 @@ export const Navbar = ({
                 >
                   <History size={18} />
                   <span>Payslip Archive</span>
+                </button>
+
+                <button
+                  className={`mobile-nav-item ${activeTab === 'taxcalc' ? 'active' : ''}`}
+                  onClick={() => handleTabClick('taxcalc')}
+                >
+                  <BadgePercent size={18} />
+                  <span>Tax Calculator</span>
+                </button>
+
+                <button
+                  className={`mobile-nav-item ${activeTab === 'pdfeditor' ? 'active' : ''}`}
+                  onClick={() => handleTabClick('pdfeditor')}
+                >
+                  <FileEdit size={18} />
+                  <span>PDF Editor</span>
                 </button>
               </nav>
             </div>

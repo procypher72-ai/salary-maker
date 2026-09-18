@@ -44,6 +44,11 @@ const createEmployee = async (req, res) => {
       companyId,
       empCode,
       fullName,
+      fatherName,
+      residentialAddress,
+      dob,
+      residentStatus,
+      panNumber,
       email,
       phone,
       designation,
@@ -73,6 +78,11 @@ const createEmployee = async (req, res) => {
       companyId,
       empCode,
       fullName,
+      fatherName: fatherName || '',
+      residentialAddress: residentialAddress || '',
+      dob: dob || '',
+      residentStatus: residentStatus || 'Resident',
+      panNumber: panNumber || '',
       email,
       phone,
       designation,
@@ -399,10 +409,21 @@ const bulkImportEmployees = async (req, res) => {
         location: emp.location || emp['Location'] || '',
       };
 
+      const panNumber = String(emp.panNumber || emp['PAN Number'] || emp['PAN'] || emp.pan || '').trim().toUpperCase();
+      const fatherName = String(emp.fatherName || emp['Father Name'] || emp["Father's Name"] || emp.fathersName || '').trim();
+      const residentialAddress = String(emp.residentialAddress || emp['Residential Address'] || emp['Address(R)'] || emp.address || '').trim();
+      const dob = String(emp.dob || emp['DOB'] || emp['Date of Birth'] || '').trim();
+      const residentStatus = String(emp.residentStatus || emp['Resident Status'] || 'Resident').trim();
+
       const employeeDoc = {
         companyId,
         empCode: String(empCode).trim(),
         fullName: String(fullName).trim(),
+        fatherName,
+        residentialAddress,
+        dob,
+        residentStatus: ['Resident', 'Non-Resident', 'Resident but not Ordinarily Resident (RNOR)'].includes(residentStatus) ? residentStatus : 'Resident',
+        panNumber,
         email: String(email).trim().toLowerCase(),
         phone: String(phone).trim(),
         designation: String(designation).trim(),

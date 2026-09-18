@@ -121,6 +121,12 @@ const INITIAL_COMPUTATION_STATE = {
       otherInterest: 0,
       dividendIncome: 0,
       otherIncome: 0,
+      lotteryWinnings: 0,
+      commissionIncome: 0,
+      agricultureIncome: 0,
+      interestItRefund: 0,
+      interestKvp: 0,
+      interestNsc: 0,
       totalOtherSources: 0,
       breakdown: [],
     },
@@ -184,11 +190,32 @@ export const ComputationModal = ({
   const [isFetchingSalary, setIsFetchingSalary] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  const getFullOfficeAddress = (comp, existingAddr = '') => {
+    const compName = (comp?.name || '').trim();
+    let compAddress = (existingAddr || comp?.fullAddress || '').trim();
+    if (compName && compAddress) {
+      return compAddress.toLowerCase().includes(compName.toLowerCase())
+        ? compAddress
+        : `${compName}, ${compAddress}`;
+    }
+    return compName || compAddress || '';
+  };
+
   // Synchronize on mount or when editing
   useEffect(() => {
     if (computationToEdit) {
-      setFormData(recalculateComputation(computationToEdit));
-      setSelectedCompanyId(computationToEdit.companyId?._id || computationToEdit.companyId || '');
+      const compId = computationToEdit.companyId?._id || computationToEdit.companyId || '';
+      const compObj = companies.find((c) => c._id === compId) || activeCompany;
+      const formattedOffice = getFullOfficeAddress(compObj, computationToEdit.personalDetails?.officeAddress);
+      const withFormattedOffice = {
+        ...computationToEdit,
+        personalDetails: {
+          ...computationToEdit.personalDetails,
+          officeAddress: formattedOffice,
+        },
+      };
+      setFormData(recalculateComputation(withFormattedOffice));
+      setSelectedCompanyId(compId);
       setSelectedEmployeeId(computationToEdit.employeeId?._id || computationToEdit.employeeId || '');
     } else {
       const defaultCompId = activeCompany?._id || (companies[0] ? companies[0]._id : '');
@@ -198,6 +225,7 @@ export const ComputationModal = ({
       const defaultEmp = matchedEmployees[0];
       setSelectedEmployeeId(defaultEmp ? defaultEmp._id : '');
 
+      const dyn = defaultEmp?.dynamicFields instanceof Map ? Object.fromEntries(defaultEmp.dynamicFields) : defaultEmp?.dynamicFields || {};
       const initial = recalculateComputation({
         ...INITIAL_COMPUTATION_STATE,
         companyId: defaultCompId,
@@ -205,8 +233,12 @@ export const ComputationModal = ({
         personalDetails: {
           ...INITIAL_COMPUTATION_STATE.personalDetails,
           name: defaultEmp ? defaultEmp.fullName : '',
-          pan: defaultEmp ? (defaultEmp.dynamicFields?.panNumber || defaultEmp.panNumber || '') : '',
-          officeAddress: activeCompany?.fullAddress || '',
+          fathersName: defaultEmp ? (defaultEmp.fatherName || dyn.fatherName || dyn.fathersName || '') : '',
+          pan: defaultEmp ? (defaultEmp.panNumber || dyn.panNumber || dyn.pan || '') : '',
+          dob: defaultEmp ? (defaultEmp.dob || dyn.dob || dyn.dateOfBirth || '') : '',
+          residentStatus: defaultEmp ? (defaultEmp.residentStatus || 'Resident') : 'Resident',
+          residentialAddress: defaultEmp ? (defaultEmp.residentialAddress || dyn.residentialAddress || dyn.address || '') : '',
+          officeAddress: getFullOfficeAddress(activeCompany),
         },
         headsOfIncome: {
           ...INITIAL_COMPUTATION_STATE.headsOfIncome,
@@ -311,7 +343,7 @@ export const ComputationModal = ({
       setIsExportingPdf(true);
       const targetId = activeSubTab === 'form16' ? 'form16-certificate-view' : 'computation-sheet-preview';
       const filename = `Tax_Computation_${formData.personalDetails?.name?.replace(/\s+/g, '_') || 'Employee'}_FY${formData.financialYear}.pdf`;
-      await exportElementToPdf(targetId, filename);
+      await exportElementToPdf(targetId, filename, { multiPage: true, margin: [7, 7, 7, 7] });
     } catch (err) {
       console.error('PDF Export failed:', err);
       window.print(); // Fallback to browser print
@@ -365,10 +397,10 @@ export const ComputationModal = ({
             <button
               onClick={() => window.print()}
               className="btn btn-secondary btn-sm"
-              title="Browser Print"
+              title="Print or Save as PDF via browser dialog (Produces 100% editable vector PDF)"
             >
               <Printer size={14} />
-              <span>Print</span>
+              <span>Print / Save as PDF</span>
             </button>
             <button
               onClick={handleSaveComputation}
@@ -483,7 +515,7 @@ export const ComputationModal = ({
                             },
                             personalDetails: {
                               ...prev.personalDetails,
-                              officeAddress: comp.fullAddress || '',
+                              officeAddress: getFullOfficeAddress(comp),
                             },
                           }));
                         }
@@ -512,10 +544,11 @@ export const ComputationModal = ({
                             personalDetails: {
                               ...prev.personalDetails,
                               name: emp.fullName,
-                              fathersName: dyn.fathersName || dyn.fatherName || prev.personalDetails.fathersName,
-                              pan: dyn.panNumber || dyn.pan || emp.panNumber || prev.personalDetails.pan,
-                              dob: dyn.dob || dyn.dateOfBirth || prev.personalDetails.dob,
-                              residentialAddress: dyn.residentialAddress || dyn.address || prev.personalDetails.residentialAddress,
+                              fathersName: emp.fatherName || dyn.fathersName || dyn.fatherName || prev.personalDetails.fathersName || '',
+                              pan: emp.panNumber || dyn.panNumber || dyn.pan || prev.personalDetails.pan || '',
+                              dob: emp.dob || dyn.dob || dyn.dateOfBirth || prev.personalDetails.dob || '',
+                              residentStatus: emp.residentStatus || prev.personalDetails.residentStatus || 'Resident',
+                              residentialAddress: emp.residentialAddress || dyn.residentialAddress || dyn.address || prev.personalDetails.residentialAddress || '',
                             },
                             verifiedBy: emp.fullName,
                           }));
@@ -564,6 +597,21 @@ export const ComputationModal = ({
                     />
                   </div>
                   <div className="form-group">
+                    <label className="form-label">Father's Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Baldev Singh"
+                      value={formData.personalDetails.fathersName || ''}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          personalDetails: { ...prev.personalDetails, fathersName: e.target.value },
+                        }))
+                      }
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group">
                     <label className="form-label">Permanent Account Number (PAN)</label>
                     <input
                       type="text"
@@ -577,6 +625,46 @@ export const ComputationModal = ({
                       className="form-input"
                       style={{ fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}
                     />
+                  </div>
+                </div>
+
+                <div className="form-grid-3" style={{ marginTop: '0.75rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Date of Birth</label>
+                    <input
+                      type="date"
+                      value={
+                        formData.personalDetails.dob
+                          ? typeof formData.personalDetails.dob === 'string' && formData.personalDetails.dob.includes('T')
+                            ? formData.personalDetails.dob.split('T')[0]
+                            : formData.personalDetails.dob
+                          : ''
+                      }
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          personalDetails: { ...prev.personalDetails, dob: e.target.value },
+                        }))
+                      }
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Resident Status</label>
+                    <select
+                      value={formData.personalDetails.residentStatus || 'Resident'}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          personalDetails: { ...prev.personalDetails, residentStatus: e.target.value },
+                        }))
+                      }
+                      className="form-select"
+                    >
+                      <option value="Resident">Resident</option>
+                      <option value="Non-Resident">Non-Resident</option>
+                      <option value="Resident but not Ordinarily Resident (RNOR)">Resident but not Ordinarily Resident (RNOR)</option>
+                    </select>
                   </div>
                   <div className="form-group">
                     <label className="form-label">Tax Regime</label>
@@ -598,6 +686,39 @@ export const ComputationModal = ({
                         Old Regime
                       </button>
                     </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.75rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Address(O) - Office Address</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. GOVT. SENIOR SECONDARY SCHOOL, GUHLA, CHEEKA, KAITHAL, HARYANA-136034"
+                      value={formData.personalDetails.officeAddress || ''}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          personalDetails: { ...prev.personalDetails, officeAddress: e.target.value },
+                        }))
+                      }
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Address(R) - Residential Address</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Village Basantpura, Barara, Haryana"
+                      value={formData.personalDetails.residentialAddress || ''}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          personalDetails: { ...prev.personalDetails, residentialAddress: e.target.value },
+                        }))
+                      }
+                      className="form-input"
+                    />
                   </div>
                 </div>
               </div>
@@ -716,8 +837,8 @@ export const ComputationModal = ({
 
           {/* TAB 5: PREVIEW SCHEDULE */}
           {activeSubTab === 'preview' && (
-            <div id="computation-sheet-preview">
-              <div className="preview-template-toolbar" style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
+            <div>
+              <div className="preview-template-toolbar no-print" style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
                 <button
                   type="button"
                   onClick={() => setFormData((prev) => ({ ...prev, templateId: 'kdk_zenit' }))}
@@ -741,15 +862,17 @@ export const ComputationModal = ({
                 </button>
               </div>
 
-              {formData.templateId === 'kdk_zenit' && (
-                <KdkZenitTemplate computation={formData} company={selectedCompany} />
-              )}
-              {formData.templateId === 'modern_executive' && (
-                <ModernExecutiveTemplate computation={formData} company={selectedCompany} />
-              )}
-              {formData.templateId === 'ca_audit' && (
-                <CaAuditTemplate computation={formData} company={selectedCompany} />
-              )}
+              <div id="computation-sheet-preview">
+                {formData.templateId === 'kdk_zenit' && (
+                  <KdkZenitTemplate computation={formData} company={selectedCompany} />
+                )}
+                {formData.templateId === 'modern_executive' && (
+                  <ModernExecutiveTemplate computation={formData} company={selectedCompany} />
+                )}
+                {formData.templateId === 'ca_audit' && (
+                  <CaAuditTemplate computation={formData} company={selectedCompany} />
+                )}
+              </div>
             </div>
           )}
 

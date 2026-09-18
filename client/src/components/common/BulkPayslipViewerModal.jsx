@@ -121,6 +121,81 @@ export const BulkPayslipViewerModal = ({
       });
   }, [payslips, employee, fromMonth, fromYear, toMonth, toYear]);
 
+  // Ensure all bulk slips (especially Haryana Education) have increasing voucher numbers (gap > 100) and matching monthly voucher dates
+  const enrichedSlips = useMemo(() => {
+    let currentVoucher = 1734;
+    const firstSlipVoucher =
+      filteredSlips[0]?.snapshotData?.employee?.dynamicFields?.voucherNo ||
+      filteredSlips[0]?.voucherNo;
+
+    if (firstSlipVoucher) {
+      const parsed = parseInt(String(firstSlipVoucher).replace(/\D/g, ''), 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        currentVoucher = parsed;
+      }
+    }
+
+    // Check if the slips already have strictly increasing distinct voucher numbers
+    let alreadyHasIncreasingVouchers = true;
+    let prevV = -1;
+    for (let i = 0; i < filteredSlips.length; i++) {
+      const v =
+        filteredSlips[i]?.snapshotData?.employee?.dynamicFields?.voucherNo ||
+        filteredSlips[i]?.voucherNo;
+      const parsed = parseInt(String(v).replace(/\D/g, ''), 10);
+      if (isNaN(parsed) || (prevV !== -1 && parsed <= prevV)) {
+        alreadyHasIncreasingVouchers = false;
+        break;
+      }
+      prevV = parsed;
+    }
+
+    // Deterministic gap generator based on slip index and month so values remain stable
+    const getDeterministicGap = (idx, seedStr) => {
+      let hash = 0;
+      for (let i = 0; i < seedStr.length; i++) {
+        hash = (hash * 31 + seedStr.charCodeAt(i)) % 1000;
+      }
+      return 101 + (Math.abs(hash) % 150); // strictly > 100
+    };
+
+    let runningVoucher = currentVoucher;
+
+    return filteredSlips.map((slip, idx) => {
+      const mIdx = MONTHS.indexOf(slip.month);
+      const yr = Number(slip.year) || currentYear;
+      const lastDay = mIdx >= 0 ? new Date(yr, mIdx + 1, 0).getDate() : 30;
+      const dd = String(lastDay).padStart(2, '0');
+      const mm = String(mIdx >= 0 ? mIdx + 1 : 1).padStart(2, '0');
+      const monthVoucherDate = `${dd}-${mm}-${yr}`;
+
+      if (idx > 0) {
+        runningVoucher += getDeterministicGap(idx, `${slip.month}_${slip.year}_${idx}`);
+      }
+
+      const assignedVoucherNo = alreadyHasIncreasingVouchers
+        ? (slip.snapshotData?.employee?.dynamicFields?.voucherNo || String(runningVoucher).padStart(6, '0'))
+        : String(runningVoucher).padStart(6, '0');
+
+      return {
+        ...slip,
+        voucherNo: assignedVoucherNo,
+        voucherDate: monthVoucherDate,
+        snapshotData: {
+          ...(slip.snapshotData || {}),
+          employee: {
+            ...(slip.snapshotData?.employee || {}),
+            dynamicFields: {
+              ...(slip.snapshotData?.employee?.dynamicFields || {}),
+              voucherNo: assignedVoucherNo,
+              voucherDate: monthVoucherDate,
+            },
+          },
+        },
+      };
+    });
+  }, [filteredSlips]);
+
   // Aggregate Financial Statistics across the range
   const summaryStats = useMemo(() => {
     let grossTotal = 0;
@@ -593,7 +668,7 @@ export const BulkPayslipViewerModal = ({
               }}
             >
               {viewMode === 'scroll' ? (
-                filteredSlips.map((slip, idx) => (
+                enrichedSlips.map((slip, idx) => (
                   <div
                     key={slip._id || idx}
                     className="bulk-slip-sheet-item"
@@ -603,8 +678,8 @@ export const BulkPayslipViewerModal = ({
                       flexDirection: 'column',
                       alignItems: 'center',
                       position: 'relative',
-                      pageBreakAfter: idx < filteredSlips.length - 1 ? 'always' : 'auto',
-                      breakAfter: idx < filteredSlips.length - 1 ? 'page' : 'auto',
+                      pageBreakAfter: idx < enrichedSlips.length - 1 ? 'always' : 'auto',
+                      breakAfter: idx < enrichedSlips.length - 1 ? 'page' : 'auto',
                     }}
                   >
                     <SnapshotRenderer payslip={slip} company={company} isEditable={false} pageNumber={idx + 1} />
@@ -612,12 +687,12 @@ export const BulkPayslipViewerModal = ({
                 ))
               ) : (
                 /* Paginated View */
-                filteredSlips[currentPageIndex] && (
+                enrichedSlips[currentPageIndex] && (
                   <div
                     className="bulk-slip-sheet-item"
                     style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                   >
-                    <SnapshotRenderer payslip={filteredSlips[currentPageIndex]} company={company} isEditable={false} pageNumber={currentPageIndex + 1} />
+                    <SnapshotRenderer payslip={enrichedSlips[currentPageIndex]} company={company} isEditable={false} pageNumber={currentPageIndex + 1} />
                   </div>
                 )
               )}

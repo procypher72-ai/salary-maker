@@ -98,10 +98,18 @@ const computationSchema = new mongoose.Schema(
         netGains: { type: Number, default: 0 },
       },
       otherSources: {
+        category: { type: String, default: 'normal' },
         interestSavings: { type: Number, default: 0 },
         interestFdr: { type: Number, default: 0 },
+        otherInterest: { type: Number, default: 0 },
         dividendIncome: { type: Number, default: 0 },
         otherIncome: { type: Number, default: 0 },
+        lotteryWinnings: { type: Number, default: 0 },
+        commissionIncome: { type: Number, default: 0 },
+        agricultureIncome: { type: Number, default: 0 },
+        interestItRefund: { type: Number, default: 0 },
+        interestKvp: { type: Number, default: 0 },
+        interestNsc: { type: Number, default: 0 },
         totalOtherSources: { type: Number, default: 0 },
         breakdown: [
           {

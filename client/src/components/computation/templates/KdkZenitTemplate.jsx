@@ -32,88 +32,125 @@ export const KdkZenitTemplate = ({ computation = {}, company = {} }) => {
 
   const basicExemption = tax.basicExemptionLimit || (isOldRegime ? 250000 : 400000);
 
+  const pageStyle = {
+    background: '#ffffff',
+    color: '#000000',
+    fontFamily: 'Arial, Helvetica, sans-serif',
+    fontSize: '12px',
+    lineHeight: 1.35,
+    padding: '24px 28px',
+    width: '100%',
+    maxWidth: '820px',
+    minHeight: '1060px',
+    margin: '0 auto',
+    boxSizing: 'border-box',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
+    borderRadius: '2px',
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+  };
+
   return (
-    <div
-      className="kdk-zenit-paper"
-      style={{
-        background: '#ffffff',
-        color: '#000000',
-        fontFamily: 'Arial, Helvetica, sans-serif',
-        fontSize: '12px',
-        lineHeight: 1.35,
-        padding: '2.5rem 3rem',
-        maxWidth: '850px',
-        margin: '0 auto',
-        minHeight: '1100px',
-        boxSizing: 'border-box',
-        boxShadow: '0 10px 35px rgba(0,0,0,0.18)',
-        borderRadius: '2px',
-        position: 'relative',
-      }}
-    >
+    <div className="kdk-zenit-document" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       {/* ========================================================================= */}
       {/* PAGE 1: Personal KYC & Main Computation of Total Income */}
       {/* ========================================================================= */}
-
-      {/* Assessee Personal & Filing Header */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 0.85fr', columnGap: '2rem', marginBottom: '1.25rem', fontSize: '12px' }}>
-        {/* Left Column: Name, Father's Name, Addresses */}
-        <div>
-          <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', padding: '1px 0' }}>
+      <div className="computation-page kdk-zenit-paper" style={pageStyle}>
+        {/* Assessee Personal & Filing Header (KDK ZenIT Standard Layout matching reference) */}
+        <div style={{ marginBottom: '1.25rem', fontSize: '12px', lineHeight: 1.5 }}>
+        {/* Top Section: Name, Father's Name, Address(O), Address(R) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginBottom: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '175px 1fr' }}>
             <span>Name :</span>
-            <strong style={{ textTransform: 'uppercase' }}>{p.name ? (p.name.startsWith('Mr.') || p.name.startsWith('Ms.') || p.name.startsWith('Mrs.') ? p.name : `Mr. ${p.name}`) : 'Mr. HARWINDER SINGH'}</strong>
+            <strong style={{ textTransform: 'uppercase' }}>
+              {p.name ? (p.name.startsWith('Mr.') || p.name.startsWith('Ms.') || p.name.startsWith('Mrs.') || p.name.startsWith('Dr.') ? p.name : `Mr. ${p.name}`) : ''}
+            </strong>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', padding: '1px 0' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '175px 1fr' }}>
             <span>Father's Name :</span>
-            <span style={{ textTransform: 'uppercase' }}>{p.fathersName ? (p.fathersName.startsWith('Mr.') ? p.fathersName : `Mr. ${p.fathersName}`) : 'Mr. JASWINDER SINGH'}</span>
+            <strong style={{ textTransform: 'uppercase' }}>
+              {p.fathersName ? (p.fathersName.startsWith('Mr.') || p.fathersName.startsWith('Sh.') || p.fathersName.startsWith('Late') ? p.fathersName : `Mr. ${p.fathersName}`) : ''}
+            </strong>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', padding: '1px 0', alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '175px 1fr', alignItems: 'start' }}>
             <span>Address(O) :</span>
-            <span style={{ textTransform: 'uppercase', fontSize: '11px', lineHeight: 1.25 }}>
-              {p.officeAddress || company.fullAddress || 'HCL TECHNOLOGIES LIMITED, BLOCK B, C, D 2ND FLOOR, TOWER D, DLF IT PARK, PLOT NO 2, CHANDIGARH-160101'}
-            </span>
+            <strong style={{ textTransform: 'uppercase', fontSize: '11.5px', lineHeight: 1.35 }}>
+              {(() => {
+                const compName = (company?.name || s?.employerName || '').trim();
+                let addr = (p.officeAddress || company?.fullAddress || '').trim();
+                if (!compName) return addr;
+                if (!addr) return compName;
+                if (addr.toLowerCase().includes(compName.toLowerCase())) {
+                  return addr;
+                }
+                return `${compName}, ${addr}`;
+              })()}
+            </strong>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', padding: '3px 0 1px', alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '175px 1fr', alignItems: 'start' }}>
             <span>Address(R) :</span>
-            <span style={{ textTransform: 'uppercase', fontSize: '11px', lineHeight: 1.25 }}>
-              {p.residentialAddress || 'VILLAGE BASANTPURA, BARARA S.O., BARARA (203), HARYANA-133201'}
-            </span>
+            <strong style={{ textTransform: 'uppercase', fontSize: '11.5px', lineHeight: 1.35 }}>
+              {p.residentialAddress || ''}
+            </strong>
           </div>
         </div>
 
-        {/* Right Column: PAN, DOB, Gender, Status, FY/AY, Return */}
-        <div>
-          <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', padding: '1px 0' }}>
-            <span>Permanent Account No :</span>
-            <strong style={{ fontFamily: 'monospace', letterSpacing: '0.04em' }}>{p.pan || 'NQBPS8394P'}</strong>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', padding: '1px 0' }}>
-            <span>Date of Birth :</span>
-            <span>{p.dob || '22/10/1998'}</span>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', padding: '1px 0' }}>
-            <span>Gender :</span>
-            <span>{p.gender || 'Male'}</span>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', padding: '1px 0' }}>
-            <span>Status :</span>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>{p.status || 'Individual'}</span>
-              <span>Resident Status :</span>
-              <span>{p.residentStatus || 'Resident'}</span>
+        {/* Bottom Section: 2 Columns */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', columnGap: '2.5rem' }}>
+          {/* Left Column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '175px 1fr' }}>
+              <span>Permanent Account No :</span>
+              <strong style={{ fontFamily: 'monospace', letterSpacing: '0.04em' }}>{p.pan || ''}</strong>
+            </div>
+
+            <div style={{ height: '8px' }} />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '175px 1fr' }}>
+              <span>Gender :</span>
+              <strong>{p.gender || 'Male'}</strong>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '175px 1fr' }}>
+              <span>Status :</span>
+              <strong>{p.status || 'Individual'}</strong>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '175px 1fr' }}>
+              <span>Previous year :</span>
+              <strong>{computation.financialYear || '2024-2025'}</strong>
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', padding: '1px 0' }}>
-            <span>Previous year :</span>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>{computation.financialYear || '2025-2026'}</span>
+
+          {/* Right Column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr' }}>
+              <span>Date of Birth :</span>
+              <strong>
+                {(() => {
+                  if (!p.dob) return '';
+                  if (/^\d{4}-\d{2}-\d{2}/.test(p.dob)) {
+                    const [y, m, d] = p.dob.slice(0, 10).split('-');
+                    return `${d}/${m}/${y}`;
+                  }
+                  return p.dob;
+                })()}
+              </strong>
+            </div>
+
+            <div style={{ height: '8px' }} />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr' }}>
+              <span>Resident Status</span>
+              <strong>{p.residentStatus || 'Resident'}</strong>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr' }}>
               <span>Assessment Year :</span>
-              <span>{computation.assessmentYear || '2026-2027'}</span>
+              <strong>{computation.assessmentYear || '2025-2026'}</strong>
             </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', padding: '1px 0' }}>
-            <span>Return :</span>
-            <strong>{computation.returnType || 'ORIGINAL'}</strong>
+            <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr' }}>
+              <span>Return :</span>
+              <strong>{computation.returnType || 'ORIGINAL'}</strong>
+            </div>
           </div>
         </div>
       </div>
@@ -270,18 +307,16 @@ export const KdkZenitTemplate = ({ computation = {}, company = {} }) => {
           </div>
         )}
 
-        {Number(tax.cess) > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: '60% 20% 20%', padding: '1.5px 0' }}>
-            <span>Add : Health and Education Cess</span>
-            <span></span>
-            <span style={{ textAlign: 'right' }}>{fmt(tax.cess)}</span>
-          </div>
-        )}
+        <div style={{ display: 'grid', gridTemplateColumns: '60% 20% 20%', padding: '1.5px 0', fontWeight: 'bold' }}>
+          <span>Add : Health and Education Cess</span>
+          <span></span>
+          <span style={{ textAlign: 'right', borderBottom: '1px solid #000000' }}>{fmt(tax.cess || 0)}</span>
+        </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '60% 20% 20%', padding: '2px 0', fontWeight: 'bold' }}>
           <span>Total</span>
           <span></span>
-          <span style={{ textAlign: 'right', borderTop: '1px solid #000000', borderBottom: '1px solid #000000' }}>
+          <span style={{ textAlign: 'right' }}>
             {fmt(tax.totalTaxWithCess || tax.totalTax)}
           </span>
         </div>
@@ -313,7 +348,7 @@ export const KdkZenitTemplate = ({ computation = {}, company = {} }) => {
             <div>
               <div style={{ display: 'grid', gridTemplateColumns: '60% 20% 20%', padding: '1px 0 0 1.25rem' }}>
                 <span>u/s 234C</span>
-                <span style={{ textAlign: 'right' }}>{fmt(tax.interest234C || 0)}</span>
+                <span style={{ textAlign: 'right', borderBottom: '1px solid #000000' }}>{fmt(tax.interest234C || 0)}</span>
                 <span></span>
               </div>
               {tax.interest234CDetails && (
@@ -333,36 +368,112 @@ export const KdkZenitTemplate = ({ computation = {}, company = {} }) => {
           )}
         </div>
 
-        {/* Taxes Deposited & Deducted */}
-        <div style={{ display: 'grid', gridTemplateColumns: '60% 20% 20%', padding: '2px 0' }}>
-          <span>Less : Tax Deposited u/s 140A</span>
-          <span></span>
-          <span style={{ textAlign: 'right' }}>{fmt(tax.taxDeposited140A || challans.reduce((s, c) => s + (Number(c.amount) || 0), 0) || tax.totalTaxesPaid || 0)}</span>
-        </div>
-
+        {/* Taxes Deducted & Deposited */}
         {Number(tax.tdsSalary) > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: '60% 20% 20%', padding: '2px 0' }}>
-            <span>Less : TDS on Salary</span>
+            <span>Less : TDS on Salary (u/s 192)</span>
             <span></span>
             <span style={{ textAlign: 'right' }}>{fmt(tax.tdsSalary)}</span>
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '60% 20% 20%', padding: '3px 0', fontWeight: 'bold' }}>
-          <span>Amount Payable</span>
-          <span></span>
-          <span style={{ textAlign: 'right', borderTop: '1px solid #000000', borderBottom: '1px solid #000000' }}>
-            {fmt(tax.amountPayable || 0)}
-          </span>
-        </div>
+        {Number(tax.tdsOther) > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: '60% 20% 20%', padding: '2px 0' }}>
+            <span>Less : TDS on Other Income (194A/194J/194C)</span>
+            <span></span>
+            <span style={{ textAlign: 'right' }}>{fmt(tax.tdsOther)}</span>
+          </div>
+        )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '60% 20% 20%', padding: '2px 0', fontWeight: 'bold' }}>
-          <span>Tax Rounded Off u/s 288 B</span>
-          <span></span>
-          <span style={{ textAlign: 'right' }}>{fmt(tax.taxRoundedOff || tax.amountPayable || 0)}</span>
-        </div>
+        {Number(tax.advanceTax) > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: '60% 20% 20%', padding: '2px 0' }}>
+            <span>Less : Advance Tax</span>
+            <span></span>
+            <span style={{ textAlign: 'right' }}>{fmt(tax.advanceTax)}</span>
+          </div>
+        )}
+
+        {(Number(tax.taxDeposited140A) > 0 || challans.length > 0) && (
+          <div style={{ display: 'grid', gridTemplateColumns: '60% 20% 20%', padding: '2px 0' }}>
+            <span>Less : Tax Deposited u/s 140A</span>
+            <span></span>
+            <span style={{ textAlign: 'right' }}>
+              {fmt(tax.taxDeposited140A || challans.reduce((s, c) => s + (Number(c.amount) || 0), 0) || 0)}
+            </span>
+          </div>
+        )}
+
+        {/* Final Settlement: Refund Due or Amount Payable */}
+        {Number(tax.amountRefundable) > 0 ? (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '60% 20% 20%', padding: '3px 0', fontWeight: 'bold' }}>
+              <span>Amount Refundable</span>
+              <span></span>
+              <span style={{ textAlign: 'right', borderBottom: '1px solid #000000', color: '#15803d' }}>
+                {fmt(tax.amountRefundable)}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '60% 20% 20%', padding: '2px 0', fontWeight: 'bold' }}>
+              <span>Refund Due u/s 288 D</span>
+              <span></span>
+              <span style={{ textAlign: 'right', color: '#15803d' }}>
+                {fmt(Math.round((tax.amountRefundable || 0) / 10) * 10)}
+              </span>
+            </div>
+          </>
+        ) : Number(tax.amountPayable) > 0 ? (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '60% 20% 20%', padding: '3px 0', fontWeight: 'bold' }}>
+              <span>Amount Payable</span>
+              <span></span>
+              <span style={{ textAlign: 'right', borderBottom: '1px solid #000000' }}>
+                {fmt(tax.amountPayable || 0)}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '60% 20% 20%', padding: '2px 0', fontWeight: 'bold' }}>
+              <span>Tax Rounded Off u/s 288 B</span>
+              <span></span>
+              <span style={{ textAlign: 'right' }}>{fmt(tax.taxRoundedOff || tax.amountPayable || 0)}</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '60% 20% 20%', padding: '3px 0', fontWeight: 'bold' }}>
+              <span>Amount Payable / (Refundable)</span>
+              <span></span>
+              <span style={{ textAlign: 'right', borderBottom: '1px solid #000000' }}>0</span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '60% 20% 20%', padding: '2px 0', fontWeight: 'bold' }}>
+              <span>Tax Rounded Off u/s 288 B</span>
+              <span></span>
+              <span style={{ textAlign: 'right' }}>0</span>
+            </div>
+          </>
+        )}
       </div>
 
+      {/* Page 1 Bottom Page Number */}
+      <div
+        style={{
+          marginTop: 'auto',
+          paddingTop: '2.5rem',
+          textAlign: 'right',
+          fontSize: '10.5px',
+          color: '#64748b',
+          fontFamily: 'Arial, Helvetica, sans-serif',
+        }}
+      >
+        <span>Page 1 of 2</span>
+      </div>
+    </div>
+
+    {/* ========================================================================= */}
+    {/* PAGE 2: Comprehensive Detail Schedules & Verification */}
+    {/* ========================================================================= */}
+    <div className="computation-page kdk-zenit-paper" style={pageStyle}>
       {/* Section Double Header: COMPREHENSIVE DETAIL */}
       <div
         style={{
@@ -372,7 +483,7 @@ export const KdkZenitTemplate = ({ computation = {}, company = {} }) => {
           textAlign: 'center',
           fontWeight: 'bold',
           fontSize: '12.5px',
-          margin: '1rem 0 0.75rem',
+          margin: '0 0 1rem',
         }}
       >
         COMPREHENSIVE DETAIL
@@ -474,23 +585,60 @@ export const KdkZenitTemplate = ({ computation = {}, company = {} }) => {
               ))
             ) : (
               <>
-                <div>
-                  <div style={{ textDecoration: 'underline' }}>Interest on Bank Savings</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span></span>
-                    <span style={{ width: '20%', textAlign: 'right' }}>{fmt(os.interestSavings || 22554)}</span>
-                    <span style={{ width: '20%', textAlign: 'right' }}>{fmt(os.interestSavings || 22554)}</span>
+                {Number(os.interestSavings || 0) > 0 && (
+                  <div>
+                    <div style={{ textDecoration: 'underline' }}>Interest on Bank Savings</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '0.5rem' }}>
+                      <span></span>
+                      <span style={{ width: '20%', textAlign: 'right' }}>{fmt(os.interestSavings)}</span>
+                      <span style={{ width: '20%', textAlign: 'right' }}>{fmt(os.interestSavings)}</span>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div>
-                  <div style={{ textDecoration: 'underline' }}>Interest on Bank FDR</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span></span>
-                    <span style={{ width: '20%', textAlign: 'right' }}>{fmt(os.interestFdr || 47643)}</span>
-                    <span style={{ width: '20%', textAlign: 'right' }}>{fmt(os.interestFdr || 47643)}</span>
+                {Number(os.interestFdr || 0) > 0 && (
+                  <div>
+                    <div style={{ textDecoration: 'underline' }}>Interest on Bank FDR / Term Deposit</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '0.5rem' }}>
+                      <span></span>
+                      <span style={{ width: '20%', textAlign: 'right' }}>{fmt(os.interestFdr)}</span>
+                      <span style={{ width: '20%', textAlign: 'right' }}>{fmt(os.interestFdr)}</span>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {Number(os.otherInterest || 0) > 0 && (
+                  <div>
+                    <div style={{ textDecoration: 'underline' }}>Other Interest Income</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '0.5rem' }}>
+                      <span></span>
+                      <span style={{ width: '20%', textAlign: 'right' }}>{fmt(os.otherInterest)}</span>
+                      <span style={{ width: '20%', textAlign: 'right' }}>{fmt(os.otherInterest)}</span>
+                    </div>
+                  </div>
+                )}
+
+                {Number(os.dividendIncome || 0) > 0 && (
+                  <div>
+                    <div style={{ textDecoration: 'underline' }}>Dividend Income</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '0.5rem' }}>
+                      <span></span>
+                      <span style={{ width: '20%', textAlign: 'right' }}>{fmt(os.dividendIncome)}</span>
+                      <span style={{ width: '20%', textAlign: 'right' }}>{fmt(os.dividendIncome)}</span>
+                    </div>
+                  </div>
+                )}
+
+                {Number(os.otherIncome || 0) > 0 && (
+                  <div>
+                    <div style={{ textDecoration: 'underline' }}>Other Income / Casual Receipts</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '0.5rem' }}>
+                      <span></span>
+                      <span style={{ width: '20%', textAlign: 'right' }}>{fmt(os.otherIncome)}</span>
+                      <span style={{ width: '20%', textAlign: 'right' }}>{fmt(os.otherIncome)}</span>
+                    </div>
+                  </div>
+                )}
               </>
             )}
 
@@ -554,20 +702,20 @@ export const KdkZenitTemplate = ({ computation = {}, company = {} }) => {
               {challans.length > 0 ? (
                 challans.map((ch, idx) => (
                   <tr key={idx} style={{ borderBottom: '1px solid #000000' }}>
-                    <td style={{ padding: '3px 6px', borderRight: '1px solid #000000', textTransform: 'uppercase' }}>{ch.bankBranch || 'BANK OF INDIA-SECTOR 47C, CHANDIGARH'}</td>
-                    <td style={{ textAlign: 'center', padding: '3px 6px', borderRight: '1px solid #000000', fontFamily: 'monospace' }}>{ch.bsrCode || '0006210'}</td>
+                    <td style={{ padding: '3px 6px', borderRight: '1px solid #000000', textTransform: 'uppercase' }}>{ch.bankBranch || 'STATE BANK OF INDIA'}</td>
+                    <td style={{ textAlign: 'center', padding: '3px 6px', borderRight: '1px solid #000000', fontFamily: 'monospace' }}>{ch.bsrCode || '0002145'}</td>
                     <td style={{ textAlign: 'center', padding: '3px 6px', borderRight: '1px solid #000000' }}>{ch.date || '27/07/2026'}</td>
                     <td style={{ textAlign: 'center', padding: '3px 6px', borderRight: '1px solid #000000', fontFamily: 'monospace' }}>{ch.challanNo || '00652'}</td>
-                    <td style={{ textAlign: 'right', padding: '3px 6px' }}>{fmt(ch.amount || 161656)}</td>
+                    <td style={{ textAlign: 'right', padding: '3px 6px' }}>{fmt(ch.amount || 0)}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td style={{ padding: '3px 6px', borderRight: '1px solid #000000', textTransform: 'uppercase' }}>BANK OF INDIA-SECTOR 47C, CHANDIGARH</td>
-                  <td style={{ textAlign: 'center', padding: '3px 6px', borderRight: '1px solid #000000', fontFamily: 'monospace' }}>0006210</td>
+                  <td style={{ padding: '3px 6px', borderRight: '1px solid #000000', textTransform: 'uppercase' }}>STATE BANK OF INDIA</td>
+                  <td style={{ textAlign: 'center', padding: '3px 6px', borderRight: '1px solid #000000', fontFamily: 'monospace' }}>0002145</td>
                   <td style={{ textAlign: 'center', padding: '3px 6px', borderRight: '1px solid #000000' }}>27/07/2026</td>
                   <td style={{ textAlign: 'center', padding: '3px 6px', borderRight: '1px solid #000000', fontFamily: 'monospace' }}>00652</td>
-                  <td style={{ textAlign: 'right', padding: '3px 6px' }}>{fmt(tax.taxDeposited140A || 161656)}</td>
+                  <td style={{ textAlign: 'right', padding: '3px 6px' }}>{fmt(tax.taxDeposited140A || 0)}</td>
                 </tr>
               )}
             </tbody>
@@ -596,26 +744,27 @@ export const KdkZenitTemplate = ({ computation = {}, company = {} }) => {
         </div>
 
         {/* Verification Name */}
-        <div style={{ textAlign: 'center', marginTop: '3.5rem', marginBottom: '2.5rem', fontSize: '12px' }}>
+        <div style={{ textAlign: 'center', marginTop: '3.5rem', marginBottom: '1.5rem', fontSize: '12px' }}>
           <strong style={{ textTransform: 'uppercase' }}>
             Verified By : {p.name ? (p.name.startsWith('Mr.') ? p.name.replace('Mr. ', '') : p.name) : (computation.verifiedBy || 'HARWINDER SINGH')}
           </strong>
         </div>
       </div>
 
-      {/* Official Bottom Right Watermark */}
+      {/* Page 2 Bottom Page Number */}
       <div
         style={{
-          position: 'absolute',
-          bottom: '1.25rem',
-          right: '2.5rem',
+          marginTop: 'auto',
+          paddingTop: '2.5rem',
+          textAlign: 'right',
           fontSize: '10.5px',
-          color: '#000000',
+          color: '#64748b',
           fontFamily: 'Arial, Helvetica, sans-serif',
         }}
       >
-        ZenIT - A KDK Software Product
+        <span>Page 2 of 2</span>
       </div>
     </div>
-  );
+  </div>
+);
 };
