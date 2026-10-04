@@ -34,7 +34,7 @@ const sanitizeClonedDocument = (clonedDoc) => {
 
   // 3. Remove shadows and force clean margins
   clonedDoc.querySelectorAll(
-    '.haryana-edu-wrapper, #haryana-pdf-sheet, .classic-tabular-wrapper, .payslip-sheet, .hcl-corporate-wrapper, .aiims-govt-wrapper, .concentrix-daksh-wrapper, .sushma-buildtech-wrapper, .dwps-payslip-wrapper, .kdk-zenit-paper, .ca-audit-paper, .modern-executive-paper'
+    '.haryana-edu-wrapper, #haryana-pdf-sheet, .nestle-india-wrapper, #nestle-pdf-sheet, .classic-tabular-wrapper, .payslip-sheet, .hcl-corporate-wrapper, .aiims-govt-wrapper, .concentrix-daksh-wrapper, .sushma-buildtech-wrapper, .dwps-payslip-wrapper, .kdk-zenit-paper, .ca-audit-paper, .modern-executive-paper'
   ).forEach((sheet) => {
     sheet.style.boxShadow = 'none';
     sheet.style.margin = '0 auto';
@@ -50,6 +50,16 @@ const sanitizeClonedDocument = (clonedDoc) => {
     hSheet.style.maxWidth = '780px';
     hSheet.style.padding = '0';
     hSheet.style.boxSizing = 'border-box';
+  });
+
+  // Dedicated handling for Nestle India Template: enforce single landscape page fit
+  clonedDoc.querySelectorAll('.nestle-india-wrapper, #nestle-pdf-sheet').forEach((nSheet) => {
+    nSheet.style.boxShadow = 'none';
+    nSheet.style.margin = '0 auto';
+    nSheet.style.padding = '0';
+    nSheet.style.boxSizing = 'border-box';
+    nSheet.style.pageBreakInside = 'avoid';
+    nSheet.style.breakInside = 'avoid';
   });
 
   // Dedicated handling for New AIIMS Template: enforce exact A4 portrait dimensions
@@ -151,7 +161,7 @@ export const tryExportServerVectorPdf = async (elementOrId, filename = 'SalarySl
   }
 
   // Find all individual sheet elements within the target
-  const selector = '.computation-page, .haryana-edu-wrapper, #haryana-pdf-sheet, .dwps-payslip-wrapper, .new-aiims-wrapper, .classic-tabular-wrapper, .payslip-sheet, .hcl-corporate-wrapper, .aiims-govt-wrapper, .concentrix-daksh-wrapper, .sushma-buildtech-wrapper, .kdk-zenit-paper, .ca-audit-paper, .modern-executive-paper';
+  const selector = '.computation-page, .haryana-edu-wrapper, #haryana-pdf-sheet, .nestle-india-wrapper, #nestle-pdf-sheet, .dwps-payslip-wrapper, .new-aiims-wrapper, .classic-tabular-wrapper, .payslip-sheet, .hcl-corporate-wrapper, .aiims-govt-wrapper, .concentrix-daksh-wrapper, .sushma-buildtech-wrapper, .kdk-zenit-paper, .ca-audit-paper, .modern-executive-paper';
   let sheets = Array.from(rootElement.querySelectorAll(selector));
   if (sheets.length === 0) {
     sheets = rootElement.matches(selector) ? [rootElement] : [rootElement];
@@ -306,7 +316,7 @@ export const exportElementToPdf = async (elementOrId, filename = 'SalarySlip.pdf
 
   // 2. Client-Side Fallback: jsPDF + html2canvas
   // Find all individual sheet elements within the target
-  const selector = '.computation-page, .haryana-edu-wrapper, #haryana-pdf-sheet, .dwps-payslip-wrapper, .new-aiims-wrapper, .classic-tabular-wrapper, .payslip-sheet, .hcl-corporate-wrapper, .aiims-govt-wrapper, .concentrix-daksh-wrapper, .sushma-buildtech-wrapper, .kdk-zenit-paper, .ca-audit-paper, .modern-executive-paper';
+  const selector = '.computation-page, .haryana-edu-wrapper, #haryana-pdf-sheet, .nestle-india-wrapper, #nestle-pdf-sheet, .dwps-payslip-wrapper, .new-aiims-wrapper, .classic-tabular-wrapper, .payslip-sheet, .hcl-corporate-wrapper, .aiims-govt-wrapper, .concentrix-daksh-wrapper, .sushma-buildtech-wrapper, .kdk-zenit-paper, .ca-audit-paper, .modern-executive-paper';
   let sheets = Array.from(rootElement.querySelectorAll(selector));
 
   if (sheets.length === 0) {

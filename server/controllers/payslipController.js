@@ -182,6 +182,18 @@ const computePayslipFinancials = (employee, company, customOverrides = {}) => {
       { label: 'Pol.Med/Super A.', amount: 0 },
       { label: 'Other Allowance', amount: 0 },
     ];
+  } else if (company?.templateKey === 'nestle_india') {
+    const basicVal = (base.basicPay !== undefined && base.basicPay !== '' && !isNaN(base.basicPay)) ? Number(base.basicPay) : 168129;
+    const hraVal = (base.hra !== undefined && base.hra !== '' && !isNaN(base.hra)) ? Number(base.hra) : Math.round(basicVal * 0.5);
+    const compVal = (base.specialAllowance !== undefined && base.specialAllowance !== '' && !isNaN(base.specialAllowance)) ? Number(base.specialAllowance) : 55565;
+    const transVal = (base.conveyanceAllowance !== undefined && base.conveyanceAllowance !== '' && !isNaN(base.conveyanceAllowance)) ? Number(base.conveyanceAllowance) : 28500;
+
+    earnings = [
+      { label: 'Basic Salary', amount: Math.round(basicVal * payRatio) },
+      { label: 'House Rent Allowance', amount: Math.round(hraVal * payRatio) },
+      { label: 'Compensatory Allowance', amount: Math.round(compVal * payRatio) },
+      { label: 'Transport Allowance', amount: Math.round(transVal * payRatio) },
+    ];
   } else {
     // Standard corporate earnings list based on baseline salary
     if (base.basicPay) earnings.push({ label: 'Basic Salary', amount: Math.round(base.basicPay * payRatio) });
@@ -298,6 +310,14 @@ const computePayslipFinancials = (employee, company, customOverrides = {}) => {
       { label: 'HBA', amount: 0 },
       { label: 'MarAdv', amount: 0 },
       { label: 'ComAd', amount: 0 },
+    ];
+  } else if (company?.templateKey === 'nestle_india') {
+    const itVal = (base.tds !== undefined && base.tds !== '' && !isNaN(base.tds)) ? Number(base.tds) : 70040;
+    const pfVal = (base.pfDeduction !== undefined && base.pfDeduction !== '' && !isNaN(base.pfDeduction)) ? Number(base.pfDeduction) : 20175;
+    deductions = [
+      { label: 'Income Tax', amount: itVal },
+      { label: 'Recreation Club GGN', amount: 150 },
+      { label: 'Ee PF contribution', amount: pfVal },
     ];
   } else {
     // Standard deductions list based on baseline salary
@@ -450,11 +470,19 @@ const prepareDraftPayslip = async (req, res) => {
     });
 
     if (existingPayslip && (!customOverrides || Object.keys(customOverrides).length === 0)) {
+      const monthDays = getDaysInMonth(month, year);
+      let sWork = existingPayslip.workingDays !== undefined ? existingPayslip.workingDays : monthDays;
+      let sPaid = existingPayslip.paidDays !== undefined ? existingPayslip.paidDays : sWork;
+      // If previous workingDays was a generic 30 or 31 without intentional LOP, adapt to actual month calendar days
+      if ((sWork === 30 || sWork === 31) && sWork !== monthDays && (!existingPayslip.lopDays || existingPayslip.lopDays === 0)) {
+        sWork = monthDays;
+        sPaid = monthDays;
+      }
       financials = {
-        workingDays: existingPayslip.workingDays,
-        paidDays: existingPayslip.paidDays,
-        lopDays: existingPayslip.lopDays,
-        payRatio: existingPayslip.workingDays > 0 ? (existingPayslip.paidDays / existingPayslip.workingDays) : 1,
+        workingDays: sWork,
+        paidDays: sPaid,
+        lopDays: existingPayslip.lopDays || 0,
+        payRatio: sWork > 0 ? (sPaid / sWork) : 1,
         earnings: existingPayslip.earnings,
         deductions: existingPayslip.deductions,
         grossEarnings: existingPayslip.grossEarnings,
@@ -769,7 +797,24 @@ const generateBulkPayslips = async (req, res) => {
       }
       const voucherNoStr = String(currentVoucher).padStart(6, '0');
 
-      const financials = computePayslipFinancials(employee, company, mergedOverrides);
+      // Calculate month-specific days (30 for 30-day months, 31 for 31-day months, 28/29 for Feb)
+      const monthDays = lastDay;
+      const monthWorkingDays = monthDays;
+      const monthPaidDays = (actualPaidDays < workingDays)
+        ? Math.round(actualPaidDays * (monthDays / workingDays))
+        : monthDays;
+      const monthLopDays = Math.max(0, monthWorkingDays - monthPaidDays);
+
+      const monthOverrides = {
+        ...mergedOverrides,
+        month,
+        year,
+        workingDays: monthWorkingDays,
+        paidDays: monthPaidDays,
+        lopDays: monthLopDays,
+      };
+
+      const financials = computePayslipFinancials(employee, company, monthOverrides);
 
       // Snapshot with month-specific voucher number & voucher date
       const monthSnapshot = {
@@ -794,9 +839,9 @@ const generateBulkPayslips = async (req, res) => {
           year,
           payPeriod,
           paymentDate: new Date(year, monthIdx + 1, 0), // Last day of month
-          workingDays,
-          paidDays: actualPaidDays,
-          lopDays: actualLopDays,
+          workingDays: monthWorkingDays,
+          paidDays: monthPaidDays,
+          lopDays: monthLopDays,
           earnings: financials.earnings,
           deductions: financials.deductions,
           grossEarnings: financials.grossEarnings,

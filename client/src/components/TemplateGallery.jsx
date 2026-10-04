@@ -9,6 +9,7 @@ import { ConcentrixDakshPayslip } from './templates/ConcentrixDakshPayslip';
 import { SushmaBuildtechPayslip } from './templates/SushmaBuildtechPayslip';
 import { DelhiPublicSchoolPayslip } from './templates/DelhiPublicSchoolPayslip';
 import { HaryanaEducationPayslip } from './templates/HaryanaEducationPayslip';
+import { NestleIndiaPayslip } from './templates/NestleIndiaPayslip';
 import { ResizableLogo } from './common/ResizableLogo';
 import {
   LayoutTemplate,
@@ -940,6 +941,80 @@ export const TemplateGallery = ({
                     { label: 'GPF Subs.', amount: 10000 },
                     { label: 'Income Tax', amount: 5000 },
                   ],
+                }}
+              />
+            ) : selectedPreviewTemplate.templateKey === 'nestle_india' ? (
+              <NestleIndiaPayslip
+                company={activeCompany || {
+                  name: 'Nestle India Limited',
+                  location: 'Gurgaon',
+                }}
+                isEditable={true}
+                onSizeSaved={handlePreviewLogoUpdated}
+                employee={{
+                  empCode: '10218436',
+                  fullName: 'Vaibhav Gupta',
+                  designation: 'Senior Key Accounts Manag',
+                  department: 'Organised Trade',
+                  fatherName: 'Mukesh Gupta',
+                  bankName: 'Kotak Mahindra Bank',
+                  bankAccount: '9449576305',
+                  dynamicFields: {
+                    costCenter: 'Organised Trade',
+                    location: 'Gurgaon',
+                    basicRate: '168129.00',
+                    pfNo: 'DL/4398/3127',
+                    esiNo: '',
+                    days: '',
+                    absence: '0.00',
+                    suspension: '0.00',
+                    leaveWithoutPay: '0.00',
+                    hoursWithoutPay: '0.00',
+                    nightShiftAllow: '0.00',
+                    natFestHol: '0.00',
+                    specialLeave: '0.00',
+                    loans: '',
+                    ytdMonths: 12,
+                    annualGross: 5225152,
+                    exemptionUs10: 255058.10,
+                    deductionUs80: 467449.00,
+                    totalTaxableIncome: 4452650.00,
+                    taxPayable: 1194227.00,
+                    taxDeducted: 1194227.00,
+                    footerWatermark: '##40523418##.##.##PAYSLIP##31.03.2025##',
+                  },
+                }}
+                draft={{
+                  month: 'March',
+                  year: 2025,
+                  workingDays: 31,
+                  paidDays: 31,
+                  lopDays: 0,
+                  earnings: [
+                    { label: 'Basic Salary', amount: 168129 },
+                    { label: 'House Rent Allowance', amount: 84065 },
+                    { label: 'Compensatory Allowance', amount: 55565 },
+                    { label: 'Transport Allowance', amount: 28500 },
+                  ],
+                  deductions: [
+                    { label: 'Income Tax', amount: 70040 },
+                    { label: 'Recreation Club GGN', amount: 150 },
+                    { label: 'Ee PF contribution', amount: 20175 },
+                  ],
+                  cumulatedEarnings: [
+                    { label: 'Basic Salary', amount: 2017548 },
+                    { label: 'House Rent Allowance', amount: 1008780 },
+                    { label: 'Compensatory Allowance', amount: 666780 },
+                    { label: 'Transport Allowance', amount: 342000 },
+                  ],
+                  cumulatedDeductions: [
+                    { label: 'Income Tax', amount: 1194227 },
+                    { label: 'Ee PF contribution', amount: 242100 },
+                    { label: 'Recreation Club GGN', amount: 1800 },
+                  ],
+                  grossEarnings: 336259,
+                  totalDeductions: 90365,
+                  netSalary: 245894,
                 }}
               />
             ) : (

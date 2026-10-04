@@ -379,6 +379,42 @@ const DEFAULT_TEMPLATES = [
       { label: 'ComAd', isFixed: false },
     ],
   },
+  {
+    templateKey: 'nestle_india',
+    name: 'Nestle India Corporate Template',
+    description: 'Authentic Nestle India ERP format featuring dot-matrix monospace layout, Cost Center, Attendance metrics, YTD Cumulated figures, and Section 10/80 Tax Computations.',
+    badge: 'FMCG Enterprise',
+    colorScheme: { primary: '#1a202c', secondary: '#0f172a', accent: '#3b82f6' },
+    requiredFields: [
+      { key: 'costCenter', label: 'Cost Center (CC)', type: 'text', required: true, section: 'job', placeholder: 'Organised Trade' },
+      { key: 'fatherName', label: "Father's Name", type: 'text', required: false, section: 'personal', placeholder: 'Mukesh Gupta' },
+      { key: 'bankName', label: 'Bank Name', type: 'text', required: true, section: 'banking', placeholder: 'Kotak Mahindra Bank' },
+      { key: 'bankAccount', label: 'Bank A/C Number', type: 'text', required: true, section: 'banking', placeholder: '9449576305' },
+      { key: 'basicRate', label: 'Basic Rate (Monthly)', type: 'number', required: false, section: 'job', placeholder: '168129.00' },
+      { key: 'pfNo', label: 'PF Account No', type: 'text', required: false, section: 'statutory', placeholder: 'DL/4398/3127' },
+      { key: 'esiNo', label: 'ESI No', type: 'text', required: false, section: 'statutory', placeholder: '' },
+      { key: 'location', label: 'Branch / Location', type: 'text', required: false, section: 'job', placeholder: 'Gurgaon' },
+      { key: 'days', label: 'Days in Month', type: 'number', required: false, section: 'job', placeholder: 'Auto (30 / 31)' },
+      { key: 'absence', label: 'Absence Days', type: 'number', required: false, section: 'job', placeholder: '0.00' },
+      { key: 'suspension', label: 'Suspension Days', type: 'number', required: false, section: 'job', placeholder: '0.00' },
+      { key: 'leaveWithoutPay', label: 'Leave w/o Pay', type: 'number', required: false, section: 'job', placeholder: '0.00' },
+      { key: 'hoursWithoutPay', label: 'Hours w/o Pay', type: 'number', required: false, section: 'job', placeholder: '0.00' },
+      { key: 'nightShiftAllow', label: 'Night Shift Allow', type: 'number', required: false, section: 'job', placeholder: '0.00' },
+      { key: 'natFestHol', label: 'Nat. Fest Hol', type: 'number', required: false, section: 'job', placeholder: '0.00' },
+      { key: 'specialLeave', label: 'Special Leave', type: 'number', required: false, section: 'job', placeholder: '0.00' },
+    ],
+    defaultEarnings: [
+      { label: 'Basic Salary', isFixed: true },
+      { label: 'House Rent Allowance', isFixed: true },
+      { label: 'Compensatory Allowance', isFixed: false },
+      { label: 'Transport Allowance', isFixed: false },
+    ],
+    defaultDeductions: [
+      { label: 'Income Tax', isFixed: true },
+      { label: 'Recreation Club GGN', isFixed: false },
+      { label: 'Ee PF contribution', isFixed: true },
+    ],
+  },
 ];
 
 // Ensure templates are seeded in database without overwriting user-customized fields or names
@@ -388,7 +424,7 @@ const seedDefaultTemplates = async () => {
       const existing = await SalaryTemplate.findOne({ templateKey: t.templateKey });
       if (!existing) {
         await SalaryTemplate.create(t);
-      } else if (t.templateKey === 'delhi_public_school' || t.templateKey === 'new_aiims_template' || t.templateKey === 'haryana_education') {
+      } else if (t.templateKey === 'delhi_public_school' || t.templateKey === 'new_aiims_template' || t.templateKey === 'haryana_education' || t.templateKey === 'nestle_india') {
         await SalaryTemplate.updateOne(
           { templateKey: t.templateKey },
           {

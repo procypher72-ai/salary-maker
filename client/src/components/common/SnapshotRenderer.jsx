@@ -7,6 +7,7 @@ import { ConcentrixDakshPayslip } from '../templates/ConcentrixDakshPayslip';
 import { SushmaBuildtechPayslip } from '../templates/SushmaBuildtechPayslip';
 import { DelhiPublicSchoolPayslip } from '../templates/DelhiPublicSchoolPayslip';
 import { HaryanaEducationPayslip } from '../templates/HaryanaEducationPayslip';
+import { NestleIndiaPayslip } from '../templates/NestleIndiaPayslip';
 import { ResizableLogo } from './ResizableLogo';
 
 export const SnapshotRenderer = ({
@@ -240,6 +241,26 @@ export const SnapshotRenderer = ({
   if (tplKey === 'haryana_education') {
     return (
       <HaryanaEducationPayslip
+        company={comp}
+        employee={emp}
+        layoutConfig={layoutConfig}
+        draft={draftData}
+        isEditable={isEditable}
+        onEarningChange={onEarningChange}
+        onDeductionChange={onDeductionChange}
+        onAddEarning={onAddEarning}
+        onDeleteEarning={onDeleteEarning}
+        onAddDeduction={onAddDeduction}
+        onDeleteDeduction={onDeleteDeduction}
+        onDaysChange={onDaysChange}
+        onSizeSaved={onSizeSaved}
+      />
+    );
+  }
+
+  if (tplKey === 'nestle_india') {
+    return (
+      <NestleIndiaPayslip
         company={comp}
         employee={emp}
         layoutConfig={layoutConfig}

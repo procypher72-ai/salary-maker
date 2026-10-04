@@ -16,7 +16,7 @@ const salaryTemplateSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      enum: ['corporate_detailed', 'minimalist_startup', 'standard_industrial', 'classic_tabular', 'hcl_corporate_tech', 'aiims_govt_medical', 'concentrix_daksh', 'sushma_buildtech', 'delhi_public_school', 'new_aiims_template', 'haryana_education'],
+      enum: ['corporate_detailed', 'minimalist_startup', 'standard_industrial', 'classic_tabular', 'hcl_corporate_tech', 'aiims_govt_medical', 'concentrix_daksh', 'sushma_buildtech', 'delhi_public_school', 'new_aiims_template', 'haryana_education', 'nestle_india'],
     },
     name: {
       type: String,

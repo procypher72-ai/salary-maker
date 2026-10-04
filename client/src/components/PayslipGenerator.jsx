@@ -9,6 +9,7 @@ import { ConcentrixDakshPayslip } from './templates/ConcentrixDakshPayslip';
 import { SushmaBuildtechPayslip } from './templates/SushmaBuildtechPayslip';
 import { DelhiPublicSchoolPayslip } from './templates/DelhiPublicSchoolPayslip';
 import { HaryanaEducationPayslip } from './templates/HaryanaEducationPayslip';
+import { NestleIndiaPayslip } from './templates/NestleIndiaPayslip';
 import { ResizableLogo } from './common/ResizableLogo';
 import { SlipLayoutToolbar } from './common/SlipLayoutToolbar';
 import { SignatureStampBox } from './common/SignatureStampBox';
@@ -412,6 +413,22 @@ export const PayslipGenerator = ({
         label: item.label,
         amount: Math.round(item.amount * payRatio),
       }));
+    } else if (templateKey === 'nestle_india') {
+      const basicVal = (base.basicPay !== undefined && base.basicPay !== '' && !isNaN(base.basicPay)) ? Number(base.basicPay) : 168129;
+      const hraVal = (base.hra !== undefined && base.hra !== '' && !isNaN(base.hra)) ? Number(base.hra) : Math.round(basicVal * 0.5);
+      const compVal = (base.specialAllowance !== undefined && base.specialAllowance !== '' && !isNaN(base.specialAllowance)) ? Number(base.specialAllowance) : 55565;
+      const transVal = (base.conveyanceAllowance !== undefined && base.conveyanceAllowance !== '' && !isNaN(base.conveyanceAllowance)) ? Number(base.conveyanceAllowance) : 28500;
+
+      const nestleBase = [
+        { label: 'Basic Salary', amount: basicVal },
+        { label: 'House Rent Allowance', amount: hraVal },
+        { label: 'Compensatory Allowance', amount: compVal },
+        { label: 'Transport Allowance', amount: transVal },
+      ];
+      updatedEarnings = nestleBase.map((item) => ({
+        label: item.label,
+        amount: Math.round(item.amount * payRatio),
+      }));
     } else {
       if (base.basicPay) updatedEarnings.push({ label: 'Basic Salary', amount: Math.round(base.basicPay * payRatio) });
       if (base.hra) updatedEarnings.push({ label: 'House Rent Allowance (HRA)', amount: Math.round(base.hra * payRatio) });
@@ -591,6 +608,23 @@ export const PayslipGenerator = ({
       };
       recalculateTotals(updated);
       showToast('Autofilled Haryana Education statutory deductions!', 'success');
+      return;
+    }
+
+    if (templateKey === 'nestle_india') {
+      const itVal = (base.tds !== undefined && base.tds !== '' && !isNaN(base.tds)) ? Number(base.tds) : 70040;
+      const pfVal = (base.pfDeduction !== undefined && base.pfDeduction !== '' && !isNaN(base.pfDeduction)) ? Number(base.pfDeduction) : 20175;
+      const updatedDeductions = [
+        { label: 'Income Tax', amount: itVal },
+        { label: 'Recreation Club GGN', amount: 150 },
+        { label: 'Ee PF contribution', amount: pfVal },
+      ];
+      const updated = {
+        ...draft,
+        deductions: updatedDeductions,
+      };
+      recalculateTotals(updated);
+      showToast('Autofilled Nestle India statutory deductions!', 'success');
       return;
     }
 
@@ -1225,6 +1259,22 @@ export const PayslipGenerator = ({
             />
           ) : templateKey === 'haryana_education' ? (
             <HaryanaEducationPayslip
+              company={activeCompany}
+              employee={selectedEmployeeObj}
+              draft={draft}
+              isEditable={true}
+              layoutConfig={layoutConfig}
+              onEarningChange={handleEarningChange}
+              onDeductionChange={handleDeductionChange}
+              onAddEarning={handleAddEarning}
+              onDeleteEarning={handleDeleteEarning}
+              onAddDeduction={handleAddDeduction}
+              onDeleteDeduction={handleDeleteDeduction}
+              onDaysChange={handleDaysChange}
+              onSizeSaved={handleLogoSaved}
+            />
+          ) : templateKey === 'nestle_india' ? (
+            <NestleIndiaPayslip
               company={activeCompany}
               employee={selectedEmployeeObj}
               draft={draft}
