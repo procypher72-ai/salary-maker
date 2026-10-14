@@ -14,6 +14,7 @@ import {
   Edit,
   Sparkles,
   Building,
+  Building2,
   CreditCard,
   Briefcase,
   DollarSign,
@@ -44,11 +45,16 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-const YEARS = [2024, 2025, 2026, 2027];
+const YEARS = [
+  2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024,
+  2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035
+];
 
 export const EmployeeManager = ({
   employees = [],
   activeCompany,
+  companies = [],
+  setActiveCompany,
   templates = [],
   payslips = [],
   onRefresh,
@@ -61,6 +67,7 @@ export const EmployeeManager = ({
   const [isCtcModalOpen, setIsCtcModalOpen] = useState(false);
   const [editingEmp, setEditingEmp] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [modalCompanyId, setModalCompanyId] = useState('');
   const [isBulkImporting, setIsBulkImporting] = useState(false);
   const [bulkImportResults, setBulkImportResults] = useState(null);
 
@@ -128,42 +135,54 @@ export const EmployeeManager = ({
 
   const [formData, setFormData] = useState(initialForm);
 
-  const handleOpenCreate = () => {
+  const handleOpenCreate = (targetCompId) => {
     setEditingEmp(null);
-    const tplKey = activeCompany?.templateKey || 'corporate_detailed';
+    const chosenCompId = (typeof targetCompId === 'string' && targetCompId)
+      ? targetCompId
+      : (modalCompanyId || activeCompany?._id || (companies && companies[0]?._id) || '');
+    setModalCompanyId(chosenCompId);
+    const chosenComp = companies.find((c) => c._id === chosenCompId) || activeCompany;
+    const tplKey = chosenComp?.templateKey || 'corporate_detailed';
+
     if (tplKey === 'delhi_public_school') {
       setFormData({
-        empCode: `DWPS-${Math.floor(1000 + Math.random() * 9000)}`,
+        empCode: '4417',
         fullName: '',
+        bankAccount: '',
+        pan: '',
+        panNumber: '',
         fatherName: '',
         dob: '',
         residentStatus: 'Resident',
         residentialAddress: '',
         email: '',
         phone: '',
-        designation: '',
+        designation: 'PRINCIPAL',
         department: 'Management',
         joiningDate: new Date().toISOString().split('T')[0],
-        taxRegime: activeCompany?.defaultTaxRegime || 'new',
-        ptState: activeCompany?.ptState || 'madhya pradesh',
-        ctcAnnual: 600000,
+        taxRegime: chosenComp?.defaultTaxRegime || 'new',
+        ptState: chosenComp?.ptState || 'madhya pradesh',
+        ctcAnnual: 802800,
         dynamicFields: {
-          functionRole: 'Management',
-          location: 'Ashta',
-          bankDetails: '',
+          accountNo: '',
           dateOfJoiningStr: '',
+          bankDetails: 'BANK OF BARODA(IFSC Code: BARB0VJASHT)',
+          bankAddress: 'KANNOD ROAD, ASHTA, DIST.SEHORE, ASHTA - 466116',
+          postingOffice: chosenComp?.name || 'DELHI WORLD PUBLIC SCHOOL, ASHTA',
+          designation: 'PRINCIPAL',
+          empId: '4417',
+          panNo: '',
         },
         baselineSalary: {
-          basicPay: 20000,
-          hra: 20000,
-          specialAllowance: 10000, // D.A
-          conveyanceAllowance: 0,
-          medicalAllowance: 0,
+          basicPay: 40000,
+          hra: 6400,
+          specialAllowance: 20000, // Dearness Allowance
+          medicalAllowance: 500,
           otherAllowances: 0,
-          pfDeduction: 0,
+          pfDeduction: 7200,
           esicDeduction: 0,
-          professionalTax: 212,
-          tds: 0,
+          professionalTax: 200,
+          tds: 5000,
           otherDeductions: 0,
         },
       });
@@ -180,8 +199,8 @@ export const EmployeeManager = ({
         designation: 'Senior Key Accounts Manag',
         department: 'Organised Trade',
         joiningDate: new Date().toISOString().split('T')[0],
-        taxRegime: activeCompany?.defaultTaxRegime || 'new',
-        ptState: activeCompany?.ptState || 'haryana',
+        taxRegime: chosenComp?.defaultTaxRegime || 'new',
+        ptState: chosenComp?.ptState || 'haryana',
         ctcAnnual: 4000000,
         dynamicFields: {
           costCenter: 'Organised Trade',
@@ -223,27 +242,44 @@ export const EmployeeManager = ({
 
   const handleOpenEdit = (emp) => {
     setEditingEmp(emp);
+    const empCompId = emp.companyId?._id || emp.companyId || activeCompany?._id || '';
+    setModalCompanyId(empCompId);
     const dyn = emp.dynamicFields instanceof Map ? Object.fromEntries(emp.dynamicFields) : emp.dynamicFields || {};
     let dobVal = emp.dob || dyn.dob || dyn.dateOfBirth || '';
     if (dobVal && typeof dobVal === 'string' && dobVal.includes('T')) {
       dobVal = dobVal.split('T')[0];
     }
+    const accNo = emp.bankAccount || dyn.accountNo || dyn.bankAccount || '';
+    const panVal = emp.pan || emp.panNumber || dyn.pan || dyn.panNo || dyn.panNumber || '';
+    const empIdVal = emp.empCode || dyn.empId || '';
+
     setFormData({
-      empCode: emp.empCode || '',
+      empCode: empIdVal,
       fullName: emp.fullName || '',
+      bankAccount: accNo,
+      pan: panVal,
+      panNumber: panVal,
       fatherName: emp.fatherName || dyn.fatherName || dyn.fathersName || '',
       dob: dobVal,
       residentStatus: emp.residentStatus || 'Resident',
       residentialAddress: emp.residentialAddress || dyn.residentialAddress || dyn.address || '',
       email: emp.email || '',
       phone: emp.phone || '',
-      designation: emp.designation || '',
-      department: emp.department || 'General',
+      designation: emp.designation || dyn.designation || '',
+      department: emp.department || dyn.functionRole || 'Management',
       joiningDate: emp.joiningDate ? new Date(emp.joiningDate).toISOString().split('T')[0] : '',
       taxRegime: emp.taxRegime || 'new',
-      ptState: emp.ptState || 'maharashtra',
+      ptState: emp.ptState || 'madhya pradesh',
       ctcAnnual: emp.ctcAnnual || 0,
-      dynamicFields: emp.dynamicFields || {},
+      dynamicFields: {
+        ...dyn,
+        accountNo: accNo,
+        panNo: panVal,
+        empId: empIdVal,
+        bankDetails: dyn.bankDetails || (emp.bankName ? `${emp.bankName}${emp.ifscCode ? `(IFSC Code: ${emp.ifscCode})` : ''}` : 'BANK OF BARODA(IFSC Code: BARB0VJASHT)'),
+        bankAddress: dyn.bankAddress || dyn.location || emp.location || 'KANNOD ROAD, ASHTA, DIST.SEHORE, ASHTA - 466116',
+        postingOffice: dyn.postingOffice || activeCompany?.name || 'DELHI WORLD PUBLIC SCHOOL, ASHTA',
+      },
       baselineSalary: emp.baselineSalary || initialForm.baselineSalary,
     });
     setIsModalOpen(true);
@@ -285,11 +321,12 @@ export const EmployeeManager = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!activeCompany) {
-      showToast('Please select an active company first', 'error');
+    const targetComp = companies.find((c) => c._id === modalCompanyId) || activeCompany;
+    if (!targetComp) {
+      showToast('Please select a company first', 'error');
       return;
     }
-    const tplKey = activeCompany?.templateKey || 'corporate_detailed';
+    const tplKey = targetComp?.templateKey || 'corporate_detailed';
 
     let empCodeToUse = formData.empCode?.trim();
     if (!empCodeToUse) {
@@ -315,6 +352,13 @@ export const EmployeeManager = ({
           dynamicFieldsToSave.dateOfJoiningStr = `${day}/${month}/${year}`;
         }
       }
+      dynamicFieldsToSave.accountNo = formData.bankAccount || dynamicFieldsToSave.accountNo || '';
+      dynamicFieldsToSave.panNo = formData.pan || formData.panNumber || dynamicFieldsToSave.panNo || '';
+      dynamicFieldsToSave.empId = empCodeToUse;
+      dynamicFieldsToSave.designation = formData.designation;
+      if (!dynamicFieldsToSave.postingOffice) {
+        dynamicFieldsToSave.postingOffice = targetComp?.name || 'DELHI WORLD PUBLIC SCHOOL, ASHTA';
+      }
       if (dynamicFieldsToSave.functionRole) {
         departmentToUse = dynamicFieldsToSave.functionRole;
       }
@@ -325,9 +369,12 @@ export const EmployeeManager = ({
       const payload = {
         ...formData,
         empCode: empCodeToUse,
+        bankAccount: formData.bankAccount || dynamicFieldsToSave.accountNo || '',
+        pan: formData.pan || formData.panNumber || dynamicFieldsToSave.panNo || '',
+        panNumber: formData.pan || formData.panNumber || dynamicFieldsToSave.panNo || '',
         department: departmentToUse,
         dynamicFields: dynamicFieldsToSave,
-        companyId: activeCompany._id,
+        companyId: targetComp._id,
       };
 
       if (editingEmp) {
@@ -440,9 +487,10 @@ export const EmployeeManager = ({
       ];
     } else if (tplKey === 'delhi_public_school') {
       initialEarnings = [
-        { label: 'Basic', amount: base.basicPay ? Number(base.basicPay) : 20000 },
-        { label: 'D.A', amount: base.specialAllowance ? Number(base.specialAllowance) : 10000 },
-        { label: 'H.R.A', amount: base.hra ? Number(base.hra) : 20000 },
+        { label: 'Basic', amount: base.basicPay ? Number(base.basicPay) : 40000 },
+        { label: 'Dearness Allowance', amount: base.specialAllowance ? Number(base.specialAllowance) : 20000 },
+        { label: 'House Rent Allowance', amount: base.hra ? Number(base.hra) : 6400 },
+        { label: 'Medical Allowance', amount: base.medicalAllowance ? Number(base.medicalAllowance) : 500 },
       ];
     } else if (tplKey === 'haryana_education') {
       initialEarnings = [
@@ -521,7 +569,9 @@ export const EmployeeManager = ({
       ];
     } else if (tplKey === 'delhi_public_school') {
       initialDeductions = [
-        { label: 'Professsional Tax', amount: base.professionalTax ? Number(base.professionalTax) : 212 },
+        { label: 'Provident Fund', amount: base.pfDeduction ? Number(base.pfDeduction) : 7200 },
+        { label: 'Income Tax', amount: base.tds ? Number(base.tds) : 5000 },
+        { label: 'Proffessional Tax', amount: base.professionalTax ? Number(base.professionalTax) : 200 },
       ];
     } else if (tplKey === 'haryana_education') {
       initialDeductions = [
@@ -998,7 +1048,28 @@ export const EmployeeManager = ({
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          {companies && companies.length > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.04)', padding: '0.3rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <Building2 size={15} className="text-cyan" />
+              <select
+                className="form-select"
+                style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.85rem', padding: '0.2rem 0.4rem', cursor: 'pointer' }}
+                value={activeCompany?._id || ''}
+                onChange={(e) => {
+                  const comp = companies.find((c) => c._id === e.target.value);
+                  if (comp && setActiveCompany) setActiveCompany(comp);
+                }}
+                id="emp-manager-header-company-select"
+              >
+                {companies.map((c) => (
+                  <option key={c._id} value={c._id} style={{ background: '#1e293b', color: '#fff' }}>
+                    🏢 {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <button
             onClick={() => {
               setBulkImportResults(null);
@@ -1011,7 +1082,7 @@ export const EmployeeManager = ({
             <span>Bulk Import Excel</span>
           </button>
           <button
-            onClick={handleOpenCreate}
+            onClick={() => handleOpenCreate(activeCompany?._id)}
             className="btn btn-primary"
             id="add-employee-btn"
           >
@@ -1963,9 +2034,9 @@ export const EmployeeManager = ({
                   {editingEmp ? 'Edit Employee Record' : 'Onboard New Employee'}
                 </h3>
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  Active Template:{' '}
+                  Selected Template Schema:{' '}
                   <span style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>
-                    {activeTemplate?.name || activeCompany?.templateKey}
+                    {((companies.find((c) => c._id === modalCompanyId) || activeCompany)?.templateKey || '').replace(/_/g, ' ').toUpperCase()}
                   </span>
                 </p>
               </div>
@@ -1978,176 +2049,238 @@ export const EmployeeManager = ({
             </div>
 
             <form onSubmit={handleSubmit}>
-              {activeCompany?.templateKey === 'delhi_public_school' ? (
+              {/* Target Company & Template Selector */}
+              {companies && companies.length > 0 && (
+                <div style={{ marginBottom: '1.25rem', padding: '0.75rem 1rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                  <label className="form-label" style={{ fontWeight: 700, color: 'var(--accent-cyan)', marginBottom: '0.4rem' }}>
+                    🏢 Target Company & Template *
+                  </label>
+                  <select
+                    className="form-select"
+                    value={modalCompanyId || activeCompany?._id || ''}
+                    onChange={(e) => {
+                      const newId = e.target.value;
+                      setModalCompanyId(newId);
+                      const chosen = companies.find((c) => c._id === newId);
+                      if (chosen && chosen.templateKey === 'delhi_public_school') {
+                        setFormData((prev) => ({
+                          ...prev,
+                          empCode: prev.empCode && prev.empCode !== 'EMP-001' ? prev.empCode : '4417',
+                          designation: prev.designation || 'PRINCIPAL',
+                          dynamicFields: {
+                            ...prev.dynamicFields,
+                            accountNo: prev.bankAccount || prev.dynamicFields?.accountNo || '',
+                            bankDetails: prev.dynamicFields?.bankDetails || 'BANK OF BARODA(IFSC Code: BARB0VJASHT)',
+                            bankAddress: prev.dynamicFields?.bankAddress || 'KANNOD ROAD, ASHTA, DIST.SEHORE, ASHTA - 466116',
+                            postingOffice: chosen.name || 'DELHI WORLD PUBLIC SCHOOL, ASHTA',
+                            empId: prev.empCode || '4417',
+                            designation: prev.designation || 'PRINCIPAL',
+                            panNo: prev.pan || prev.panNumber || prev.dynamicFields?.panNo || '',
+                          },
+                          baselineSalary: prev.baselineSalary?.basicPay ? prev.baselineSalary : {
+                            basicPay: 40000,
+                            hra: 6400,
+                            specialAllowance: 20000,
+                            medicalAllowance: 500,
+                            otherAllowances: 0,
+                            pfDeduction: 7200,
+                            esicDeduction: 0,
+                            professionalTax: 200,
+                            tds: 5000,
+                            otherDeductions: 0,
+                          },
+                        }));
+                      }
+                    }}
+                    id="modal-company-select"
+                  >
+                    {companies.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name} — {(c.templateKey || 'corporate_detailed').replace(/_/g, ' ').toUpperCase()}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {((companies.find((c) => c._id === modalCompanyId) || activeCompany)?.templateKey === 'delhi_public_school') ? (
                 /* ── DELHI WORLD PUBLIC SCHOOL FOCUSED ONBOARDING FORM ── */
                 <>
                   <div style={{ marginBottom: '1.25rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
                       <Users size={18} className="text-cyan" />
                       <h4 style={{ fontSize: '0.95rem', color: 'var(--accent-cyan)', margin: 0, fontWeight: 700 }}>
-                        Employee Details (Delhi World Public School Format)
+                        Delhi World Public School — Employee Credentials
                       </h4>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                      {/* Name (Full Name) */}
-                      <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 700 }}>Name (Full Name) *</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="e.g. SUNAINA SHARMA"
-                          value={formData.fullName}
-                          onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                          required
-                          autoFocus
-                          id="dwps-input-fullname"
-                        />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                      {/* Left Column Box (Template Left Side) */}
+                      <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-cyan)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '0.35rem' }}>
+                          Template Left Side Details
+                        </div>
+
+                        {/* 1. Name */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Name *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. SUNAINA SHARMA"
+                            value={formData.fullName}
+                            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                            required
+                            autoFocus
+                            id="dwps-input-fullname"
+                          />
+                        </div>
+
+                        {/* 2. Account No. */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Account No. *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. 38570100006930"
+                            value={formData.bankAccount || formData.dynamicFields?.accountNo || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setFormData((prev) => ({
+                                ...prev,
+                                bankAccount: val,
+                                dynamicFields: { ...prev.dynamicFields, accountNo: val },
+                              }));
+                            }}
+                            required
+                            id="dwps-input-accountno"
+                          />
+                        </div>
+
+                        {/* 3. Joining Date */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Joining Date *</label>
+                          <input
+                            type="date"
+                            className="form-input"
+                            value={formData.joiningDate}
+                            onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
+                            required
+                            id="dwps-input-joiningdate"
+                          />
+                        </div>
+
+                        {/* 4. Bank Details */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Bank Details (Bank & IFSC) *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. BANK OF BARODA(IFSC Code: BARB0VJASHT)"
+                            value={formData.dynamicFields?.bankDetails || ''}
+                            onChange={(e) => handleDynamicFieldChange('bankDetails', e.target.value)}
+                            required
+                            id="dwps-input-bankdetails"
+                          />
+                        </div>
+
+                        {/* Bank Address */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Bank Branch / Address</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. KANNOD ROAD, ASHTA, DIST.SEHORE, ASHTA - 466116"
+                            value={formData.dynamicFields?.bankAddress || ''}
+                            onChange={(e) => handleDynamicFieldChange('bankAddress', e.target.value)}
+                            id="dwps-input-bankaddress"
+                          />
+                        </div>
                       </div>
 
-                      {/* Function */}
-                      <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 700 }}>Function</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="e.g. Management"
-                          value={formData.dynamicFields?.functionRole !== undefined ? formData.dynamicFields.functionRole : (formData.department || '')}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setFormData((prev) => ({
-                              ...prev,
-                              department: val,
-                              dynamicFields: { ...prev.dynamicFields, functionRole: val },
-                            }));
-                          }}
-                          id="dwps-input-function"
-                        />
-                      </div>
+                      {/* Right Column Box (Template Right Side) */}
+                      <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-cyan)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '0.35rem' }}>
+                          Template Right Side Details
+                        </div>
 
-                      {/* Designation */}
-                      <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 700 }}>Designation *</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="e.g. Principal"
-                          value={formData.designation}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setFormData((prev) => ({
-                              ...prev,
-                              designation: val,
-                              dynamicFields: { ...prev.dynamicFields, designation: val },
-                            }));
-                          }}
-                          required
-                          id="dwps-input-designation"
-                        />
-                      </div>
+                        {/* 5. Posting Office */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Posting Office *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. DELHI WORLD PUBLIC SCHOOL, ASHTA"
+                            value={formData.dynamicFields?.postingOffice || ''}
+                            onChange={(e) => handleDynamicFieldChange('postingOffice', e.target.value)}
+                            required
+                            id="dwps-input-postingofficer"
+                          />
+                        </div>
 
-                      {/* Location */}
-                      <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 700 }}>Location</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="e.g. Ashta"
-                          value={formData.dynamicFields?.location || ''}
-                          onChange={(e) => handleDynamicFieldChange('location', e.target.value)}
-                          id="dwps-input-location"
-                        />
-                      </div>
+                        {/* 6. Designation */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Designation *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. PRINCIPAL"
+                            value={formData.designation}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setFormData((prev) => ({
+                                ...prev,
+                                designation: val,
+                                dynamicFields: { ...prev.dynamicFields, designation: val },
+                              }));
+                            }}
+                            required
+                            id="dwps-input-designation"
+                          />
+                        </div>
 
-                      {/* Bank Details */}
-                      <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                        <label className="form-label" style={{ fontWeight: 700 }}>Bank Details (Account No, Bank Name, Branch)</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="e.g. 38570100006930,Bank of Baroda,Ashta"
-                          value={formData.dynamicFields?.bankDetails || ''}
-                          onChange={(e) => handleDynamicFieldChange('bankDetails', e.target.value)}
-                          id="dwps-input-bankdetails"
-                        />
-                      </div>
+                        {/* 7. Emp ID */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Emp ID *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. 4417"
+                            value={formData.empCode || formData.dynamicFields?.empId || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setFormData((prev) => ({
+                                ...prev,
+                                empCode: val,
+                                dynamicFields: { ...prev.dynamicFields, empId: val },
+                              }));
+                            }}
+                            required
+                            id="dwps-input-empid"
+                          />
+                        </div>
 
-                      {/* Date of Joining */}
-                      <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 700 }}>Date of Joining</label>
-                        <input
-                          type="date"
-                          className="form-input"
-                          value={formData.joiningDate}
-                          onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
-                          id="dwps-input-joiningdate"
-                        />
-                      </div>
-
-                      {/* Employee ID (Auto / Optional) */}
-                      <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 700 }}>Employee ID / Code (Auto)</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="e.g. DWPS-1021"
-                          value={formData.empCode}
-                          onChange={(e) => setFormData({ ...formData, empCode: e.target.value })}
-                          id="dwps-input-empcode"
-                        />
-                      </div>
-
-                      {/* Father's Name */}
-                      <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 700 }}>Father's Name</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="e.g. Baldev Singh"
-                          value={formData.fatherName || ''}
-                          onChange={(e) => setFormData({ ...formData, fatherName: e.target.value })}
-                          id="dwps-input-fathername"
-                        />
-                      </div>
-
-                      {/* Date of Birth */}
-                      <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 700 }}>Date of Birth</label>
-                        <input
-                          type="date"
-                          className="form-input"
-                          value={formData.dob || ''}
-                          onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
-                          id="dwps-input-dob"
-                        />
-                      </div>
-
-                      {/* Resident Status */}
-                      <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 700 }}>Resident Status</label>
-                        <select
-                          className="form-select"
-                          value={formData.residentStatus || 'Resident'}
-                          onChange={(e) => setFormData({ ...formData, residentStatus: e.target.value })}
-                          id="dwps-select-residentstatus"
-                        >
-                          <option value="Resident">Resident</option>
-                          <option value="Non-Resident">Non-Resident</option>
-                          <option value="Resident but not Ordinarily Resident (RNOR)">Resident but not Ordinarily Resident (RNOR)</option>
-                        </select>
-                      </div>
-
-                      {/* Residential Address */}
-                      <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                        <label className="form-label" style={{ fontWeight: 700 }}>Residential Address / Address(R)</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="e.g. Village Basantpura, Barara, Haryana"
-                          value={formData.residentialAddress || ''}
-                          onChange={(e) => setFormData({ ...formData, residentialAddress: e.target.value })}
-                          id="dwps-input-addressr"
-                        />
+                        {/* 8. PAN No */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>PAN No *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. MKRPK2843N"
+                            value={formData.pan || formData.panNumber || formData.dynamicFields?.panNo || ''}
+                            onChange={(e) => {
+                              const val = e.target.value.toUpperCase();
+                              setFormData((prev) => ({
+                                ...prev,
+                                pan: val,
+                                panNumber: val,
+                                dynamicFields: { ...prev.dynamicFields, panNo: val },
+                              }));
+                            }}
+                            required
+                            id="dwps-input-panno"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2174,7 +2307,7 @@ export const EmployeeManager = ({
                       </div>
 
                       <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 600 }}>D.A ({currencySymbol})</label>
+                        <label className="form-label" style={{ fontWeight: 600 }}>Dearness Allowance ({currencySymbol})</label>
                         <input
                           type="number"
                           className="form-input"
@@ -2185,7 +2318,7 @@ export const EmployeeManager = ({
                       </div>
 
                       <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 600 }}>H.R.A ({currencySymbol})</label>
+                        <label className="form-label" style={{ fontWeight: 600 }}>House Rent Allowance ({currencySymbol})</label>
                         <input
                           type="number"
                           className="form-input"
@@ -2196,7 +2329,40 @@ export const EmployeeManager = ({
                       </div>
 
                       <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 600 }}>Professional Tax ({currencySymbol})</label>
+                        <label className="form-label" style={{ fontWeight: 600 }}>Medical Allowance ({currencySymbol})</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={formData.baselineSalary.medicalAllowance}
+                          onChange={(e) => handleSalaryChange('medicalAllowance', e.target.value)}
+                          id="dwps-salary-medical"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>Provident Fund ({currencySymbol})</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={formData.baselineSalary.pfDeduction}
+                          onChange={(e) => handleSalaryChange('pfDeduction', e.target.value)}
+                          id="dwps-salary-pf"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>Income Tax / TDS ({currencySymbol})</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={formData.baselineSalary.tds}
+                          onChange={(e) => handleSalaryChange('tds', e.target.value)}
+                          id="dwps-salary-tax"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>Proffessional Tax ({currencySymbol})</label>
                         <input
                           type="number"
                           className="form-input"

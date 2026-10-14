@@ -1,85 +1,73 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { ResizableLogo } from '../common/ResizableLogo';
-import { SignatureStampBox } from '../common/SignatureStampBox';
+import dwpsLogoImg from '../../assets/dwps_logo.png';
+import { dwpsLogoBase64 } from '../../assets/dwpsLogoBase64';
 
-const DEFAULT_DWPS_FIELDS = [
-  { id: 'f_function', label: 'Function', key: 'functionRole', defaultValue: '' },
-  { id: 'f_designation', label: 'Designation', key: 'designation', defaultValue: '' },
-  { id: 'f_location', label: 'Location', key: 'location', defaultValue: '' },
-  { id: 'f_bank_details', label: 'Bank Details', key: 'bankDetails', defaultValue: '' },
-  { id: 'f_doj', label: 'Date of Joining', key: 'dateOfJoiningStr', defaultValue: '' },
-];
-
-const QUICK_FIELD_PRESETS = [
-  { label: 'PAN Number', key: 'panNumber', defaultValue: '' },
-  { label: 'PF Number', key: 'pfNumber', defaultValue: '' },
-  { label: 'UAN Number', key: 'uanNumber', defaultValue: '' },
-  { label: 'ESI Number', key: 'esiNumber', defaultValue: '' },
-  { label: 'Bank A/C No', key: 'bankAccount', defaultValue: '' },
-  { label: 'IFSC Code', key: 'ifscCode', defaultValue: '' },
-  { label: 'Aadhar Number', key: 'aadharNumber', defaultValue: '' },
-  { label: 'Employee Code', key: 'empCode', defaultValue: '' },
-  { label: 'Department', key: 'department', defaultValue: '' },
-];
-
-// High-fidelity Jeyaar Polymer Full Logo (Emblem + Typography, 100% transparent vector)
-export const JeyaarPolymerLogo = () => (
-  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', width: '100%', height: '100%', background: 'transparent' }}>
-    <svg width="100%" height="100%" viewBox="0 0 340 76" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block', maxHeight: '100%', maxWidth: '100%' }}>
-      {/* Outer Cyan Halo / Trim on Swoosh */}
-      <path
-        d="M 64 14 C 45 6, 12 10, 8 32 C 4 56, 38 78, 72 74"
-        stroke="#7dd3fc"
-        strokeWidth="3.2"
-        strokeLinecap="round"
-        fill="none"
-      />
-      {/* Main Coral-Red Dynamic Swoosh */}
-      <path
-        d="M 66 17 C 47 9, 17 12, 13 32 C 9 53, 38 76, 71 72 C 58 73, 24 57, 21 38 C 18 19, 47 15, 66 17 Z"
-        fill="#dc2626"
-      />
-      <path
-        d="M 64 16 C 45 8, 16 12, 13 32 C 9 50, 36 73, 69 70 C 70 70, 70 73, 68 73 C 33 76, 7 53, 11 31 C 15 10, 45 7, 64 15 Z"
-        fill="#ef4444"
-      />
-
-      {/* JP Monogram (Sky Blue) */}
-      <g fill="#38bdf8" fontFamily="'Arial Black', 'Montserrat', 'Segoe UI Black', 'Trebuchet MS', sans-serif" fontWeight="900">
-        <text x="19" y="53" fontSize="34" letterSpacing="-2">J</text>
-        <text x="38" y="53" fontSize="34" letterSpacing="-1">P</text>
-      </g>
-
-      {/* Company Name Typography in Coral-Red */}
-      <text
-        x="84"
-        y="35"
-        fill="#d9384a"
-        fontFamily="'Arial Black', 'Montserrat', 'Segoe UI Black', 'Trebuchet MS', sans-serif"
-        fontWeight="900"
-        fontSize="21"
-        letterSpacing="1.2"
-      >
-        JEYAAR POLYMER
-      </text>
-      <text
-        x="84"
-        y="62"
-        fill="#d9384a"
-        fontFamily="'Arial Black', 'Montserrat', 'Segoe UI Black', 'Trebuchet MS', sans-serif"
-        fontWeight="900"
-        fontSize="21"
-        letterSpacing="1.2"
-      >
-        PVT. LTD
-      </text>
-    </svg>
+// Fallback high-resolution Delhi World Public School Logo extracted directly from official payslip
+export const DwpsLogo = () => (
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+    <img
+      src={dwpsLogoBase64 || dwpsLogoImg}
+      alt="Delhi World Public School Crest"
+      style={{
+        maxWidth: '100%',
+        maxHeight: '100%',
+        objectFit: 'contain',
+        display: 'block',
+      }}
+    />
   </div>
 );
 
-export const DwpsLogo = JeyaarPolymerLogo;
+// Number to Indian Words Converter
+function numberToIndianWords(num) {
+  if (!num || isNaN(num) || num <= 0) return 'Rupees Zero Only';
+  const a = [
+    '', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ',
+    'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '
+  ];
+  const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
+  const n = ('000000000' + Math.floor(num)).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+  if (!n) return `Rupees ${num} Only`;
+  let str = '';
+  str += (Number(n[1]) !== 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+  str += (Number(n[2]) !== 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+  str += (Number(n[3]) !== 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+  str += (Number(n[4]) !== 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+  str += (Number(n[5]) !== 0) ? (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
+  
+  const cleanStr = str.replace(/\s+/g, ' ').trim();
+  return `Rupees ${cleanStr} Only`;
+}
+
+// Calculate Period String (e.g. Period 01/06/2023-30/06/2023)
+function getPayPeriodString(monthName, yearVal) {
+  const monthNames = [
+    'january', 'february', 'march', 'april', 'may', 'june',
+    'july', 'august', 'september', 'october', 'november', 'december'
+  ];
+  let mIdx = -1;
+  if (typeof monthName === 'number') {
+    mIdx = monthName - 1;
+  } else if (typeof monthName === 'string') {
+    const num = parseInt(monthName, 10);
+    if (!isNaN(num) && num >= 1 && num <= 12) {
+      mIdx = num - 1;
+    } else {
+      mIdx = monthNames.findIndex((m) => m.startsWith(monthName.trim().toLowerCase().slice(0, 3)));
+    }
+  }
+  if (mIdx < 0 || mIdx > 11) mIdx = 5; // Default June
+
+  const yr = Number(yearVal) || 2023;
+  const pad = (n) => String(n).padStart(2, '0');
+  const monthNum = pad(mIdx + 1);
+  const lastDay = pad(new Date(yr, mIdx + 1, 0).getDate());
+
+  return `(Period 01/${monthNum}/${yr}-${lastDay}/${monthNum}/${yr})`;
+}
 
 export const DelhiPublicSchoolPayslip = ({
   company = {},
@@ -102,54 +90,102 @@ export const DelhiPublicSchoolPayslip = ({
   const cfg = layoutConfig || company || {};
 
   const slipStyle = {
-    maxWidth: cfg.slipWidth ? `${cfg.slipWidth}px` : '860px',
+    maxWidth: cfg.slipWidth ? `${cfg.slipWidth}px` : '794px',
     minHeight: cfg.slipMinHeight && cfg.slipMinHeight > 0 ? `${cfg.slipMinHeight}px` : undefined,
-    padding: cfg.slipPadding && cfg.slipPadding !== 24 ? `${cfg.slipPadding}px` : '0px',
-    borderWidth: cfg.slipBorderWidth !== undefined ? `${cfg.slipBorderWidth}px` : '1px',
-    borderStyle: cfg.slipBorderStyle || 'solid',
-    borderColor: cfg.slipBorderColor || '#000000',
-    borderRadius: cfg.slipBorderRadius !== undefined ? `${cfg.slipBorderRadius}px` : '0px',
+    padding: cfg.slipPadding && cfg.slipPadding !== 24 ? `${cfg.slipPadding}px` : undefined,
     fontSize: cfg.fontSizeScale ? `${cfg.fontSizeScale * 0.0082}rem` : undefined,
     pageBreakInside: 'avoid',
     breakInside: 'avoid',
+    border: 'none',
+    outline: 'none',
   };
 
-  const rowMinHeight = cfg.incomeDeductionHeight ? `${cfg.incomeDeductionHeight}px` : undefined;
-
-  // Number Formatter (plain integer or formatted amount)
   const formatAmount = (num) => {
     if (num === undefined || num === null || isNaN(num) || num === '') return '0';
     return Number(num).toLocaleString('en-IN');
   };
 
-  const monthName = draft.month || 'April';
-  const yearVal = draft.year || 2022;
-  const payPeriodDisplay = `Pay Slip for ${monthName}, ${yearVal}`;
+  let monthName = draft.month;
+  let yearVal = draft.year;
+
+  // If month or year not explicitly provided, try extracting from payPeriod (e.g. "February 2020")
+  if ((!monthName || !yearVal) && draft.payPeriod) {
+    const parts = draft.payPeriod.trim().split(/\s+/);
+    if (parts.length >= 2 && isNaN(parts[0]) && !isNaN(parts[1])) {
+      if (!monthName) monthName = parts[0];
+      if (!yearVal) yearVal = Number(parts[1]);
+    }
+  }
+
+  monthName = monthName || 'June';
+  yearVal = yearVal || 2023;
+
+  // Format month name nicely (e.g. "February", "June")
+  const standardMonthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  let standardMIdx = -1;
+  if (typeof monthName === 'number') {
+    standardMIdx = monthName - 1;
+  } else if (typeof monthName === 'string') {
+    const num = parseInt(monthName, 10);
+    if (!isNaN(num) && num >= 1 && num <= 12) {
+      standardMIdx = num - 1;
+    } else {
+      standardMIdx = standardMonthNames.findIndex((m) => m.toLowerCase().startsWith(monthName.trim().toLowerCase().slice(0, 3)));
+    }
+  }
+  const displayMonth = (standardMIdx >= 0 && standardMIdx <= 11) ? standardMonthNames[standardMIdx] : monthName;
+
+  // Only use draft.payPeriod if it's already an explicit date range like "(Period 01/06/2023-30/06/2023)"
+  // NEVER use raw month/year strings (e.g. "February 2020") as periodStr to prevent duplicate month text
+  let periodStr = '';
+  if (draft.payPeriod && (draft.payPeriod.includes('Period') || draft.payPeriod.includes('/'))) {
+    periodStr = draft.payPeriod.trim();
+    if (!periodStr.startsWith('(') && periodStr.includes('Period')) {
+      periodStr = `(${periodStr})`;
+    }
+  } else {
+    periodStr = getPayPeriodString(monthName, yearVal);
+  }
 
   const baseSal = employee?.baselineSalary || {};
   const defaultBasic = (baseSal.basicPay !== undefined && baseSal.basicPay !== '' && !isNaN(baseSal.basicPay))
     ? Number(baseSal.basicPay)
-    : 20000;
+    : 40000;
   const defaultDa = (baseSal.specialAllowance !== undefined && baseSal.specialAllowance !== '' && !isNaN(baseSal.specialAllowance))
     ? Number(baseSal.specialAllowance)
-    : ((baseSal.da !== undefined && baseSal.da !== '' && !isNaN(baseSal.da)) ? Number(baseSal.da) : 10000);
+    : ((baseSal.da !== undefined && baseSal.da !== '' && !isNaN(baseSal.da)) ? Number(baseSal.da) : 20000);
   const defaultHra = (baseSal.hra !== undefined && baseSal.hra !== '' && !isNaN(baseSal.hra))
     ? Number(baseSal.hra)
-    : 20000;
+    : 6400;
+  const defaultMed = (baseSal.medicalAllowance !== undefined && baseSal.medicalAllowance !== '' && !isNaN(baseSal.medicalAllowance))
+    ? Number(baseSal.medicalAllowance)
+    : 500;
+
+  const defaultPf = (baseSal.pfDeduction !== undefined && baseSal.pfDeduction !== '' && !isNaN(baseSal.pfDeduction))
+    ? Number(baseSal.pfDeduction)
+    : 7200;
+  const defaultTax = (baseSal.tds !== undefined && baseSal.tds !== '' && !isNaN(baseSal.tds))
+    ? Number(baseSal.tds)
+    : 5000;
   const defaultPt = (baseSal.professionalTax !== undefined && baseSal.professionalTax !== '' && !isNaN(baseSal.professionalTax))
     ? Number(baseSal.professionalTax)
-    : 212;
+    : 200;
 
   const earnings = draft.earnings && draft.earnings.length > 0 ? draft.earnings : [
     { label: 'Basic', amount: defaultBasic },
-    { label: 'D.A', amount: defaultDa },
-    { label: 'H.R.A', amount: defaultHra },
+    { label: 'Dearness Allowance', amount: defaultDa },
+    { label: 'House Rent Allowance', amount: defaultHra },
+    { label: 'Medical Allowance', amount: defaultMed },
   ];
+
   const deductions = draft.deductions && draft.deductions.length > 0 ? draft.deductions : [
-    { label: 'Professsional Tax', amount: defaultPt },
+    { label: 'Provident Fund', amount: defaultPf },
+    { label: 'Income Tax', amount: defaultTax },
+    { label: 'Proffessional Tax', amount: defaultPt },
   ];
-  const maxRows = Math.max(earnings.length, deductions.length);
-  const extraSpacer = Number(cfg.extraSpacerHeight) || 0;
 
   // Total Calculations
   const calculatedTotalEarnings = earnings.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
@@ -160,286 +196,105 @@ export const DelhiPublicSchoolPayslip = ({
   const totalDeductionsDisplay = draft.totalDeductions !== undefined ? draft.totalDeductions : calculatedTotalDeductions;
   const netSalaryDisplay = draft.netSalary !== undefined ? draft.netSalary : calculatedNetSalary;
 
-  // Metadata Fields
-  const employeeName = String(employee?.fullName || dynamic.name || 'SUNAINA SHARMA').toUpperCase();
-  
-  const getBankDetails = () => {
-    if (dynamic.bankDetails) return dynamic.bankDetails;
-    const parts = [];
-    if (dynamic.bankAccount || employee?.bankAccount) parts.push(dynamic.bankAccount || employee?.bankAccount);
-    if (dynamic.bankName || employee?.bankName) parts.push(dynamic.bankName || employee?.bankName);
-    if (dynamic.bankBranch || dynamic.location || employee?.location) parts.push(dynamic.bankBranch || dynamic.location || employee?.location);
-    if (parts.length > 0) return parts.join(', ');
-    return '';
-  };
+  const wordsDisplay = draft.netSalaryInWords || numberToIndianWords(netSalaryDisplay);
+
+  // Metadata Values
+  const employeeName = (employee?.fullName || dynamic.name || 'SUNAINA SHARMA').toUpperCase();
+  const accountNo = employee?.bankAccount || dynamic.accountNo || dynamic.bankAccount || '38570100006930';
 
   const getDateOfJoining = () => {
     if (dynamic.dateOfJoiningStr) return dynamic.dateOfJoiningStr;
-    if (dynamic.joiningDate) {
-      const d = new Date(dynamic.joiningDate);
+    const dateSource = dynamic.joiningDate || employee?.joiningDate;
+    if (dateSource) {
+      const d = new Date(dateSource);
       if (!isNaN(d.getTime())) {
         const day = String(d.getDate()).padStart(2, '0');
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const year = d.getFullYear();
         return `${day}/${month}/${year}`;
       }
+      return String(dateSource);
     }
-    if (employee?.joiningDate) {
-      const d = new Date(employee.joiningDate);
-      if (!isNaN(d.getTime())) {
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = d.getFullYear();
-        return `${day}/${month}/${year}`;
-      }
-      return String(employee.joiningDate);
-    }
-    return '';
+    return '21/10/2021';
   };
 
-  // Custom Metadata Fields Configuration & Dynamic Synchronization
-  const sanitizeFields = (rawFields) => {
-    if (!Array.isArray(rawFields) || rawFields.length === 0) {
-      const initial = [...DEFAULT_DWPS_FIELDS];
-      if (dynamic.panNumber || employee?.pan || employee?.panNumber) {
-        initial.push({ id: 'f_pan', label: 'PAN Number', key: 'panNumber', defaultValue: '' });
-      }
-      if (dynamic.pfNumber || employee?.pfNumber) {
-        initial.push({ id: 'f_pf', label: 'PF Number', key: 'pfNumber', defaultValue: '' });
-      }
-      if (dynamic.uanNumber || employee?.uanNumber) {
-        initial.push({ id: 'f_uan', label: 'UAN Number', key: 'uanNumber', defaultValue: '' });
-      }
-      if (dynamic.esiNumber || employee?.esiNumber) {
-        initial.push({ id: 'f_esi', label: 'ESI Number', key: 'esiNumber', defaultValue: '' });
-      }
-      return initial;
+  const getBankDetails = () => {
+    if (dynamic.bankDetails) return dynamic.bankDetails;
+    if (employee?.bankName) {
+      return `${employee.bankName}${employee?.ifscCode ? `(IFSC Code: ${employee.ifscCode})` : ''}`;
     }
-    return rawFields.map((f) => {
-      let defVal = f.defaultValue !== undefined && f.defaultValue !== null ? f.defaultValue : (f.customValue || '');
-      // Clear legacy dummy placeholders
-      if (defVal === 'Principal' && (f.key === 'designation' || f.label === 'Designation')) defVal = '';
-      if (defVal === 'Ashta' && (f.key === 'location' || f.label === 'Location')) defVal = '';
-      if (defVal === '21/10/2021' && (f.key === 'dateOfJoiningStr' || f.key === 'doj' || f.label === 'Date of Joining')) defVal = '';
-      if (defVal === '38570100006930,Bank of Baroda,Ashta' && (f.key === 'bankDetails' || f.label === 'Bank Details')) defVal = '';
-      return {
-        ...f,
-        defaultValue: defVal,
-      };
-    });
+    return 'BANK OF BARODA(IFSC Code: BARB0VJASHT)';
   };
 
-  const configuredFields = cfg.dwpsCustomFields || company?.dwpsCustomFields;
-  const [fields, setFields] = useState(() => sanitizeFields(configuredFields));
+  const bankAddress = dynamic.bankAddress || dynamic.location || employee?.location || 'KANNOD ROAD, ASHTA, DIST.SEHORE, ASHTA - 466116';
+  const postingOffice = (dynamic.postingOffice || company?.name || 'DELHI WORLD PUBLIC SCHOOL, ASHTA').toUpperCase();
+  const designation = (employee?.designation || dynamic.designation || 'PRINCIPAL').toUpperCase();
+  const empId = employee?.empCode || dynamic.empId || '4417';
+  const panNo = (employee?.panNumber || employee?.pan || dynamic.panNo || dynamic.panNumber || 'MKRPK2843N').toUpperCase();
 
-  useEffect(() => {
-    const cf = cfg.dwpsCustomFields || company?.dwpsCustomFields;
-    if (Array.isArray(cf) && cf.length > 0) {
-      setFields(sanitizeFields(cf));
-    }
-  }, [company?.dwpsCustomFields, cfg.dwpsCustomFields]);
-
-  const configuredColumns = cfg.dwpsMetaColumns !== undefined
-    ? Number(cfg.dwpsMetaColumns)
-    : (company?.dwpsMetaColumns !== undefined ? Number(company.dwpsMetaColumns) : 1);
-  const [metaColumns, setMetaColumns] = useState(configuredColumns);
-
-  useEffect(() => {
-    const col = cfg.dwpsMetaColumns !== undefined
-      ? Number(cfg.dwpsMetaColumns)
-      : (company?.dwpsMetaColumns !== undefined ? Number(company.dwpsMetaColumns) : 1);
-    setMetaColumns(col);
-  }, [company?.dwpsMetaColumns, cfg.dwpsMetaColumns]);
-
-  const [showAddMenu, setShowAddMenu] = useState(false);
-  const [customFieldLabel, setCustomFieldLabel] = useState('');
-
-  const persistFields = async (newFields) => {
-    setFields(newFields);
-    const targetCompanyId =
-      company?._id ||
-      company?.companyId ||
-      localStorage.getItem('salarymaker_active_company_id');
-
-    if (targetCompanyId) {
-      try {
-        await api.updateCompany(targetCompanyId, { dwpsCustomFields: newFields });
-      } catch (e) {
-        console.error('Failed to save DWPS custom metadata fields:', e);
-      }
-    }
-    if (onSizeSaved) {
-      onSizeSaved({ dwpsCustomFields: newFields });
-    }
-  };
-
-  const handleToggleColumns = async (colNum) => {
-    setMetaColumns(colNum);
-    const targetCompanyId =
-      company?._id ||
-      company?.companyId ||
-      localStorage.getItem('salarymaker_active_company_id');
-
-    if (targetCompanyId) {
-      try {
-        await api.updateCompany(targetCompanyId, { dwpsMetaColumns: colNum });
-      } catch (e) {
-        console.error('Failed to save DWPS meta columns:', e);
-      }
-    }
-    if (onSizeSaved) {
-      onSizeSaved({ dwpsMetaColumns: colNum });
-    }
-  };
-
-  const handleMoveField = (idx, direction) => {
-    const targetIdx = idx + direction;
-    if (targetIdx < 0 || targetIdx >= fields.length) return;
-    const updated = [...fields];
-    const temp = updated[idx];
-    updated[idx] = updated[targetIdx];
-    updated[targetIdx] = temp;
-    persistFields(updated);
-  };
-
-  const handleAddPreset = (preset) => {
-    const existing = fields.find((f) => f.key === preset.key || f.label.toLowerCase() === preset.label.toLowerCase());
-    if (existing) {
-      setShowAddMenu(false);
-      return;
-    }
-    const initialVal =
-      preset.key === 'department'
-        ? (employee?.department || dynamic.department || preset.defaultValue || '')
-        : (employee?.[preset.key] || dynamic[preset.key] || preset.defaultValue || '');
-
-    const newField = {
-      id: 'f_' + Date.now(),
-      label: preset.label,
-      key: preset.key,
-      defaultValue: initialVal,
-    };
-    const updated = [...fields, newField];
-    persistFields(updated);
-    setShowAddMenu(false);
-  };
-
-  const handleAddCustom = (e) => {
-    e.preventDefault();
-    if (!customFieldLabel.trim()) return;
-    const label = customFieldLabel.trim();
-    const key = label.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
-    const newField = {
-      id: 'f_' + Date.now(),
-      label: label,
-      key: key,
-      defaultValue: '',
-    };
-    const updated = [...fields, newField];
-    persistFields(updated);
-    setCustomFieldLabel('');
-    setShowAddMenu(false);
-  };
-
-  const handleRemoveField = (idx) => {
-    const updated = fields.filter((_, i) => i !== idx);
-    persistFields(updated);
-  };
-
-  const handleFieldChange = (idx, prop, val) => {
-    const updated = fields.map((f, i) => (i === idx ? { ...f, [prop]: val } : f));
-    persistFields(updated);
-  };
-
-  const getFieldValue = (field) => {
-    // 1. If user set an explicit non-empty defaultValue (e.g. customized Department), prioritize it!
-    if (
-      field.defaultValue !== undefined &&
-      field.defaultValue !== null &&
-      String(field.defaultValue).trim() !== '' &&
-      !(field.defaultValue === 'Principal' && (field.key === 'designation' || field.label === 'Designation')) &&
-      !(field.defaultValue === 'Ashta' && (field.key === 'location' || field.label === 'Location')) &&
-      !(field.defaultValue === '21/10/2021' && (field.key === 'dateOfJoiningStr' || field.key === 'doj' || field.label === 'Date of Joining')) &&
-      !(field.defaultValue === '38570100006930,Bank of Baroda,Ashta' && (field.key === 'bankDetails' || field.label === 'Bank Details'))
-    ) {
-      return String(field.defaultValue);
-    }
-
-    const k = (field.key || field.label || '').toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
-
-    // 2. Check real employee profile & dynamicFields
-    let empVal = null;
-    if (k === 'function' || k === 'functionrole') {
-      empVal = dynamic.functionRole || dynamic.function || employee?.department;
-    } else if (k === 'designation') {
-      empVal = dynamic.designation || employee?.designation;
-    } else if (k === 'location') {
-      empVal = dynamic.location || employee?.location;
-    } else if (k === 'bankdetails') {
-      const bd = getBankDetails();
-      if (bd) empVal = bd;
-    } else if (k === 'dateofjoining' || k === 'doj' || k === 'joiningdate' || k === 'dateofjoiningstr') {
-      const doj = getDateOfJoining();
-      if (doj) empVal = doj;
-    } else if (k === 'pannumber' || k === 'pan' || k === 'panno') {
-      empVal = dynamic.panNumber || dynamic.pan || employee?.pan || employee?.panNumber;
-    } else if (k === 'pfnumber' || k === 'pf' || k === 'pfno' || k === 'providentfund') {
-      empVal = dynamic.pfNumber || dynamic.pf || employee?.pfNumber;
-    } else if (k === 'uannumber' || k === 'uan' || k === 'uanno') {
-      empVal = dynamic.uanNumber || dynamic.uan || employee?.uanNumber;
-    } else if (k === 'esinumber' || k === 'esi' || k === 'esic' || k === 'esino') {
-      empVal = dynamic.esiNumber || dynamic.esi || employee?.esiNumber;
-    } else if (k === 'bankaccount' || k === 'accountnumber' || k === 'bankac' || k === 'bankacno') {
-      empVal = dynamic.bankAccount || employee?.bankAccount;
-    } else if (k === 'ifsccode' || k === 'ifsc') {
-      empVal = dynamic.ifscCode || employee?.ifscCode;
-    } else if (k === 'aadharnumber' || k === 'aadhar' || k === 'aadharno') {
-      empVal = dynamic.aadharNumber || dynamic.aadhar || employee?.aadharNumber;
-    } else if (k === 'empcode' || k === 'employeecode' || k === 'empid') {
-      empVal = employee?.empCode || dynamic.empCode;
-    } else if (k === 'department') {
-      empVal = employee?.department || dynamic.department;
-    } else {
-      empVal = dynamic[field.key] || dynamic[field.label] || employee?.[field.key] || employee?.[field.label];
-    }
-
-    if (empVal !== undefined && empVal !== null && String(empVal).trim() !== '') {
-      return String(empVal);
-    }
-
-    // 3. Fallback dummy placeholders (only when previewing template without employee)
-    if (k === 'function' || k === 'functionrole') return 'Management';
-    if (k === 'designation') return 'Principal';
-    if (k === 'location') return 'Ashta';
-    if (k === 'bankdetails') return '38570100006930,Bank of Baroda,Ashta';
-    if (k === 'dateofjoining' || k === 'doj' || k === 'joiningdate' || k === 'dateofjoiningstr') return '21/10/2021';
-
-    return '';
-  };
-
-  const schoolName = company?.name || 'Delhi World Public School, Ashta';
+  const schoolName = company?.name || 'Delhi World Public School';
   const schoolAddress = company?.fullAddress || company?.address || 'Shujalpur Road Ashta, Dist. Sehore (M.P)';
-  const hasCustomAddress = Boolean(company?.fullAddress || company?.address);
-  const schoolPinCode = company?.pinCode
-    ? (schoolAddress.includes(company.pinCode) ? '' : `Pin Code - ${company.pinCode}`)
-    : (hasCustomAddress ? '' : 'Pin Code - 466116');
+
+  const workingDaysVal = draft.paidDays !== undefined
+    ? String(draft.paidDays)
+    : (draft.workingDays !== undefined ? String(draft.workingDays) : '30');
+
+  // Editable local state for metadata overrides
+  const [metaOverrides, setMetaOverrides] = useState({
+    name: employeeName,
+    accountNo: accountNo,
+    joiningDate: getDateOfJoining(),
+    bankDetails: getBankDetails(),
+    bankAddress: bankAddress,
+    postingOffice: postingOffice,
+    designation: designation,
+    empId: empId,
+    panNo: panNo,
+    workingDays: workingDaysVal,
+  });
+
+  useEffect(() => {
+    setMetaOverrides((prev) => ({
+      ...prev,
+      name: employeeName,
+      accountNo: accountNo,
+      joiningDate: getDateOfJoining(),
+      bankDetails: getBankDetails(),
+      bankAddress: bankAddress,
+      postingOffice: postingOffice,
+      designation: designation,
+      empId: empId,
+      panNo: panNo,
+      workingDays: workingDaysVal,
+    }));
+  }, [
+    employeeName,
+    accountNo,
+    employee?.joiningDate,
+    dynamic.dateOfJoiningStr,
+    dynamic.bankDetails,
+    postingOffice,
+    designation,
+    empId,
+    panNo,
+    workingDaysVal,
+  ]);
+
+  const handleMetaChange = (key, val) => {
+    setMetaOverrides((prev) => ({ ...prev, [key]: val }));
+  };
 
   return (
     <div className="dwps-payslip-wrapper" id="dwps-pdf-sheet" style={slipStyle}>
       {/* 1. Header with Crest on Left and Centered School Branding */}
-      <div
-        className="dwps-header-section"
-        style={{
-          minHeight: `${Math.max(68, (Number(company?.logoHeight) || 55) + 16)}px`,
-        }}
-      >
+      <div className="dwps-header-section">
         <div className="dwps-logo-holder">
           <ResizableLogo
             company={company}
             isEditable={isEditable}
             fallbackLogo={<DwpsLogo />}
-            defaultWidth={220}
-            defaultHeight={55}
+            defaultWidth={56}
+            defaultHeight={54}
             onSizeSaved={onSizeSaved}
           />
         </div>
@@ -447,291 +302,197 @@ export const DelhiPublicSchoolPayslip = ({
         <div className="dwps-school-title-box">
           <h1 className="dwps-school-name">{schoolName}</h1>
           <div className="dwps-school-subline">{schoolAddress}</div>
-          {schoolPinCode ? <div className="dwps-school-pincode">{schoolPinCode}</div> : null}
+          <div className="dwps-payslip-for-row">
+            <strong>Pay Slip</strong> for the month of {displayMonth} {yearVal} {periodStr}
+          </div>
         </div>
       </div>
 
-      {/* 2. Full-Width Pay Slip Month Subheader */}
-      <div className="dwps-payslip-for-row">
-        {payPeriodDisplay}
-      </div>
-
-      {/* 3. Full-Width Employee Name Row */}
-      <div className="dwps-emp-name-row">
-        {employeeName}
-      </div>
-
-      {/* 4. Employee Metadata Aligned List */}
-      <div
-        className={`dwps-meta-section ${metaColumns === 2 ? 'two-cols' : ''}`}
-        style={metaColumns === 2 ? {
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          columnGap: '1.5rem',
-          rowGap: '0.28rem',
-        } : undefined}
-      >
-        {fields.map((field, idx) => {
-          const val = getFieldValue(field);
-          return (
-            <div className="dwps-meta-row" key={field.id || idx}>
-              {isEditable ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '100%' }}>
-                  {/* Reorder Buttons */}
-                  <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
-                    <button
-                      type="button"
-                      onClick={() => handleMoveField(idx, -1)}
-                      disabled={idx === 0}
-                      title="Move Up"
-                      style={{
-                        background: idx === 0 ? '#f8fafc' : '#e2e8f0',
-                        color: idx === 0 ? '#cbd5e1' : '#334155',
-                        border: 'none',
-                        borderRadius: '2px',
-                        fontSize: '7px',
-                        lineHeight: '8px',
-                        padding: '1px 3px',
-                        cursor: idx === 0 ? 'default' : 'pointer',
-                      }}
-                    >
-                      ▲
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleMoveField(idx, 1)}
-                      disabled={idx === fields.length - 1}
-                      title="Move Down"
-                      style={{
-                        background: idx === fields.length - 1 ? '#f8fafc' : '#e2e8f0',
-                        color: idx === fields.length - 1 ? '#cbd5e1' : '#334155',
-                        border: 'none',
-                        borderRadius: '2px',
-                        fontSize: '7px',
-                        lineHeight: '8px',
-                        padding: '1px 3px',
-                        cursor: idx === fields.length - 1 ? 'default' : 'pointer',
-                      }}
-                    >
-                      ▼
-                    </button>
-                  </div>
-
-                  <input
-                    type="text"
-                    className="dwps-canvas-input"
-                    style={{ width: metaColumns === 2 ? '100px' : '130px', fontWeight: 700, padding: '2px 4px', fontSize: '11px', flexShrink: 0 }}
-                    value={field.label}
-                    onChange={(e) => handleFieldChange(idx, 'label', e.target.value)}
-                  />
-                  <span className="dwps-meta-colon">:</span>
-                  <input
-                    type="text"
-                    className="dwps-canvas-input"
-                    style={{ flex: 1, minWidth: '40px', padding: '2px 4px', fontSize: '11px' }}
-                    value={field.defaultValue !== undefined && field.defaultValue !== '' ? field.defaultValue : (val || '')}
-                    placeholder="Enter value"
-                    onChange={(e) => handleFieldChange(idx, 'defaultValue', e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="no-print"
-                    onClick={() => handleRemoveField(idx)}
-                    title="Remove Field"
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#ef4444',
-                      cursor: 'pointer',
-                      fontSize: '11px',
-                      padding: '2px 4px',
-                      flexShrink: 0,
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <span className="dwps-meta-label" style={metaColumns === 2 ? { width: '105px' } : undefined}>
-                    {field.label}
-                  </span>
-                  <span className="dwps-meta-colon">:</span>
-                  <span className="dwps-meta-value">{val}</span>
-                </>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {isEditable && (
-        <div className="no-print" style={{ padding: '0 1.25rem 0.6rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-          <div style={{ position: 'relative' }}>
-            <button
-              type="button"
-              className="btn-add-meta-field"
-              onClick={() => setShowAddMenu(!showAddMenu)}
-              style={{
-                background: '#f0fdf4',
-                color: '#15803d',
-                border: '1px dashed #86efac',
-                borderRadius: '4px',
-                padding: '4px 10px',
-                fontSize: '11px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
-            >
-              + Add Field (PAN, PF, UAN...)
-            </button>
-
-            {showAddMenu && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  marginTop: '6px',
-                  background: '#ffffff',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: '8px',
-                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05)',
-                  zIndex: 9999,
-                  padding: '8px',
-                  minWidth: '220px',
-                }}
-              >
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', padding: '4px 6px', textTransform: 'uppercase' }}>
-                  Quick Presets
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2px', maxHeight: '180px', overflowY: 'auto' }}>
-                  {QUICK_FIELD_PRESETS.map((p) => (
-                    <button
-                      key={p.key}
-                      type="button"
-                      onClick={() => handleAddPreset(p)}
-                      style={{
-                        display: 'block',
-                        width: '100%',
-                        textAlign: 'left',
-                        padding: '5px 8px',
-                        fontSize: '11px',
-                        background: 'none',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        color: '#1e293b',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-                    >
-                      + {p.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div style={{ borderTop: '1px solid #e2e8f0', margin: '6px 0', paddingTop: '6px' }}>
-                  <form onSubmit={handleAddCustom} style={{ display: 'flex', gap: '4px' }}>
-                    <input
-                      type="text"
-                      className="dwps-canvas-input"
-                      placeholder="Custom label..."
-                      value={customFieldLabel}
-                      onChange={(e) => setCustomFieldLabel(e.target.value)}
-                      style={{ flex: 1, fontSize: '11px', padding: '3px 6px' }}
-                    />
-                    <button
-                      type="submit"
-                      style={{
-                        background: '#2563eb',
-                        color: '#ffffff',
-                        border: 'none',
-                        borderRadius: '4px',
-                        padding: '3px 8px',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Add
-                    </button>
-                  </form>
-                </div>
-              </div>
+      {/* 2. Employee Metadata (2 Columns Side-by-Side with aligned colons) */}
+      <div className="dwps-meta-section">
+        {/* Left Column */}
+        <div className="dwps-meta-col">
+          <div className="dwps-meta-row">
+            <span className="dwps-meta-label">Name</span>
+            <span className="dwps-meta-colon">:</span>
+            {isEditable ? (
+              <input
+                type="text"
+                className="dwps-canvas-input dwps-meta-value-input"
+                value={metaOverrides.name}
+                onChange={(e) => handleMetaChange('name', e.target.value)}
+              />
+            ) : (
+              <span className="dwps-meta-value">{metaOverrides.name}</span>
             )}
           </div>
 
-          {/* 1-Col vs 2-Col Layout Switcher */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f8fafc', padding: '3px 6px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', padding: '0 4px', textTransform: 'uppercase' }}>
-              Layout:
-            </span>
-            <button
-              type="button"
-              onClick={() => handleToggleColumns(1)}
-              style={{
-                padding: '2px 8px',
-                fontSize: '11px',
-                fontWeight: metaColumns === 1 ? 700 : 500,
-                color: metaColumns === 1 ? '#0f172a' : '#64748b',
-                background: metaColumns === 1 ? '#ffffff' : 'transparent',
-                border: metaColumns === 1 ? '1px solid #cbd5e1' : 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                boxShadow: metaColumns === 1 ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
-              }}
-            >
-              1 Column
-            </button>
-            <button
-              type="button"
-              onClick={() => handleToggleColumns(2)}
-              style={{
-                padding: '2px 8px',
-                fontSize: '11px',
-                fontWeight: metaColumns === 2 ? 700 : 500,
-                color: metaColumns === 2 ? '#0f172a' : '#64748b',
-                background: metaColumns === 2 ? '#ffffff' : 'transparent',
-                border: metaColumns === 2 ? '1px solid #cbd5e1' : 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                boxShadow: metaColumns === 2 ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
-              }}
-            >
-              2 Columns (Side-by-Side)
-            </button>
+          <div className="dwps-meta-row">
+            <span className="dwps-meta-label">Account No.</span>
+            <span className="dwps-meta-colon">:</span>
+            {isEditable ? (
+              <input
+                type="text"
+                className="dwps-canvas-input dwps-meta-value-input"
+                value={metaOverrides.accountNo}
+                onChange={(e) => handleMetaChange('accountNo', e.target.value)}
+              />
+            ) : (
+              <span className="dwps-meta-value">{metaOverrides.accountNo}</span>
+            )}
+          </div>
+
+          <div className="dwps-meta-row">
+            <span className="dwps-meta-label">Joining Date</span>
+            <span className="dwps-meta-colon">:</span>
+            {isEditable ? (
+              <input
+                type="text"
+                className="dwps-canvas-input dwps-meta-value-input"
+                value={metaOverrides.joiningDate}
+                onChange={(e) => handleMetaChange('joiningDate', e.target.value)}
+              />
+            ) : (
+              <span className="dwps-meta-value">{metaOverrides.joiningDate}</span>
+            )}
+          </div>
+
+          <div className="dwps-meta-row">
+            <span className="dwps-meta-label">Bank Details</span>
+            <span className="dwps-meta-colon">:</span>
+            {isEditable ? (
+              <input
+                type="text"
+                className="dwps-canvas-input dwps-meta-value-input"
+                value={metaOverrides.bankDetails}
+                onChange={(e) => handleMetaChange('bankDetails', e.target.value)}
+              />
+            ) : (
+              <span className="dwps-meta-value">{metaOverrides.bankDetails}</span>
+            )}
+          </div>
+
+          {/* Subline under Bank Details */}
+          <div className="dwps-meta-subvalue">
+            {isEditable ? (
+              <input
+                type="text"
+                className="dwps-canvas-input dwps-meta-value-input"
+                value={metaOverrides.bankAddress}
+                onChange={(e) => handleMetaChange('bankAddress', e.target.value)}
+              />
+            ) : (
+              metaOverrides.bankAddress
+            )}
           </div>
         </div>
-      )}
 
-        {/* 5. Four-Column Bordered Financial Grid Table */}
-        <table className="dwps-fin-table">
-          <thead>
-            <tr>
-              <th className="dwps-th-ern">Earning</th>
-              <th className="dwps-th-ern-amt">Amount</th>
-              <th className="dwps-th-ded">Deduction</th>
-              <th className="dwps-th-ded-amt">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: maxRows }).map((_, idx) => {
-              const ern = earnings[idx];
-              const ded = deductions[idx];
+        {/* Right Column */}
+        <div className="dwps-meta-col">
+          <div className="dwps-meta-row">
+            <span className="dwps-meta-label">Posting Office</span>
+            <span className="dwps-meta-colon">:</span>
+            {isEditable ? (
+              <input
+                type="text"
+                className="dwps-canvas-input dwps-meta-value-input"
+                value={metaOverrides.postingOffice}
+                onChange={(e) => handleMetaChange('postingOffice', e.target.value)}
+              />
+            ) : (
+              <span className="dwps-meta-value">{metaOverrides.postingOffice}</span>
+            )}
+          </div>
 
-              return (
-                <tr key={idx} style={{ height: rowMinHeight }}>
-                  {/* Earning Description */}
-                  <td className="dwps-td-ern">
-                    {isEditable && ern ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <div className="dwps-meta-row">
+            <span className="dwps-meta-label">Designation</span>
+            <span className="dwps-meta-colon">:</span>
+            {isEditable ? (
+              <input
+                type="text"
+                className="dwps-canvas-input dwps-meta-value-input"
+                value={metaOverrides.designation}
+                onChange={(e) => handleMetaChange('designation', e.target.value)}
+              />
+            ) : (
+              <span className="dwps-meta-value">{metaOverrides.designation}</span>
+            )}
+          </div>
+
+          <div className="dwps-meta-row">
+            <span className="dwps-meta-label">Emp ID</span>
+            <span className="dwps-meta-colon">:</span>
+            {isEditable ? (
+              <input
+                type="text"
+                className="dwps-canvas-input dwps-meta-value-input"
+                value={metaOverrides.empId}
+                onChange={(e) => handleMetaChange('empId', e.target.value)}
+              />
+            ) : (
+              <span className="dwps-meta-value">{metaOverrides.empId}</span>
+            )}
+          </div>
+
+          <div className="dwps-meta-row">
+            <span className="dwps-meta-label">PAN No</span>
+            <span className="dwps-meta-colon">:</span>
+            {isEditable ? (
+              <input
+                type="text"
+                className="dwps-canvas-input dwps-meta-value-input"
+                value={metaOverrides.panNo}
+                onChange={(e) => handleMetaChange('panNo', e.target.value)}
+              />
+            ) : (
+              <span className="dwps-meta-value">{metaOverrides.panNo}</span>
+            )}
+          </div>
+
+          <div className="dwps-meta-row">
+            <span className="dwps-meta-label">Working Days</span>
+            <span className="dwps-meta-colon">:</span>
+            {isEditable ? (
+              <input
+                type="text"
+                className="dwps-canvas-input dwps-meta-value-input"
+                value={metaOverrides.workingDays !== undefined ? metaOverrides.workingDays : workingDaysVal}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  handleMetaChange('workingDays', val);
+                  if (onDaysChange) {
+                    onDaysChange('paidDays', val);
+                  }
+                }}
+              />
+            ) : (
+              <span className="dwps-meta-value">{metaOverrides.workingDays !== undefined ? metaOverrides.workingDays : workingDaysVal}</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Financial Table (Earnings & Deductions with center vertical dividing line) */}
+      <table className="dwps-fin-table">
+        <thead>
+          <tr>
+            <th className="dwps-th-ern">Earnings</th>
+            <th className="dwps-th-ded">Deductions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            {/* Earnings Item List Box */}
+            <td className="dwps-td-ern-box">
+              <div className="dwps-items-list">
+                {earnings.map((ern, idx) => (
+                  <div key={idx} className="dwps-item-line">
+                    {isEditable ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}>
                         <input
                           type="text"
-                          className="dwps-canvas-input"
+                          className="dwps-canvas-input dwps-item-name"
+                          style={{ flex: 1 }}
                           value={ern.label}
                           onChange={(e) => onEarningChange && onEarningChange(idx, 'label', e.target.value)}
                         />
@@ -741,38 +502,63 @@ export const DelhiPublicSchoolPayslip = ({
                             className="btn-remove-earning no-print"
                             onClick={() => onDeleteEarning(idx)}
                             title="Remove Earning"
-                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '10px' }}
+                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '10px', padding: '0 2px' }}
                           >
                             ✕
                           </button>
                         )}
                       </div>
                     ) : (
-                      ern?.label || ''
+                      <span className="dwps-item-name">{ern.label}</span>
                     )}
-                  </td>
 
-                  {/* Earning Amount */}
-                  <td className="dwps-td-ern-amt">
-                    {isEditable && ern ? (
+                    {isEditable ? (
                       <input
                         type="number"
-                        className="dwps-canvas-input num-right"
+                        className="dwps-canvas-input dwps-item-amount"
+                        style={{ width: '85px', textAlign: 'right' }}
                         value={ern.amount}
                         onChange={(e) => onEarningChange && onEarningChange(idx, 'amount', e.target.value)}
                       />
                     ) : (
-                      ern ? formatAmount(ern.amount) : ''
+                      <span className="dwps-item-amount">{formatAmount(ern.amount)}</span>
                     )}
-                  </td>
+                  </div>
+                ))}
 
-                  {/* Deduction Description */}
-                  <td className="dwps-td-ded">
-                    {isEditable && ded ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                {isEditable && onAddEarning && (
+                  <div className="no-print" style={{ paddingTop: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={onAddEarning}
+                      style={{
+                        fontSize: '10px',
+                        color: '#15803d',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        padding: '2px 0',
+                      }}
+                    >
+                      + Add Earning
+                    </button>
+                  </div>
+                )}
+              </div>
+            </td>
+
+            {/* Deductions Item List Box */}
+            <td className="dwps-td-ded-box">
+              <div className="dwps-items-list">
+                {deductions.map((ded, idx) => (
+                  <div key={idx} className="dwps-item-line">
+                    {isEditable ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}>
                         <input
                           type="text"
-                          className="dwps-canvas-input"
+                          className="dwps-canvas-input dwps-item-name"
+                          style={{ flex: 1 }}
                           value={ded.label}
                           onChange={(e) => onDeductionChange && onDeductionChange(idx, 'label', e.target.value)}
                         />
@@ -782,128 +568,106 @@ export const DelhiPublicSchoolPayslip = ({
                             className="btn-remove-deduction no-print"
                             onClick={() => onDeleteDeduction(idx)}
                             title="Remove Deduction"
-                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '10px' }}
+                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '10px', padding: '0 2px' }}
                           >
                             ✕
                           </button>
                         )}
                       </div>
                     ) : (
-                      ded?.label || ''
+                      <span className="dwps-item-name">{ded.label}</span>
                     )}
-                  </td>
 
-                  {/* Deduction Amount */}
-                  <td className="dwps-td-ded-amt">
-                    {isEditable && ded ? (
+                    {isEditable ? (
                       <input
                         type="number"
-                        className="dwps-canvas-input num-right"
+                        className="dwps-canvas-input dwps-item-amount"
+                        style={{ width: '85px', textAlign: 'right' }}
                         value={ded.amount}
                         onChange={(e) => onDeductionChange && onDeductionChange(idx, 'amount', e.target.value)}
                       />
                     ) : (
-                      ded ? formatAmount(ded.amount) : ''
+                      <span className="dwps-item-amount">{formatAmount(ded.amount)}</span>
                     )}
-                  </td>
-                </tr>
-              );
-            })}
+                  </div>
+                ))}
 
-            {/* In editable mode: Add Row Buttons */}
-            {isEditable && (
-              <tr className="no-print">
-                <td colSpan={2} style={{ padding: '4px 8px', background: '#f8fafc' }}>
-                  {onAddEarning && (
-                    <button
-                      type="button"
-                      onClick={onAddEarning}
-                      className="btn-add-line"
-                      style={{ fontSize: '11px', color: '#15803d', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-                    >
-                      + Add Earning
-                    </button>
-                  )}
-                </td>
-                <td colSpan={2} style={{ padding: '4px 8px', background: '#f8fafc' }}>
-                  {onAddDeduction && (
+                {isEditable && onAddDeduction && (
+                  <div className="no-print" style={{ paddingTop: '4px' }}>
                     <button
                       type="button"
                       onClick={onAddDeduction}
-                      className="btn-add-line"
-                      style={{ fontSize: '11px', color: '#b91c1c', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                      style={{
+                        fontSize: '10px',
+                        color: '#b91c1c',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        padding: '2px 0',
+                      }}
                     >
                       + Add Deduction
                     </button>
-                  )}
-                </td>
-              </tr>
-            )}
-
-            {/* Extra Spacer if configured */}
-            {extraSpacer > 0 && (
-              <tr style={{ height: `${extraSpacer}px` }}>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-              </tr>
-            )}
-
-            {/* Total Earning & Total Deduction Row */}
-            <tr className="dwps-totals-row">
-              <td className="dwps-td-total-ern-label">Total Earning:</td>
-              <td className="dwps-td-total-ern-val">{formatAmount(totalEarningsDisplay)}</td>
-              <td className="dwps-td-total-ded-label">Total Deduction</td>
-              <td className="dwps-td-total-ded-val">{formatAmount(totalDeductionsDisplay)}</td>
-            </tr>
-
-            {/* Net Amount Row */}
-            <tr className="dwps-net-row">
-              <td colSpan={2} className="dwps-td-empty-left"></td>
-              <td className="dwps-td-net-label">Net Amount</td>
-              <td className="dwps-td-net-val">{formatAmount(netSalaryDisplay)}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        {/* 6. Amount in Words Section */}
-        <div className="dwps-words-section">
-          <div className="dwps-words-title">Amount (in words)</div>
-          <div className="dwps-words-text">
-            {draft.netSalaryInWords || 'Fourty nine thousand seven hunderd and eighty eighty only.'}
-          </div>
-        </div>
-
-        {/* 7. Footer / School Signatory (Rendered ONLY if enabled in company settings AND signature is uploaded) */}
-        {company?.showSignature === true && Boolean(company?.signatureUrl) && (
-          <div className="dwps-footer-section">
-            <div className="dwps-signatory-container">
-              <div className="dwps-footer-school-name">{schoolName}</div>
-              
-              <div className="dwps-signature-image-box">
-                <img
-                  src={company.signatureUrl}
-                  alt="Authorized Signature"
-                  style={{
-                    maxHeight: company?.signatureHeight ? `${company.signatureHeight}px` : '48px',
-                    maxWidth: company?.signatureWidth ? `${company.signatureWidth}px` : '150px',
-                    objectFit: 'contain',
-                  }}
-                />
+                  </div>
+                )}
               </div>
+            </td>
+          </tr>
 
-              <div className="dwps-authorized-sign-text">
-                {company?.signatoryName || 'Authorized Signature:'}
-              </div>
+          {/* Gross Salary & Total Deductions Row */}
+          <tr className="dwps-totals-row">
+            <td className="dwps-td-gross">
+              Gross Salary: {formatAmount(totalEarningsDisplay)}
+            </td>
+            <td className="dwps-td-tot-ded">
+              Total Deductions: {formatAmount(totalDeductionsDisplay)}
+            </td>
+          </tr>
+
+          {/* Net Salary Row */}
+          <tr className="dwps-net-salary-row">
+            <td colSpan={2}>
+              Net Salary: {formatAmount(netSalaryDisplay)}
+            </td>
+          </tr>
+
+          {/* Amount In Words Row */}
+          <tr className="dwps-in-words-row">
+            <td colSpan={2}>
+              In words: {wordsDisplay}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* 4. Footer Note */}
+      <div className="dwps-footer-note">
+        General Note: Generated from the database, does not require signature
+      </div>
+
+      {/* 5. Optional Authorized Signatory (Rendered ONLY if specifically enabled in company settings) */}
+      {company?.showSignature === true && Boolean(company?.signatureUrl) && (
+        <div className="dwps-footer-section no-print-override" style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '180px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: '#000000', marginBottom: '4px' }}>
+              {schoolName}
+            </div>
+            <img
+              src={company.signatureUrl}
+              alt="Authorized Signature"
+              style={{
+                maxHeight: company?.signatureHeight ? `${company.signatureHeight}px` : '42px',
+                maxWidth: company?.signatureWidth ? `${company.signatureWidth}px` : '140px',
+                objectFit: 'contain',
+              }}
+            />
+            <div style={{ fontSize: '10px', fontWeight: 700, color: '#000000', marginTop: '4px' }}>
+              {company?.signatoryName || 'Authorized Signatory'}
             </div>
           </div>
-        )}
-
-        {/* 8. Computer Generated Note */}
-        <div className="dwps-footer-note" style={{ textAlign: 'center', fontSize: '0.75rem', color: '#000000', padding: '0.65rem 1.25rem 0.85rem' }}>
-          *This is a computer generated payslip and doesn't require signature or any company seal.
         </div>
+      )}
     </div>
   );
 };

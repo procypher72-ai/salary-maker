@@ -58,10 +58,18 @@ const computePayslipFinancials = (employee, company, customOverrides = {}) => {
   let deductions = [];
 
   if (customOverrides.earnings && Array.isArray(customOverrides.earnings)) {
-    earnings = customOverrides.earnings.map((e) => ({
-      label: e.label,
-      amount: Number(e.amount) || 0,
-    }));
+    earnings = customOverrides.earnings.map((e) => {
+      const fullAmt = e.rate !== undefined && e.rate !== null && !isNaN(e.rate) && Number(e.rate) > 0
+        ? Number(e.rate)
+        : (e.fullAmount !== undefined && Number(e.fullAmount) > 0
+            ? Number(e.fullAmount)
+            : (Number(e.amount) || 0));
+      return {
+        label: e.label,
+        rate: fullAmt,
+        amount: Math.round(fullAmt * payRatio),
+      };
+    });
   } else if (base.customEarnings && Array.isArray(base.customEarnings) && base.customEarnings.length > 0) {
     earnings = base.customEarnings.map((e) => ({
       label: e.label,
@@ -131,16 +139,18 @@ const computePayslipFinancials = (employee, company, customOverrides = {}) => {
       { label: 'PERFORMANCE BONUS', amount: Math.round(10000 * payRatio), rate: 10000 },
     ];
   } else if (company?.templateKey === 'delhi_public_school') {
-    const basicVal = (base.basicPay !== undefined && base.basicPay !== '' && !isNaN(base.basicPay)) ? Number(base.basicPay) : 20000;
+    const basicVal = (base.basicPay !== undefined && base.basicPay !== '' && !isNaN(base.basicPay)) ? Number(base.basicPay) : 40000;
     const daVal = (base.specialAllowance !== undefined && base.specialAllowance !== '' && !isNaN(base.specialAllowance))
       ? Number(base.specialAllowance)
-      : ((base.da !== undefined && base.da !== '' && !isNaN(base.da)) ? Number(base.da) : 10000);
-    const hraVal = (base.hra !== undefined && base.hra !== '' && !isNaN(base.hra)) ? Number(base.hra) : 20000;
+      : ((base.da !== undefined && base.da !== '' && !isNaN(base.da)) ? Number(base.da) : 20000);
+    const hraVal = (base.hra !== undefined && base.hra !== '' && !isNaN(base.hra)) ? Number(base.hra) : 6400;
+    const medVal = (base.medicalAllowance !== undefined && base.medicalAllowance !== '' && !isNaN(base.medicalAllowance)) ? Number(base.medicalAllowance) : 500;
 
     earnings = [
       { label: 'Basic', amount: Math.round(basicVal * payRatio) },
-      { label: 'D.A', amount: Math.round(daVal * payRatio) },
-      { label: 'H.R.A', amount: Math.round(hraVal * payRatio) },
+      { label: 'Dearness Allowance', amount: Math.round(daVal * payRatio) },
+      { label: 'House Rent Allowance', amount: Math.round(hraVal * payRatio) },
+      { label: 'Medical Allowance', amount: Math.round(medVal * payRatio) },
     ];
     if (base.otherAllowances && Number(base.otherAllowances) > 0) {
       earnings.push({ label: 'Other Allowance', amount: Math.round(Number(base.otherAllowances) * payRatio) });
@@ -265,18 +275,21 @@ const computePayslipFinancials = (employee, company, customOverrides = {}) => {
       { label: 'TDS', amount: 2500 },
     ];
   } else if (company?.templateKey === 'delhi_public_school') {
+    const pfVal = (base.pfDeduction !== undefined && base.pfDeduction !== '' && !isNaN(base.pfDeduction))
+      ? Number(base.pfDeduction)
+      : 7200;
+    const taxVal = (base.tds !== undefined && base.tds !== '' && !isNaN(base.tds))
+      ? Number(base.tds)
+      : 5000;
     const ptVal = (base.professionalTax !== undefined && base.professionalTax !== '' && !isNaN(base.professionalTax))
       ? Number(base.professionalTax)
-      : 212;
+      : 200;
+
     deductions = [
-      { label: 'Professsional Tax', amount: ptVal },
+      { label: 'Provident Fund', amount: pfVal },
+      { label: 'Income Tax', amount: taxVal },
+      { label: 'Proffessional Tax', amount: ptVal },
     ];
-    if (base.tds && Number(base.tds) > 0) {
-      deductions.push({ label: 'Income Tax / TDS', amount: Number(base.tds) });
-    }
-    if (base.pfDeduction && Number(base.pfDeduction) > 0) {
-      deductions.push({ label: 'Provident Fund (PF)', amount: Number(base.pfDeduction) });
-    }
   } else if (company?.templateKey === 'haryana_education') {
     const gpfVal = (base.pfDeduction !== undefined && base.pfDeduction !== '' && !isNaN(base.pfDeduction)) ? Number(base.pfDeduction) : 10000;
     const itVal = (base.tds !== undefined && base.tds !== '' && !isNaN(base.tds)) ? Number(base.tds) : 5000;
@@ -702,6 +715,7 @@ const generateBulkPayslips = async (req, res) => {
       deductions,
       customOverrides = {},
       snapshotData: clientSnapshot,
+      monthBreakdown = [],
     } = req.body;
 
     if (!employeeId || !startMonth || !startYear || !endMonth || !endYear) {
@@ -754,7 +768,6 @@ const generateBulkPayslips = async (req, res) => {
       workingDays,
       paidDays: actualPaidDays,
       lopDays: actualLopDays,
-      ...(earnings ? { earnings } : {}),
       ...(deductions ? { deductions } : {}),
       ...customOverrides,
     };
@@ -780,13 +793,17 @@ const generateBulkPayslips = async (req, res) => {
       const year = Math.floor(current / 12);
       const monthIdx = current % 12;
       const month = MONTH_NAMES[monthIdx];
-      const payPeriod = `${month} ${year}`;
 
       // Calculate last date of this month for Voucher Date in DD-MM-YYYY format
       const lastDay = new Date(year, monthIdx + 1, 0).getDate();
       const dd = String(lastDay).padStart(2, '0');
       const mm = String(monthIdx + 1).padStart(2, '0');
       const voucherDateStr = `${dd}-${mm}-${year}`;
+
+      // Calculate pay period format based on template
+      const payPeriod = (company?.templateKey === 'delhi_public_school')
+        ? `(Period 01/${mm}/${year}-${dd}/${mm}/${year})`
+        : `${month} ${year}`;
 
       // Calculate voucher number for this month:
       // First month receives base voucher (e.g. 001734)
@@ -797,13 +814,28 @@ const generateBulkPayslips = async (req, res) => {
       }
       const voucherNoStr = String(currentVoucher).padStart(6, '0');
 
-      // Calculate month-specific days (30 for 30-day months, 31 for 31-day months, 28/29 for Feb)
+      // Check if custom working days & paid days were specified for this month in monthBreakdown
+      const monthConfig = Array.isArray(monthBreakdown)
+        ? monthBreakdown.find(
+            (item) => item.month?.toLowerCase() === month.toLowerCase() && Number(item.year) === Number(year)
+          )
+        : null;
+
+      // Month-specific days (from calendar days)
       const monthDays = lastDay;
-      const monthWorkingDays = monthDays;
-      const monthPaidDays = (actualPaidDays < workingDays)
-        ? Math.round(actualPaidDays * (monthDays / workingDays))
-        : monthDays;
-      const monthLopDays = Math.max(0, monthWorkingDays - monthPaidDays);
+      const monthWorkingDays = monthConfig?.workingDays !== undefined
+        ? Number(monthConfig.workingDays)
+        : (monthConfig?.totalDays !== undefined ? Number(monthConfig.totalDays) : monthDays);
+
+      const monthPaidDays = monthConfig?.paidDays !== undefined
+        ? Number(monthConfig.paidDays)
+        : ((actualPaidDays < workingDays)
+            ? Math.round(actualPaidDays * (monthDays / workingDays))
+            : monthDays);
+
+      const monthLopDays = monthConfig?.lopDays !== undefined
+        ? Number(monthConfig.lopDays)
+        : Math.max(0, monthWorkingDays - monthPaidDays);
 
       const monthOverrides = {
         ...mergedOverrides,
@@ -816,7 +848,45 @@ const generateBulkPayslips = async (req, res) => {
 
       const financials = computePayslipFinancials(employee, company, monthOverrides);
 
+      // For Nestle India: compute YTD cumulated figures from FULL baseline salary (not prorated).
+      // This ensures CUMULATED EARNINGS / CUMULATED DEDUCTIONS stay constant regardless of
+      // how many working days an employee had in the current month.
+      let nestleCumulatedDraft = {};
+      if (company?.templateKey === 'nestle_india') {
+        const base = employee.baselineSalary || {};
+        const dynF = employee.dynamicFields instanceof Map
+          ? Object.fromEntries(employee.dynamicFields)
+          : (employee.dynamicFields || {});
+
+        const ytdMonths = dynF.ytdMonths !== undefined ? Number(dynF.ytdMonths) : 12;
+
+        // Full monthly baseline amounts (payRatio = 1 — no LOP adjustment)
+        const fullBasic = Number(base.basicPay) || 168129;
+        const fullHra = Number(base.hra) || Math.round(fullBasic * 0.5);
+        const fullComp = Number(base.specialAllowance) || 55565;
+        const fullTrans = Number(base.conveyanceAllowance) || 28500;
+        const fullPf = Number(base.pfDeduction) || 20175;
+        const fullIt = Number(base.tds) || 70040;
+        const fullClub = 150;
+
+        nestleCumulatedDraft = {
+          cumulatedEarnings: [
+            { label: 'Basic Salary', amount: dynF.cumBasic !== undefined ? Number(dynF.cumBasic) : Math.round(fullBasic * ytdMonths) },
+            { label: 'House Rent Allowance', amount: dynF.cumHra !== undefined ? Number(dynF.cumHra) : Math.round(fullHra * ytdMonths) },
+            { label: 'Compensatory Allowance', amount: dynF.cumComp !== undefined ? Number(dynF.cumComp) : Math.round(fullComp * ytdMonths) },
+            { label: 'Transport Allowance', amount: dynF.cumTransport !== undefined ? Number(dynF.cumTransport) : Math.round(fullTrans * ytdMonths) },
+          ],
+          cumulatedDeductions: [
+            { label: 'Income Tax', amount: dynF.cumTax !== undefined ? Number(dynF.cumTax) : (dynF.taxDeducted !== undefined ? Number(dynF.taxDeducted) : Math.round(fullIt * 17.05)) },
+            { label: 'Ee PF contribution', amount: dynF.cumPf !== undefined ? Number(dynF.cumPf) : Math.round(fullPf * ytdMonths) },
+            { label: 'Recreation Club GGN', amount: dynF.cumClub !== undefined ? Number(dynF.cumClub) : Math.round(fullClub * ytdMonths) },
+          ],
+        };
+      }
+
       // Snapshot with month-specific voucher number & voucher date
+      // Also embed pre-computed Nestle cumulated (YTD) data so it is persisted and
+      // never recalculated from the prorated current-month amounts at render time.
       const monthSnapshot = {
         ...finalSnapshot,
         employee: {
@@ -826,6 +896,16 @@ const generateBulkPayslips = async (req, res) => {
             voucherNo: voucherNoStr,
             voucherDate: voucherDateStr,
           },
+        },
+        // Store cumulated draft for Nestle template; harmless (undefined) for other templates
+        draft: {
+          ...(finalSnapshot.draft || {}),
+          ...nestleCumulatedDraft,
+          month,
+          year,
+          workingDays: monthWorkingDays,
+          paidDays: monthPaidDays,
+          lopDays: monthLopDays,
         },
       };
 

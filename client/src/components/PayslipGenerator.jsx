@@ -20,6 +20,11 @@ import {
   FileText,
   Calendar,
   User,
+  UserPlus,
+  Edit3,
+  X,
+  Users,
+  DollarSign,
   Plus,
   Trash2,
   Printer,
@@ -43,14 +48,20 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-const YEARS = [2024, 2025, 2026, 2027];
+const YEARS = [
+  2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024,
+  2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035
+];
 
 export const PayslipGenerator = ({
   activeCompany,
+  companies = [],
+  setActiveCompany,
   employees = [],
   templates = [],
   onPayslipGenerated,
   onCompanyUpdated,
+  onRefreshEmployees,
 }) => {
   const { showToast } = useAuth();
 
@@ -67,6 +78,7 @@ export const PayslipGenerator = ({
   const [startYear, setStartYear] = useState(2026);
   const [endMonth, setEndMonth] = useState('June');
   const [endYear, setEndYear] = useState(2026);
+  const [bulkMonths, setBulkMonths] = useState([]);
 
   // Interactive Live Canvas State
   const [draft, setDraft] = useState(null);
@@ -77,6 +89,34 @@ export const PayslipGenerator = ({
   const [isBulkGenerating, setIsBulkGenerating] = useState(false);
   const [isCtcModalOpen, setIsCtcModalOpen] = useState(false);
   const [overtimeHours, setOvertimeHours] = useState(0);
+
+  // Quick Employee Management Modal from Generator
+  const [isEmpModalOpen, setIsEmpModalOpen] = useState(false);
+  const [editingEmpObj, setEditingEmpObj] = useState(null);
+  const [savingEmp, setSavingEmp] = useState(false);
+  const [empFormData, setEmpFormData] = useState({
+    fullName: '',
+    empCode: '',
+    bankAccount: '',
+    pan: '',
+    panNumber: '',
+    designation: '',
+    department: 'Management',
+    joiningDate: new Date().toISOString().split('T')[0],
+    dynamicFields: {},
+    baselineSalary: {
+      basicPay: 40000,
+      hra: 6400,
+      specialAllowance: 20000,
+      medicalAllowance: 500,
+      otherAllowances: 0,
+      pfDeduction: 7200,
+      esicDeduction: 0,
+      professionalTax: 200,
+      tds: 5000,
+      otherDeductions: 0,
+    },
+  });
 
   // Live Layout & Styling Configuration
   const [layoutConfig, setLayoutConfig] = useState({
@@ -174,19 +214,310 @@ export const PayslipGenerator = ({
     }
   }, [selectedEmpId, selectedMonth, selectedYear, activeCompany, mode]);
 
+  // Recalculate and preserve custom days for each month in the selected bulk date range
+  useEffect(() => {
+    const sIdx = MONTHS.indexOf(startMonth);
+    const eIdx = MONTHS.indexOf(endMonth);
+    const sYr = Number(startYear);
+    const eYr = Number(endYear);
+
+    if (sIdx === -1 || eIdx === -1 || isNaN(sYr) || isNaN(eYr)) return;
+
+    const startTotal = sYr * 12 + sIdx;
+    const endTotal = eYr * 12 + eIdx;
+
+    if (endTotal < startTotal) {
+      setBulkMonths([]);
+      return;
+    }
+
+    setBulkMonths((prev) => {
+      const prevMap = new Map();
+      prev.forEach((item) => prevMap.set(`${item.month}-${item.year}`, item));
+
+      const list = [];
+      for (let curr = startTotal; curr <= endTotal; curr++) {
+        const y = Math.floor(curr / 12);
+        const mIdx = curr % 12;
+        const mName = MONTHS[mIdx];
+        const key = `${mName}-${y}`;
+        const totalDays = new Date(y, mIdx + 1, 0).getDate();
+
+        const existing = prevMap.get(key);
+        if (existing) {
+          const wDays = existing.workingDays !== undefined ? existing.workingDays : totalDays;
+          const pDays = existing.paidDays !== undefined ? Math.min(existing.paidDays, wDays) : wDays;
+          list.push({
+            ...existing,
+            totalDays,
+            workingDays: wDays,
+            paidDays: pDays,
+            lopDays: Math.max(0, wDays - pDays),
+          });
+        } else {
+          list.push({
+            month: mName,
+            year: y,
+            totalDays,
+            workingDays: totalDays,
+            paidDays: totalDays,
+            lopDays: 0,
+          });
+        }
+      }
+      return list;
+    });
+  }, [startMonth, startYear, endMonth, endYear]);
+
+  const handleBulkMonthDaysChange = (index, field, value) => {
+    setBulkMonths((prev) => {
+      const next = [...prev];
+      if (!next[index]) return prev;
+      const item = { ...next[index] };
+      const numVal = parseInt(value, 10);
+
+      if (field === 'paidDays') {
+        const safePaid = isNaN(numVal) ? 0 : Math.max(0, Math.min(numVal, item.workingDays));
+        item.paidDays = safePaid;
+        item.lopDays = Math.max(0, item.workingDays - safePaid);
+      } else if (field === 'workingDays') {
+        const safeWork = isNaN(numVal) ? item.totalDays : Math.max(1, Math.min(numVal, item.totalDays));
+        item.workingDays = safeWork;
+        if (item.paidDays > safeWork) {
+          item.paidDays = safeWork;
+        }
+        item.lopDays = Math.max(0, safeWork - item.paidDays);
+      }
+      next[index] = item;
+      return next;
+    });
+  };
+
   // --- Inline Canvas Editing Handlers ---
   const handleDaysChange = (field, val) => {
     if (!draft) return;
     const num = Number(val) || 0;
-    const updated = { ...draft, [field]: num };
-    
-    // Pro-rata recalculation if paid days changed
-    const workingDays = field === 'workingDays' ? num : draft.workingDays;
-    const paidDays = field === 'paidDays' ? num : draft.paidDays;
+    const workingDays = field === 'workingDays' ? num : (Number(draft.workingDays) || 30);
+    const paidDays = field === 'paidDays' ? num : (draft.paidDays !== undefined ? Number(draft.paidDays) : workingDays);
     const lopDays = Math.max(0, workingDays - paidDays);
-    updated.lopDays = lopDays;
+    const payRatio = workingDays > 0 ? (paidDays / workingDays) : 1;
+
+    let updatedEarnings = draft.earnings ? [...draft.earnings] : [];
+
+    // Pro-rata recalculation if paid days or working days changed for Delhi World Public School
+    if (templateKey === 'delhi_public_school') {
+      const base = selectedEmployeeObj?.baselineSalary || {};
+      const fullBasic = (base.basicPay !== undefined && base.basicPay !== '' && !isNaN(base.basicPay)) ? Number(base.basicPay) : 40000;
+      const fullDa = (base.specialAllowance !== undefined && base.specialAllowance !== '' && !isNaN(base.specialAllowance))
+        ? Number(base.specialAllowance)
+        : ((base.da !== undefined && base.da !== '' && !isNaN(base.da)) ? Number(base.da) : 20000);
+      const fullHra = (base.hra !== undefined && base.hra !== '' && !isNaN(base.hra)) ? Number(base.hra) : 6400;
+      const fullMed = (base.medicalAllowance !== undefined && base.medicalAllowance !== '' && !isNaN(base.medicalAllowance)) ? Number(base.medicalAllowance) : 500;
+
+      updatedEarnings = updatedEarnings.map((item) => {
+        let baseRate = item.rate !== undefined && item.rate !== null && !isNaN(item.rate) ? Number(item.rate) : item.baseAmount;
+        if (!baseRate) {
+          const lk = (item.label || '').toLowerCase();
+          if (lk.includes('basic')) baseRate = fullBasic;
+          else if (lk.includes('dearness') || lk.includes('d.a')) baseRate = fullDa;
+          else if (lk.includes('rent') || lk.includes('h.r.a') || lk.includes('hra')) baseRate = fullHra;
+          else if (lk.includes('medical')) baseRate = fullMed;
+          else baseRate = Number(item.amount) || 0;
+        }
+        return {
+          ...item,
+          rate: baseRate,
+          amount: Math.round(baseRate * payRatio),
+        };
+      });
+    }
+
+    const updated = {
+      ...draft,
+      [field]: num,
+      workingDays,
+      paidDays,
+      lopDays,
+      earnings: updatedEarnings,
+    };
 
     recalculateTotals(updated);
+  };
+
+  const handleOpenNewEmpModal = () => {
+    setEditingEmpObj(null);
+    if (templateKey === 'delhi_public_school') {
+      setEmpFormData({
+        fullName: '',
+        empCode: '4417',
+        bankAccount: '',
+        pan: '',
+        panNumber: '',
+        designation: 'PRINCIPAL',
+        department: 'Management',
+        joiningDate: new Date().toISOString().split('T')[0],
+        dynamicFields: {
+          accountNo: '',
+          dateOfJoiningStr: '',
+          bankDetails: 'BANK OF BARODA(IFSC Code: BARB0VJASHT)',
+          bankAddress: 'KANNOD ROAD, ASHTA, DIST.SEHORE, ASHTA - 466116',
+          postingOffice: activeCompany?.name || 'DELHI WORLD PUBLIC SCHOOL, ASHTA',
+          designation: 'PRINCIPAL',
+          empId: '4417',
+          panNo: '',
+        },
+        baselineSalary: {
+          basicPay: 40000,
+          hra: 6400,
+          specialAllowance: 20000,
+          medicalAllowance: 500,
+          otherAllowances: 0,
+          pfDeduction: 7200,
+          esicDeduction: 0,
+          professionalTax: 200,
+          tds: 5000,
+          otherDeductions: 0,
+        },
+      });
+    } else {
+      setEmpFormData({
+        fullName: '',
+        empCode: `EMP-${Date.now().toString().slice(-4)}`,
+        bankAccount: '',
+        pan: '',
+        panNumber: '',
+        designation: 'Staff',
+        department: 'General',
+        joiningDate: new Date().toISOString().split('T')[0],
+        dynamicFields: {},
+        baselineSalary: {
+          basicPay: 30000,
+          hra: 12000,
+          specialAllowance: 8000,
+          medicalAllowance: 1000,
+          otherAllowances: 0,
+          pfDeduction: 3600,
+          esicDeduction: 0,
+          professionalTax: 200,
+          tds: 2000,
+          otherDeductions: 0,
+        },
+      });
+    }
+    setIsEmpModalOpen(true);
+  };
+
+  const handleOpenEditEmpModal = () => {
+    if (!selectedEmployeeObj) {
+      showToast('Please select an employee to edit', 'info');
+      return;
+    }
+    setEditingEmpObj(selectedEmployeeObj);
+    const dyn = selectedEmployeeObj.dynamicFields instanceof Map
+      ? Object.fromEntries(selectedEmployeeObj.dynamicFields)
+      : (selectedEmployeeObj.dynamicFields || {});
+    const accNo = selectedEmployeeObj.bankAccount || dyn.accountNo || dyn.bankAccount || '';
+    const panVal = selectedEmployeeObj.pan || selectedEmployeeObj.panNumber || dyn.pan || dyn.panNo || '';
+    const empIdVal = selectedEmployeeObj.empCode || dyn.empId || '';
+
+    setEmpFormData({
+      fullName: selectedEmployeeObj.fullName || '',
+      empCode: empIdVal,
+      bankAccount: accNo,
+      pan: panVal,
+      panNumber: panVal,
+      designation: selectedEmployeeObj.designation || dyn.designation || '',
+      department: selectedEmployeeObj.department || 'Management',
+      joiningDate: selectedEmployeeObj.joiningDate ? new Date(selectedEmployeeObj.joiningDate).toISOString().split('T')[0] : '',
+      dynamicFields: {
+        ...dyn,
+        accountNo: accNo,
+        panNo: panVal,
+        empId: empIdVal,
+        bankDetails: dyn.bankDetails || (selectedEmployeeObj.bankName ? `${selectedEmployeeObj.bankName}${selectedEmployeeObj.ifscCode ? `(IFSC Code: ${selectedEmployeeObj.ifscCode})` : ''}` : 'BANK OF BARODA(IFSC Code: BARB0VJASHT)'),
+        bankAddress: dyn.bankAddress || dyn.location || 'KANNOD ROAD, ASHTA, DIST.SEHORE, ASHTA - 466116',
+        postingOffice: dyn.postingOffice || activeCompany?.name || 'DELHI WORLD PUBLIC SCHOOL, ASHTA',
+      },
+      baselineSalary: selectedEmployeeObj.baselineSalary || {
+        basicPay: 40000,
+        hra: 6400,
+        specialAllowance: 20000,
+        medicalAllowance: 500,
+        otherAllowances: 0,
+        pfDeduction: 7200,
+        esicDeduction: 0,
+        professionalTax: 200,
+        tds: 5000,
+        otherDeductions: 0,
+      },
+    });
+    setIsEmpModalOpen(true);
+  };
+
+  const handleSaveEmployeeRecord = async (e) => {
+    e.preventDefault();
+    if (!empFormData.fullName?.trim() || !empFormData.designation?.trim()) {
+      showToast('Please enter Employee Name and Designation', 'error');
+      return;
+    }
+
+    const dynToSave = { ...(empFormData.dynamicFields || {}) };
+    let empCodeToUse = empFormData.empCode?.trim() || `EMP-${Date.now().toString().slice(-4)}`;
+
+    if (templateKey === 'delhi_public_school') {
+      if (empFormData.joiningDate) {
+        const d = new Date(empFormData.joiningDate);
+        if (!isNaN(d.getTime())) {
+          const day = String(d.getDate()).padStart(2, '0');
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const year = d.getFullYear();
+          dynToSave.dateOfJoiningStr = `${day}/${month}/${year}`;
+        }
+      }
+      dynToSave.accountNo = empFormData.bankAccount || dynToSave.accountNo || '';
+      dynToSave.panNo = empFormData.pan || empFormData.panNumber || dynToSave.panNo || '';
+      dynToSave.empId = empCodeToUse;
+      dynToSave.designation = empFormData.designation;
+      if (!dynToSave.postingOffice) {
+        dynToSave.postingOffice = activeCompany?.name || 'DELHI WORLD PUBLIC SCHOOL, ASHTA';
+      }
+    }
+
+    setSavingEmp(true);
+    try {
+      const payload = {
+        ...empFormData,
+        empCode: empCodeToUse,
+        bankAccount: empFormData.bankAccount || dynToSave.accountNo || '',
+        pan: empFormData.pan || empFormData.panNumber || dynToSave.panNo || '',
+        panNumber: empFormData.pan || empFormData.panNumber || dynToSave.panNo || '',
+        dynamicFields: dynToSave,
+        companyId: activeCompany._id,
+      };
+
+      let savedId = null;
+      if (editingEmpObj) {
+        const res = await api.updateEmployee(editingEmpObj._id, payload);
+        showToast(res.message || 'Employee updated successfully!', 'success');
+        savedId = editingEmpObj._id;
+      } else {
+        const res = await api.createEmployee(payload);
+        showToast(res.message || 'Employee created successfully!', 'success');
+        savedId = res.employee?._id || res._id;
+      }
+
+      setIsEmpModalOpen(false);
+      if (onRefreshEmployees) {
+        await onRefreshEmployees();
+      }
+      if (savedId) {
+        setSelectedEmpId(savedId);
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setSavingEmp(false);
+    }
   };
 
   const handleEarningChange = (index, field, val, labelIfNew) => {
@@ -354,23 +685,26 @@ export const PayslipGenerator = ({
         rate: item.rate,
       }));
     } else if (templateKey === 'delhi_public_school') {
-      const basicVal = (base.basicPay !== undefined && base.basicPay !== '' && !isNaN(base.basicPay)) ? Number(base.basicPay) : 20000;
+      const basicVal = (base.basicPay !== undefined && base.basicPay !== '' && !isNaN(base.basicPay)) ? Number(base.basicPay) : 40000;
       const daVal = (base.specialAllowance !== undefined && base.specialAllowance !== '' && !isNaN(base.specialAllowance))
         ? Number(base.specialAllowance)
-        : ((base.da !== undefined && base.da !== '' && !isNaN(base.da)) ? Number(base.da) : 10000);
-      const hraVal = (base.hra !== undefined && base.hra !== '' && !isNaN(base.hra)) ? Number(base.hra) : 20000;
+        : ((base.da !== undefined && base.da !== '' && !isNaN(base.da)) ? Number(base.da) : 20000);
+      const hraVal = (base.hra !== undefined && base.hra !== '' && !isNaN(base.hra)) ? Number(base.hra) : 6400;
+      const medVal = (base.medicalAllowance !== undefined && base.medicalAllowance !== '' && !isNaN(base.medicalAllowance)) ? Number(base.medicalAllowance) : 500;
 
       const dwpsBaseEarnings = [
-        { label: 'Basic', amount: basicVal },
-        { label: 'D.A', amount: daVal },
-        { label: 'H.R.A', amount: hraVal },
+        { label: 'Basic', amount: basicVal, rate: basicVal },
+        { label: 'Dearness Allowance', amount: daVal, rate: daVal },
+        { label: 'House Rent Allowance', amount: hraVal, rate: hraVal },
+        { label: 'Medical Allowance', amount: medVal, rate: medVal },
       ];
       if (base.otherAllowances && Number(base.otherAllowances) > 0) {
-        dwpsBaseEarnings.push({ label: 'Other Allowance', amount: Number(base.otherAllowances) });
+        dwpsBaseEarnings.push({ label: 'Other Allowance', amount: Number(base.otherAllowances), rate: Number(base.otherAllowances) });
       }
       updatedEarnings = dwpsBaseEarnings.map((item) => ({
         label: item.label,
-        amount: Math.round(item.amount * payRatio),
+        rate: item.rate,
+        amount: Math.round(item.rate * payRatio),
       }));
     } else if (templateKey === 'haryana_education') {
       const basicVal = (base.basicPay !== undefined && base.basicPay !== '' && !isNaN(base.basicPay) && Number(base.basicPay) !== 77900) ? Number(base.basicPay) : 64600;
@@ -547,24 +881,27 @@ export const PayslipGenerator = ({
     }
 
     if (templateKey === 'delhi_public_school') {
+      const pfVal = (base.pfDeduction !== undefined && base.pfDeduction !== '' && !isNaN(base.pfDeduction))
+        ? Number(base.pfDeduction)
+        : 7200;
+      const taxVal = (base.tds !== undefined && base.tds !== '' && !isNaN(base.tds))
+        ? Number(base.tds)
+        : 5000;
       const ptVal = (base.professionalTax !== undefined && base.professionalTax !== '' && !isNaN(base.professionalTax))
         ? Number(base.professionalTax)
-        : 212;
+        : 200;
+
       const updatedDeductions = [
-        { label: 'Professsional Tax', amount: ptVal },
+        { label: 'Provident Fund', amount: pfVal },
+        { label: 'Income Tax', amount: taxVal },
+        { label: 'Proffessional Tax', amount: ptVal },
       ];
-      if (base.tds && Number(base.tds) > 0) {
-        updatedDeductions.push({ label: 'Income Tax / TDS', amount: Number(base.tds) });
-      }
-      if (base.pfDeduction && Number(base.pfDeduction) > 0) {
-        updatedDeductions.push({ label: 'Provident Fund (PF)', amount: Number(base.pfDeduction) });
-      }
       const updated = {
         ...draft,
         deductions: updatedDeductions,
       };
       recalculateTotals(updated);
-      showToast('Autofilled Delhi Public School statutory deductions!', 'success');
+      showToast('Autofilled Delhi World Public School statutory deductions!', 'success');
       return;
     }
 
@@ -717,7 +1054,7 @@ export const PayslipGenerator = ({
         workingDays: draft?.workingDays !== undefined ? draft.workingDays : 30,
         paidDays: draft?.paidDays !== undefined ? draft.paidDays : (draft?.workingDays || 30),
         lopDays: draft?.lopDays !== undefined ? draft.lopDays : 0,
-        earnings: draft?.earnings,
+        monthBreakdown: bulkMonths,
         deductions: draft?.deductions,
         snapshotData: {
           company: {
@@ -732,7 +1069,7 @@ export const PayslipGenerator = ({
           templateKey,
         },
       });
-      showToast(res.message || 'Bulk payslips generated successfully!', 'success');
+      showToast(res.message || 'Bulk payslips generated successfully with customized days!', 'success');
       if (onPayslipGenerated) onPayslipGenerated();
     } catch (err) {
       showToast(err.message, 'error');
@@ -830,8 +1167,56 @@ export const PayslipGenerator = ({
         <div className="glass-panel" style={{ padding: '1.25rem' }}>
           {mode === 'single' ? (
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-              <div className="form-group" style={{ flex: '1 1 240px', marginBottom: 0 }}>
-                <label className="form-label">Select Employee</label>
+              {/* Active Company Switcher */}
+              {companies && companies.length > 0 && (
+                <div className="form-group" style={{ flex: '1 1 230px', marginBottom: 0 }}>
+                  <label className="form-label">Company & Template</label>
+                  <select
+                    className="form-select"
+                    value={activeCompany?._id || ''}
+                    onChange={(e) => {
+                      const found = companies.find((c) => c._id === e.target.value);
+                      if (found && setActiveCompany) setActiveCompany(found);
+                    }}
+                    id="gen-company-select"
+                  >
+                    {companies.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        🏢 {c.name} ({(c.templateKey || '').replace(/_/g, ' ').toUpperCase()})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="form-group" style={{ flex: '1 1 290px', marginBottom: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <label className="form-label" style={{ marginBottom: 0 }}>Select Employee</label>
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ padding: '0.2rem 0.55rem', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                      onClick={handleOpenNewEmpModal}
+                      id="gen-btn-add-emp"
+                    >
+                      <UserPlus size={13} className="text-cyan" />
+                      <span>+ New Employee</span>
+                    </button>
+                    {selectedEmployeeObj && (
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ padding: '0.2rem 0.55rem', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                        onClick={handleOpenEditEmpModal}
+                        id="gen-btn-edit-emp"
+                      >
+                        <Edit3 size={13} />
+                        <span>Edit</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <select
                   className="form-select"
                   value={selectedEmpId}
@@ -987,25 +1372,195 @@ export const PayslipGenerator = ({
                   </select>
                 </div>
 
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={isBulkGenerating}
-                  id="bulk-generate-submit-btn"
-                  style={{ marginTop: '1.3rem' }}
+              </div>
+
+              {/* Month-by-Month Days & Attendance Customization Table */}
+              <div
+                style={{
+                  marginTop: '1.25rem',
+                  padding: '1.25rem',
+                  background: 'rgba(15, 23, 42, 0.65)',
+                  border: '1px solid rgba(99, 102, 241, 0.25)',
+                  borderRadius: '10px',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '0.75rem',
+                    marginBottom: '1rem',
+                  }}
                 >
-                  {isBulkGenerating ? (
-                    <>
-                      <Loader2 size={16} className="spin" />
-                      <span>Generating Batch...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Layers size={16} />
-                      <span>Issue Consecutive Payslips</span>
-                    </>
-                  )}
-                </button>
+                  <div>
+                    <h4
+                      style={{
+                        margin: 0,
+                        fontSize: '0.95rem',
+                        fontWeight: 700,
+                        color: 'var(--text-light)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                      }}
+                    >
+                      <Clock size={16} style={{ color: 'var(--accent-cyan)' }} />
+                      <span>Month-wise Paid Days & Attendance Settings</span>
+                      <span className="badge badge-info">{bulkMonths.length} Months Selected</span>
+                    </h4>
+                    <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      Har month ke Paid Days customize karein. Salary us month ke calendar days aur paid days ke hisab se calculate hogi.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-secondary"
+                      onClick={() => {
+                        setBulkMonths((prev) =>
+                          prev.map((m) => ({
+                            ...m,
+                            workingDays: m.totalDays,
+                            paidDays: m.totalDays,
+                            lopDays: 0,
+                          }))
+                        );
+                        showToast('All months set to 100% full attendance', 'info');
+                      }}
+                      title="Set full calendar days for every month"
+                    >
+                      <CheckCircle2 size={12} />
+                      <span>Reset All to Full Days</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-secondary"
+                      onClick={() => {
+                        setBulkMonths((prev) =>
+                          prev.map((m) => {
+                            const standard = Math.min(30, m.totalDays);
+                            return {
+                              ...m,
+                              workingDays: standard,
+                              paidDays: standard,
+                              lopDays: 0,
+                            };
+                          })
+                        );
+                        showToast('All months set to standard 30 days', 'info');
+                      }}
+                      title="Set standard 30 days for every month"
+                    >
+                      <span>Standard 30 Days</span>
+                    </button>
+                  </div>
+                </div>
+
+                {bulkMonths.length === 0 ? (
+                  <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    ⚠️ Invalid period range. End Month/Year must be after Start Month/Year.
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      maxHeight: '300px',
+                      overflowY: 'auto',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                    }}
+                  >
+                    <table className="data-table" style={{ width: '100%', fontSize: '0.82rem', margin: 0 }}>
+                      <thead>
+                        <tr>
+                          <th style={{ padding: '0.6rem 0.8rem' }}>Month & Year</th>
+                          <th style={{ textAlign: 'center', padding: '0.6rem 0.8rem' }}>Month Days</th>
+                          <th style={{ textAlign: 'center', padding: '0.6rem 0.8rem', width: '130px' }}>Paid Days</th>
+                          <th style={{ textAlign: 'center', padding: '0.6rem 0.8rem' }}>Loss of Pay (LOP)</th>
+                          <th style={{ textAlign: 'center', padding: '0.6rem 0.8rem' }}>Pay Ratio</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {bulkMonths.map((bm, idx) => {
+                          const isLop = bm.lopDays > 0;
+                          const ratioPct = bm.workingDays > 0 ? Math.round((bm.paidDays / bm.workingDays) * 100) : 100;
+                          return (
+                            <tr key={`${bm.month}-${bm.year}`} style={{ background: idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
+                              <td style={{ fontWeight: 600, padding: '0.5rem 0.8rem', color: 'var(--text-light)' }}>
+                                📅 {bm.month} {bm.year}
+                              </td>
+                              <td style={{ textAlign: 'center', padding: '0.5rem 0.8rem', color: 'var(--text-muted)' }}>
+                                {bm.totalDays} Days
+                              </td>
+                              <td style={{ textAlign: 'center', padding: '0.5rem 0.8rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max={bm.totalDays}
+                                    value={bm.paidDays}
+                                    onChange={(e) => handleBulkMonthDaysChange(idx, 'paidDays', e.target.value)}
+                                    className="form-input"
+                                    style={{
+                                      width: '65px',
+                                      padding: '0.25rem 0.4rem',
+                                      textAlign: 'center',
+                                      fontSize: '0.85rem',
+                                      fontWeight: 700,
+                                      borderColor: isLop ? 'var(--accent-amber)' : 'var(--accent-cyan)',
+                                      color: isLop ? 'var(--accent-amber)' : 'inherit',
+                                    }}
+                                  />
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>/ {bm.totalDays}</span>
+                                </div>
+                              </td>
+                              <td style={{ textAlign: 'center', padding: '0.5rem 0.8rem' }}>
+                                {isLop ? (
+                                  <span className="badge badge-admin" style={{ fontWeight: 700, fontSize: '0.72rem' }}>
+                                    -{bm.lopDays} Days Absent
+                                  </span>
+                                ) : (
+                                  <span className="badge badge-employee" style={{ fontSize: '0.72rem' }}>
+                                    Full Attendance
+                                  </span>
+                                )}
+                              </td>
+                              <td style={{ textAlign: 'center', padding: '0.5rem 0.8rem', fontWeight: 700, color: ratioPct < 100 ? 'var(--accent-amber)' : 'var(--accent-emerald)' }}>
+                                {ratioPct}%
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Submit Button inside card */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.25rem' }}>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={isBulkGenerating || bulkMonths.length === 0}
+                    id="bulk-generate-submit-btn"
+                    style={{ padding: '0.6rem 1.4rem', fontSize: '0.9rem' }}
+                  >
+                    {isBulkGenerating ? (
+                      <>
+                        <Loader2 size={16} className="spin" />
+                        <span>Generating {bulkMonths.length} Payslips...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Layers size={16} />
+                        <span>Issue {bulkMonths.length} Consecutive Payslips</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           )}
@@ -1623,6 +2178,457 @@ export const PayslipGenerator = ({
           showToast('Applied calculated CTC structure to current payslip draft!', 'success');
         }}
       />
+
+      {/* Quick Add / Edit Employee Modal from Generator */}
+      {isEmpModalOpen && (
+        <div
+          className="modal-backdrop"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1.5rem',
+          }}
+          onClick={() => setIsEmpModalOpen(false)}
+        >
+          <div
+            className="glass-panel"
+            style={{
+              width: '100%',
+              maxWidth: '850px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              background: '#0f172a',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '12px',
+              padding: '1.75rem',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1.5rem',
+                borderBottom: '1px solid var(--border-subtle)',
+                paddingBottom: '1rem',
+              }}
+            >
+              <div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>
+                  {editingEmpObj ? 'Edit Employee Details' : 'Onboard New Employee'}
+                </h3>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  Active Template: <span style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>{activeCompany?.name} ({(templateKey || '').replace(/_/g, ' ').toUpperCase()})</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEmpModalOpen(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEmployeeRecord}>
+              {templateKey === 'delhi_public_school' ? (
+                <>
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                      <Users size={18} className="text-cyan" />
+                      <h4 style={{ fontSize: '0.95rem', color: 'var(--accent-cyan)', margin: 0, fontWeight: 700 }}>
+                        Delhi World Public School — Employee Credentials
+                      </h4>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                      {/* Left Column Box (Template Left Side) */}
+                      <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-cyan)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '0.35rem' }}>
+                          Template Left Side Details
+                        </div>
+
+                        {/* 1. Name */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Name *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. SUNAINA SHARMA"
+                            value={empFormData.fullName}
+                            onChange={(e) => setEmpFormData({ ...empFormData, fullName: e.target.value })}
+                            required
+                            autoFocus
+                            id="gen-dwps-input-fullname"
+                          />
+                        </div>
+
+                        {/* 2. Account No. */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Account No. *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. 38570100006930"
+                            value={empFormData.bankAccount || empFormData.dynamicFields?.accountNo || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setEmpFormData((prev) => ({
+                                ...prev,
+                                bankAccount: val,
+                                dynamicFields: { ...prev.dynamicFields, accountNo: val },
+                              }));
+                            }}
+                            required
+                            id="gen-dwps-input-accountno"
+                          />
+                        </div>
+
+                        {/* 3. Joining Date */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Joining Date *</label>
+                          <input
+                            type="date"
+                            className="form-input"
+                            value={empFormData.joiningDate}
+                            onChange={(e) => setEmpFormData({ ...empFormData, joiningDate: e.target.value })}
+                            required
+                            id="gen-dwps-input-joiningdate"
+                          />
+                        </div>
+
+                        {/* 4. Bank Details */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Bank Details (Bank & IFSC) *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. BANK OF BARODA(IFSC Code: BARB0VJASHT)"
+                            value={empFormData.dynamicFields?.bankDetails || ''}
+                            onChange={(e) => setEmpFormData((prev) => ({
+                              ...prev,
+                              dynamicFields: { ...prev.dynamicFields, bankDetails: e.target.value },
+                            }))}
+                            required
+                            id="gen-dwps-input-bankdetails"
+                          />
+                        </div>
+
+                        {/* Bank Address */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Bank Branch / Address</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. KANNOD ROAD, ASHTA, DIST.SEHORE, ASHTA - 466116"
+                            value={empFormData.dynamicFields?.bankAddress || ''}
+                            onChange={(e) => setEmpFormData((prev) => ({
+                              ...prev,
+                              dynamicFields: { ...prev.dynamicFields, bankAddress: e.target.value },
+                            }))}
+                            id="gen-dwps-input-bankaddress"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Right Column Box (Template Right Side) */}
+                      <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-cyan)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '0.35rem' }}>
+                          Template Right Side Details
+                        </div>
+
+                        {/* 5. Posting Office */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Posting Office *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. DELHI WORLD PUBLIC SCHOOL, ASHTA"
+                            value={empFormData.dynamicFields?.postingOffice || ''}
+                            onChange={(e) => setEmpFormData((prev) => ({
+                              ...prev,
+                              dynamicFields: { ...prev.dynamicFields, postingOffice: e.target.value },
+                            }))}
+                            required
+                            id="gen-dwps-input-postingofficer"
+                          />
+                        </div>
+
+                        {/* 6. Designation */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Designation *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. PRINCIPAL"
+                            value={empFormData.designation}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setEmpFormData((prev) => ({
+                                ...prev,
+                                designation: val,
+                                dynamicFields: { ...prev.dynamicFields, designation: val },
+                              }));
+                            }}
+                            required
+                            id="gen-dwps-input-designation"
+                          />
+                        </div>
+
+                        {/* 7. Emp ID */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Emp ID *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. 4417"
+                            value={empFormData.empCode || empFormData.dynamicFields?.empId || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setEmpFormData((prev) => ({
+                                ...prev,
+                                empCode: val,
+                                dynamicFields: { ...prev.dynamicFields, empId: val },
+                              }));
+                            }}
+                            required
+                            id="gen-dwps-input-empid"
+                          />
+                        </div>
+
+                        {/* 8. PAN No */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>PAN No *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. MKRPK2843N"
+                            value={empFormData.pan || empFormData.panNumber || empFormData.dynamicFields?.panNo || ''}
+                            onChange={(e) => {
+                              const val = e.target.value.toUpperCase();
+                              setEmpFormData((prev) => ({
+                                ...prev,
+                                pan: val,
+                                panNumber: val,
+                                dynamicFields: { ...prev.dynamicFields, panNo: val },
+                              }));
+                            }}
+                            required
+                            id="gen-dwps-input-panno"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 2: DWPS Baseline Compensation Structure */}
+                  <div style={{ marginTop: '1.25rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                      <DollarSign size={18} className="text-cyan" />
+                      <h4 style={{ fontSize: '0.95rem', color: 'var(--accent-cyan)', margin: 0, fontWeight: 700 }}>
+                        Monthly Compensation Structure (DWPS Formula)
+                      </h4>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>Basic ({currencySymbol}) *</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={empFormData.baselineSalary?.basicPay}
+                          onChange={(e) => setEmpFormData((prev) => ({
+                            ...prev,
+                            baselineSalary: { ...prev.baselineSalary, basicPay: Number(e.target.value) || 0 },
+                          }))}
+                          required
+                          id="gen-dwps-salary-basic"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>Dearness Allowance ({currencySymbol})</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={empFormData.baselineSalary?.specialAllowance}
+                          onChange={(e) => setEmpFormData((prev) => ({
+                            ...prev,
+                            baselineSalary: { ...prev.baselineSalary, specialAllowance: Number(e.target.value) || 0 },
+                          }))}
+                          id="gen-dwps-salary-da"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>House Rent Allowance ({currencySymbol})</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={empFormData.baselineSalary?.hra}
+                          onChange={(e) => setEmpFormData((prev) => ({
+                            ...prev,
+                            baselineSalary: { ...prev.baselineSalary, hra: Number(e.target.value) || 0 },
+                          }))}
+                          id="gen-dwps-salary-hra"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>Medical Allowance ({currencySymbol})</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={empFormData.baselineSalary?.medicalAllowance}
+                          onChange={(e) => setEmpFormData((prev) => ({
+                            ...prev,
+                            baselineSalary: { ...prev.baselineSalary, medicalAllowance: Number(e.target.value) || 0 },
+                          }))}
+                          id="gen-dwps-salary-medical"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>Provident Fund ({currencySymbol})</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={empFormData.baselineSalary?.pfDeduction}
+                          onChange={(e) => setEmpFormData((prev) => ({
+                            ...prev,
+                            baselineSalary: { ...prev.baselineSalary, pfDeduction: Number(e.target.value) || 0 },
+                          }))}
+                          id="gen-dwps-salary-pf"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>Income Tax / TDS ({currencySymbol})</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={empFormData.baselineSalary?.tds}
+                          onChange={(e) => setEmpFormData((prev) => ({
+                            ...prev,
+                            baselineSalary: { ...prev.baselineSalary, tds: Number(e.target.value) || 0 },
+                          }))}
+                          id="gen-dwps-salary-tax"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>Proffessional Tax ({currencySymbol})</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={empFormData.baselineSalary?.professionalTax}
+                          onChange={(e) => setEmpFormData((prev) => ({
+                            ...prev,
+                            baselineSalary: { ...prev.baselineSalary, professionalTax: Number(e.target.value) || 0 },
+                          }))}
+                          id="gen-dwps-salary-pt"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* Standard Template Form */
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <div className="form-group">
+                      <label className="form-label">Full Name *</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="e.g. John Doe"
+                        value={empFormData.fullName}
+                        onChange={(e) => setEmpFormData({ ...empFormData, fullName: e.target.value })}
+                        required
+                        autoFocus
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Employee ID / Code *</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={empFormData.empCode}
+                        onChange={(e) => setEmpFormData({ ...empFormData, empCode: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Designation *</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={empFormData.designation}
+                        onChange={(e) => setEmpFormData({ ...empFormData, designation: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Bank Account Number</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={empFormData.bankAccount}
+                        onChange={(e) => setEmpFormData({ ...empFormData, bankAccount: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">PAN Number</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={empFormData.pan}
+                        onChange={(e) => setEmpFormData({ ...empFormData, pan: e.target.value.toUpperCase() })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Joining Date</label>
+                      <input
+                        type="date"
+                        className="form-input"
+                        value={empFormData.joiningDate}
+                        onChange={(e) => setEmpFormData({ ...empFormData, joiningDate: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.25rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setIsEmpModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={savingEmp}
+                  id="gen-btn-save-emp-submit"
+                >
+                  {savingEmp ? <Loader2 size={16} className="spin" /> : <Save size={16} />}
+                  <span>{editingEmpObj ? 'Update Employee' : 'Create Employee Record'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

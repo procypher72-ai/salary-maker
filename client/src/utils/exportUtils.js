@@ -1,6 +1,7 @@
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
+import { PDFDocument } from 'pdf-lib';
 
 /**
  * Clean clone pre-processor for individual payslip sheets
@@ -72,6 +73,13 @@ const sanitizeClonedDocument = (clonedDoc) => {
     aiimsSheet.style.display = 'flex';
     aiimsSheet.style.flexDirection = 'column';
     aiimsSheet.style.boxSizing = 'border-box';
+  });
+
+  // Dedicated handling for Delhi World Public School Template: completely eliminate outside container borders
+  clonedDoc.querySelectorAll('.dwps-payslip-wrapper, #dwps-pdf-sheet').forEach((dwpsSheet) => {
+    dwpsSheet.style.boxShadow = 'none';
+    dwpsSheet.style.border = 'none';
+    dwpsSheet.style.outline = 'none';
   });
 
   // 4. Convert all input elements into clean, crisp typography spans
@@ -178,6 +186,7 @@ export const tryExportServerVectorPdf = async (elementOrId, filename = 'SalarySl
     sheets.some((el) =>
       el.classList.contains('classic-tabular-wrapper') ||
       el.classList.contains('hcl-corporate-wrapper') ||
+      el.classList.contains('nestle-india-wrapper') ||
       el.classList.contains('landscape-slip')
     );
 
@@ -191,6 +200,29 @@ export const tryExportServerVectorPdf = async (elementOrId, filename = 'SalarySl
 
   sheets.forEach((sheetEl) => {
     const clone = sheetEl.cloneNode(true);
+
+    // Convert all images from live sheetEl to base64 Data URLs in the clone if not already data: URLs
+    const liveImgs = sheetEl.querySelectorAll('img');
+    const cloneImgs = clone.querySelectorAll('img');
+    for (let idx = 0; idx < liveImgs.length && idx < cloneImgs.length; idx++) {
+      const lImg = liveImgs[idx];
+      const cImg = cloneImgs[idx];
+      if (cImg && cImg.src && !cImg.src.startsWith('data:')) {
+        try {
+          if (lImg.complete && lImg.naturalWidth > 0) {
+            const canvas = document.createElement('canvas');
+            canvas.width = lImg.naturalWidth;
+            canvas.height = lImg.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(lImg, 0, 0);
+            cImg.src = canvas.toDataURL('image/png');
+          }
+        } catch (e) {
+          // Cross-origin or canvas read error, retain current src
+        }
+      }
+    }
+
     const sheetWrapper = clonedDoc.createElement('div');
     sheetWrapper.className = 'vector-pdf-sheet-wrapper';
     sheetWrapper.appendChild(clone);
@@ -265,6 +297,10 @@ export const tryExportServerVectorPdf = async (elementOrId, filename = 'SalarySl
   }
 
   const blob = await res.blob();
+  if (options.returnBlob) {
+    return blob;
+  }
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.style.display = 'none';
@@ -305,9 +341,12 @@ export const exportElementToPdf = async (elementOrId, filename = 'SalarySlip.pdf
   // 1. Prioritize Server-Side Vector PDF (Real digital selectable & editable text)
   if (!options.forceCanvas) {
     try {
-      const ok = await tryExportServerVectorPdf(rootElement, filename, options);
-      if (ok) {
-        return; // Successfully exported via vector engine - stop here!
+      const result = await tryExportServerVectorPdf(rootElement, filename, options);
+      if (options.returnBlob && result instanceof Blob) {
+        return result;
+      }
+      if (result) {
+        return true; // Successfully exported via vector engine - stop here!
       }
     } catch (serverErr) {
       console.warn('Server vector PDF export unavailable, using client canvas fallback:', serverErr);
@@ -342,6 +381,7 @@ export const exportElementToPdf = async (elementOrId, filename = 'SalarySlip.pdf
     targetElements.some((el) =>
       el.classList.contains('classic-tabular-wrapper') ||
       el.classList.contains('hcl-corporate-wrapper') ||
+      el.classList.contains('nestle-india-wrapper') ||
       el.classList.contains('landscape-slip')
     );
 
@@ -465,7 +505,98 @@ export const exportElementToPdf = async (elementOrId, filename = 'SalarySlip.pdf
     }
   }
 
+  if (options.returnBlob) {
+    return pdf.output('blob');
+  }
+
   pdf.save(filename);
+  return true;
+};
+
+/**
+ * Export multiple elements into a single merged PDF document.
+ * Each element is captured with its correct aspect ratio, geometry, and orientation,
+ * and seamlessly stitched into a unified multi-page PDF catalog via pdf-lib.
+ *
+ * @param {Array<{ id: string, name?: string }|string>} items - List of element IDs or config objects
+ * @param {string} filename - Merged PDF output filename
+ * @param {object} options - Progress and abort hooks
+ */
+export const exportMultipleElementsToMergedPdf = async (
+  items = [],
+  filename = 'All_Salary_Templates_Catalog.pdf',
+  options = {}
+) => {
+  if (!items || items.length === 0) {
+    throw new Error('No items provided for merged PDF export');
+  }
+
+  const mergedPdf = await PDFDocument.create();
+  let mergedPageCount = 0;
+
+  for (let i = 0; i < items.length; i++) {
+    if (options.shouldAbort && options.shouldAbort()) {
+      break;
+    }
+
+    const item = items[i];
+    const elementId = typeof item === 'string' ? item : (item.id || item.elementId);
+    const itemName = typeof item === 'object' && item.name ? item.name : `Template ${i + 1}`;
+
+    if (options.onProgress) {
+      options.onProgress(i + 1, items.length, itemName);
+    }
+
+    const targetEl = document.getElementById(elementId);
+    if (!targetEl) {
+      console.warn(`Element #${elementId} not found in DOM, skipping from merged PDF.`);
+      continue;
+    }
+
+    try {
+      const pdfBlob = await exportElementToPdf(targetEl, `${itemName}.pdf`, {
+        ...options,
+        returnBlob: true,
+      });
+
+      if (pdfBlob && pdfBlob instanceof Blob) {
+        const arrayBuffer = await pdfBlob.arrayBuffer();
+        const doc = await PDFDocument.load(arrayBuffer);
+        const copiedPages = await mergedPdf.copyPages(doc, doc.getPageIndices());
+        copiedPages.forEach((page) => mergedPdf.addPage(page));
+        mergedPageCount += copiedPages.length;
+      }
+    } catch (err) {
+      console.warn(`Failed to export/merge "${itemName}":`, err);
+    }
+
+    // Gentle pause so the browser UI thread can breathe & update progress indicators
+    await new Promise((r) => setTimeout(r, 120));
+  }
+
+  if (mergedPageCount === 0) {
+    throw new Error('Could not generate any template pages for the merged PDF.');
+  }
+
+  const mergedPdfBytes = await mergedPdf.save();
+  const finalBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+  const url = URL.createObjectURL(finalBlob);
+
+  const a = document.createElement('a');
+  a.style.display = 'none';
+  a.href = url;
+  a.download = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+
+  setTimeout(() => {
+    try {
+      if (a.parentNode) a.parentNode.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {}
+  }, 2000);
+
+  return { success: true, pageCount: mergedPageCount };
 };
 
 /**

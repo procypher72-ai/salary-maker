@@ -95,6 +95,10 @@ export const SnapshotRenderer = ({
     netSalaryInWords: payslip.netSalaryInWords,
     voucherNo: payslip.voucherNo || payslip.snapshotData?.employee?.dynamicFields?.voucherNo,
     voucherDate: payslip.voucherDate || payslip.snapshotData?.employee?.dynamicFields?.voucherDate,
+    // Nestle YTD cumulated figures — stored in the snapshot so they are never
+    // recalculated from the (potentially prorated) current-month amounts
+    cumulatedEarnings: payslip.snapshotData?.draft?.cumulatedEarnings || undefined,
+    cumulatedDeductions: payslip.snapshotData?.draft?.cumulatedDeductions || undefined,
   };
 
   if (tplKey === 'new_aiims_template') {

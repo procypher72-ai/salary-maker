@@ -34,7 +34,17 @@ import { OtherSourcesTab } from './tabs/OtherSourcesTab';
 import { DeductionsTab } from './tabs/DeductionsTab';
 import { TaxesAndChallansTab } from './tabs/TaxesAndChallansTab';
 
-const FINANCIAL_YEARS = ['2026-2027', '2025-2026', '2024-2025', '2023-2024'];
+const FINANCIAL_YEARS = [
+  '2026-2027',
+  '2025-2026',
+  '2024-2025',
+  '2023-2024',
+  '2022-2023',
+  '2021-2022',
+  '2020-2021',
+  '2019-2020',
+  '2018-2019',
+];
 
 const INITIAL_COMPUTATION_STATE = {
   financialYear: '2025-2026',

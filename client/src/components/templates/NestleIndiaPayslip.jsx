@@ -148,18 +148,74 @@ export const NestleIndiaPayslip = ({
   const loansAmt = dynamic.loans !== undefined ? dynamic.loans : '';
 
   // Cumulated (YTD) Earnings & Deductions
+  // IMPORTANT: These must always reflect the employee's FULL monthly baseline salary amounts
+  // multiplied by ytdMonths — they must NEVER be derived from the current month's prorated
+  // (LOP-adjusted) earnings. Working days reduction should only affect current month net pay.
   const cumulatedMultiplier = dynamic.ytdMonths !== undefined ? Number(dynamic.ytdMonths) : 12;
+
+  // Full (non-prorated) baseline amounts — read from dynamic fields where available,
+  // then from the earnings[].rate field (stored full amount), then hardcoded defaults.
+  const fullBasicAmt = dynamic.basicRate !== undefined && dynamic.basicRate !== '' && !isNaN(dynamic.basicRate)
+    ? Number(dynamic.basicRate)
+    : (earnings.find(e => /basic/i.test(e.label))?.rate !== undefined
+        ? Number(earnings.find(e => /basic/i.test(e.label)).rate)
+        : (earnings.find(e => /basic/i.test(e.label))?.fullAmount !== undefined
+            ? Number(earnings.find(e => /basic/i.test(e.label)).fullAmount)
+            : 168129));
+
+  const fullHraAmt = dynamic.hraRate !== undefined && dynamic.hraRate !== '' && !isNaN(dynamic.hraRate)
+    ? Number(dynamic.hraRate)
+    : (earnings.find(e => /house rent|hra/i.test(e.label))?.rate !== undefined
+        ? Number(earnings.find(e => /house rent|hra/i.test(e.label)).rate)
+        : (earnings.find(e => /house rent|hra/i.test(e.label))?.fullAmount !== undefined
+            ? Number(earnings.find(e => /house rent|hra/i.test(e.label)).fullAmount)
+            : Math.round(fullBasicAmt * 0.5)));
+
+  const fullCompAmt = dynamic.compRate !== undefined && dynamic.compRate !== '' && !isNaN(dynamic.compRate)
+    ? Number(dynamic.compRate)
+    : (earnings.find(e => /compensatory/i.test(e.label))?.rate !== undefined
+        ? Number(earnings.find(e => /compensatory/i.test(e.label)).rate)
+        : (earnings.find(e => /compensatory/i.test(e.label))?.fullAmount !== undefined
+            ? Number(earnings.find(e => /compensatory/i.test(e.label)).fullAmount)
+            : 55565));
+
+  const fullTransportAmt = dynamic.transportRate !== undefined && dynamic.transportRate !== '' && !isNaN(dynamic.transportRate)
+    ? Number(dynamic.transportRate)
+    : (earnings.find(e => /transport/i.test(e.label))?.rate !== undefined
+        ? Number(earnings.find(e => /transport/i.test(e.label)).rate)
+        : (earnings.find(e => /transport/i.test(e.label))?.fullAmount !== undefined
+            ? Number(earnings.find(e => /transport/i.test(e.label)).fullAmount)
+            : 28500));
+
+  // Full baseline deduction amounts (also not prorated)
+  const fullItAmt = dynamic.tdsRate !== undefined && dynamic.tdsRate !== '' && !isNaN(dynamic.tdsRate)
+    ? Number(dynamic.tdsRate)
+    : (deductions.find(d => /income tax/i.test(d.label))?.fullAmount !== undefined
+        ? Number(deductions.find(d => /income tax/i.test(d.label)).fullAmount)
+        : 70040);
+
+  const fullPfAmt = dynamic.pfRate !== undefined && dynamic.pfRate !== '' && !isNaN(dynamic.pfRate)
+    ? Number(dynamic.pfRate)
+    : (deductions.find(d => /pf/i.test(d.label))?.fullAmount !== undefined
+        ? Number(deductions.find(d => /pf/i.test(d.label)).fullAmount)
+        : 20175);
+
+  const fullClubAmt = dynamic.clubRate !== undefined && dynamic.clubRate !== '' && !isNaN(dynamic.clubRate)
+    ? Number(dynamic.clubRate)
+    : 150;
+
   const defaultCumulatedEarnings = [
-    { label: 'Basic Salary', amount: dynamic.cumBasic !== undefined ? Number(dynamic.cumBasic) : (earnings.find(e => /basic/i.test(e.label))?.amount ? earnings.find(e => /basic/i.test(e.label)).amount * cumulatedMultiplier : 2017548) },
-    { label: 'House Rent Allowance', amount: dynamic.cumHra !== undefined ? Number(dynamic.cumHra) : (earnings.find(e => /house rent|hra/i.test(e.label))?.amount ? earnings.find(e => /house rent|hra/i.test(e.label)).amount * cumulatedMultiplier : 1008780) },
-    { label: 'Compensatory Allowance', amount: dynamic.cumComp !== undefined ? Number(dynamic.cumComp) : (earnings.find(e => /compensatory/i.test(e.label))?.amount ? earnings.find(e => /compensatory/i.test(e.label)).amount * cumulatedMultiplier : 666780) },
-    { label: 'Transport Allowance', amount: dynamic.cumTransport !== undefined ? Number(dynamic.cumTransport) : (earnings.find(e => /transport/i.test(e.label))?.amount ? earnings.find(e => /transport/i.test(e.label)).amount * cumulatedMultiplier : 342000) },
+    { label: 'Basic Salary', amount: dynamic.cumBasic !== undefined ? Number(dynamic.cumBasic) : Math.round(fullBasicAmt * cumulatedMultiplier) },
+    { label: 'House Rent Allowance', amount: dynamic.cumHra !== undefined ? Number(dynamic.cumHra) : Math.round(fullHraAmt * cumulatedMultiplier) },
+    { label: 'Compensatory Allowance', amount: dynamic.cumComp !== undefined ? Number(dynamic.cumComp) : Math.round(fullCompAmt * cumulatedMultiplier) },
+    { label: 'Transport Allowance', amount: dynamic.cumTransport !== undefined ? Number(dynamic.cumTransport) : Math.round(fullTransportAmt * cumulatedMultiplier) },
   ];
 
   const defaultCumulatedDeductions = [
-    { label: 'Income Tax', amount: dynamic.cumTax !== undefined ? Number(dynamic.cumTax) : (deductions.find(d => /income tax/i.test(d.label))?.amount ? Math.round(deductions.find(d => /income tax/i.test(d.label)).amount * 17.05) : 1194227) },
-    { label: 'Ee PF contribution', amount: dynamic.cumPf !== undefined ? Number(dynamic.cumPf) : (deductions.find(d => /pf/i.test(d.label))?.amount ? deductions.find(d => /pf/i.test(d.label)).amount * cumulatedMultiplier : 242100) },
-    { label: 'Recreation Club GGN', amount: dynamic.cumClub !== undefined ? Number(dynamic.cumClub) : (deductions.find(d => /club/i.test(d.label))?.amount ? deductions.find(d => /club/i.test(d.label)).amount * cumulatedMultiplier : 1800) },
+    // Income Tax YTD: use explicit cumTax if set, else annual tax figure from dynamic, else baseline × ~17 months ratio
+    { label: 'Income Tax', amount: dynamic.cumTax !== undefined ? Number(dynamic.cumTax) : (dynamic.taxDeducted !== undefined ? Number(dynamic.taxDeducted) : Math.round(fullItAmt * 17.05)) },
+    { label: 'Ee PF contribution', amount: dynamic.cumPf !== undefined ? Number(dynamic.cumPf) : Math.round(fullPfAmt * cumulatedMultiplier) },
+    { label: 'Recreation Club GGN', amount: dynamic.cumClub !== undefined ? Number(dynamic.cumClub) : Math.round(fullClubAmt * cumulatedMultiplier) },
   ];
 
   const cumulatedEarnings = draft.cumulatedEarnings || defaultCumulatedEarnings;

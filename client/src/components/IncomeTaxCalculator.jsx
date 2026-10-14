@@ -27,6 +27,11 @@ const FINANCIAL_YEARS = [
   { label: 'FY 2025-26 (AY 2026-27)', value: '2025-2026' },
   { label: 'FY 2024-25 (AY 2025-26)', value: '2024-2025' },
   { label: 'FY 2023-24 (AY 2024-25)', value: '2023-2024' },
+  { label: 'FY 2022-23 (AY 2023-24)', value: '2022-2023' },
+  { label: 'FY 2021-22 (AY 2022-23)', value: '2021-2022' },
+  { label: 'FY 2020-21 (AY 2021-22)', value: '2020-2021' },
+  { label: 'FY 2019-20 (AY 2020-21)', value: '2019-2020' },
+  { label: 'FY 2018-19 (AY 2019-20)', value: '2018-2019' },
 ];
 
 const AGE_CATEGORIES = [

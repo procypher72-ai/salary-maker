@@ -118,6 +118,8 @@ const payslipSchema = new mongoose.Schema(
       },
       templateKey: String,
       statutoryAudit: mongoose.Schema.Types.Mixed,
+      // Template-specific pre-computed data (e.g. Nestle cumulated YTD earnings/deductions)
+      draft: mongoose.Schema.Types.Mixed,
     },
 
     status: {

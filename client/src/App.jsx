@@ -210,6 +210,8 @@ export function App() {
               <EmployeeManager
                 employees={employees}
                 activeCompany={activeCompany}
+                companies={companies}
+                setActiveCompany={setActiveCompany}
                 templates={templates}
                 payslips={payslips}
                 onRefresh={fetchAllData}
@@ -220,9 +222,12 @@ export function App() {
             {activeTab === 'generator' && (
               <PayslipGenerator
                 activeCompany={activeCompany}
+                companies={companies}
+                setActiveCompany={setActiveCompany}
                 employees={employees}
                 templates={templates}
                 onCompanyUpdated={fetchAllData}
+                onRefreshEmployees={fetchAllData}
                 onPayslipGenerated={() => {
                   fetchAllData();
                   setActiveTab('history');

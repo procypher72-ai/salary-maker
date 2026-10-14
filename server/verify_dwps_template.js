@@ -10,7 +10,7 @@ const verifyDwpsTemplate = async () => {
     await mongoose.connect('mongodb://127.0.0.1:27017/salary_maker');
     console.log('--- Verifying Delhi World Public School Template System ---');
 
-    // 1. Seed & Check SalaryTemplate
+    // 1. Seed & Update SalaryTemplate
     await seedDefaultTemplates();
     const tpl = await SalaryTemplate.findOne({ templateKey: 'delhi_public_school' });
     console.log('1. Template Seeded:', tpl ? 'PASS' : 'FAIL');
@@ -21,104 +21,125 @@ const verifyDwpsTemplate = async () => {
       console.log('   Default Deductions:', tpl.defaultDeductions.map(d => d.label).join(', '));
     }
 
-    // 2. Optionally seed Delhi World Public School company if not present
-    let dwpsComp = await Company.findOne({ name: 'Delhi World Public School, Ashta' });
+    // 2. Seed / Update Delhi World Public School company
+    let dwpsComp = await Company.findOne({
+      $or: [
+        { name: 'Delhi World Public School' },
+        { name: 'Delhi World Public School, Ashta' },
+        { templateKey: 'delhi_public_school' }
+      ]
+    });
+
     if (!dwpsComp) {
       dwpsComp = await Company.create({
-        name: 'Delhi World Public School, Ashta',
+        name: 'Delhi World Public School',
         fullAddress: 'Shujalpur Road Ashta, Dist. Sehore (M.P)',
-        pinCode: 'Pin Code - 466116',
         templateKey: 'delhi_public_school',
-        slipWidth: 950,
-        slipPadding: 24,
+        slipWidth: 794,
       });
       console.log('2. Created Delhi World Public School Company');
     } else {
-      console.log('2. Delhi World Public School Company Exists');
+      dwpsComp.name = 'Delhi World Public School';
+      dwpsComp.fullAddress = 'Shujalpur Road Ashta, Dist. Sehore (M.P)';
+      dwpsComp.templateKey = 'delhi_public_school';
+      await dwpsComp.save();
+      console.log('2. Updated Delhi World Public School Company');
     }
 
-    // 3. Optionally seed SUNAINA SHARMA employee if not present
+    // 3. Seed / Update SUNAINA SHARMA employee
     let sunaina = await Employee.findOne({ companyId: dwpsComp._id, fullName: 'SUNAINA SHARMA' });
+    const empData = {
+      companyId: dwpsComp._id,
+      empCode: '4417',
+      fullName: 'SUNAINA SHARMA',
+      designation: 'PRINCIPAL',
+      bankAccount: '38570100006930',
+      panNumber: 'MKRPK2843N',
+      joiningDate: new Date('2021-10-21'),
+      baselineSalary: {
+        basicPay: 40000,
+        hra: 6400,
+        specialAllowance: 20000,
+        medicalAllowance: 500,
+        pfDeduction: 7200,
+        tds: 5000,
+        professionalTax: 200,
+      },
+      dynamicFields: {
+        accountNo: '38570100006930',
+        dateOfJoiningStr: '21/10/2021',
+        bankDetails: 'BANK OF BARODA(IFSC Code: BARB0VJASHT)',
+        bankAddress: 'KANNOD ROAD, ASHTA, DIST.SEHORE, ASHTA - 466116',
+        postingOffice: 'DELHI WORLD PUBLIC SCHOOL, ASHTA',
+        designation: 'PRINCIPAL',
+        empId: '4417',
+        panNo: 'MKRPK2843N',
+      },
+    };
+
     if (!sunaina) {
-      sunaina = await Employee.create({
-        companyId: dwpsComp._id,
-        empCode: 'DWPS-1021',
-        fullName: 'SUNAINA SHARMA',
-        designation: 'Principal',
-        department: 'Management',
-        location: 'Ashta',
-        joiningDate: new Date('2021-10-21'),
-        baselineSalary: {
-          basicPay: 20000,
-          hra: 20000,
-          specialAllowance: 10000,
-        },
-        dynamicFields: {
-          functionRole: 'Management',
-          designation: 'Principal',
-          location: 'Ashta',
-          bankDetails: '38570100006930,Bank of Baroda,Ashta',
-          dateOfJoiningStr: '21/10/2021',
-        },
-      });
+      sunaina = await Employee.create(empData);
       console.log('3. Created SUNAINA SHARMA Employee');
     } else {
-      console.log('3. SUNAINA SHARMA Employee Exists');
+      Object.assign(sunaina, empData);
+      await sunaina.save();
+      console.log('3. Updated SUNAINA SHARMA Employee');
     }
 
-    // 4. Optionally seed April, May, June 2022 sample payslips matching the PDF!
-    const sampleMonths = [
-      { month: 'April', year: 2022, payPeriod: 'April 2022' },
-      { month: 'May', year: 2022, payPeriod: 'May 2022' },
-      { month: 'June', year: 2022, payPeriod: 'June 2022' },
-    ];
+    // 4. Seed / Update June 2023 sample payslip exactly matching the official PDF!
+    const juneSlipData = {
+      companyId: dwpsComp._id,
+      employeeId: sunaina._id,
+      month: 'June',
+      year: 2023,
+      payPeriod: '(Period 01/06/2023-30/06/2023)',
+      paymentDate: new Date('2023-06-30'),
+      workingDays: 30,
+      paidDays: 30,
+      lopDays: 0,
+      earnings: [
+        { label: 'Basic', amount: 40000 },
+        { label: 'Dearness Allowance', amount: 20000 },
+        { label: 'House Rent Allowance', amount: 6400 },
+        { label: 'Medical Allowance', amount: 500 },
+      ],
+      deductions: [
+        { label: 'Provident Fund', amount: 7200 },
+        { label: 'Income Tax', amount: 5000 },
+        { label: 'Proffessional Tax', amount: 200 },
+      ],
+      grossEarnings: 66900,
+      totalDeductions: 12400,
+      netSalary: 54500,
+      netSalaryInWords: 'Rupees Fifty Four Thousand Five Hundred Only',
+      templateKey: 'delhi_public_school',
+      snapshotData: {
+        company: dwpsComp.toObject(),
+        employee: sunaina.toObject(),
+        templateKey: 'delhi_public_school',
+      },
+    };
 
-    for (const m of sampleMonths) {
-      const existingSlip = await Payslip.findOne({
-        companyId: dwpsComp._id,
-        employeeId: sunaina._id,
-        month: m.month,
-        year: m.year,
-      });
+    let slip = await Payslip.findOne({
+      companyId: dwpsComp._id,
+      employeeId: sunaina._id,
+      month: 'June',
+      year: 2023,
+    });
 
-      if (!existingSlip) {
-        await Payslip.create({
-          companyId: dwpsComp._id,
-          employeeId: sunaina._id,
-          month: m.month,
-          year: m.year,
-          payPeriod: m.payPeriod,
-          paymentDate: new Date(`${m.year}-${m.month === 'April' ? '04' : m.month === 'May' ? '05' : '06'}-30`),
-          workingDays: 30,
-          paidDays: 30,
-          lopDays: 0,
-          earnings: [
-            { label: 'Basic', amount: 20000 },
-            { label: 'D.A', amount: 10000 },
-            { label: 'H.R.A', amount: 20000 },
-          ],
-          deductions: [
-            { label: 'Professsional Tax', amount: 212 },
-          ],
-          grossEarnings: 50000,
-          totalDeductions: 212,
-          netSalary: 49788,
-          netSalaryInWords: 'Fourty nine thousand seven hunderd and eighty eighty only.',
-          templateKey: 'delhi_public_school',
-          snapshotData: {
-            company: dwpsComp.toObject(),
-            employee: sunaina.toObject(),
-            templateKey: 'delhi_public_school',
-          },
-        });
-        console.log(`4. Seeded sample payslip: ${m.payPeriod}`);
-      }
+    if (!slip) {
+      await Payslip.create(juneSlipData);
+      console.log('4. Created official June 2023 payslip');
+    } else {
+      Object.assign(slip, juneSlipData);
+      await slip.save();
+      console.log('4. Updated official June 2023 payslip');
     }
 
     console.log('--- DWPS Template Verification Completed Successfully ---');
     process.exit(0);
   } catch (err) {
-    console.error('Error verifying DWPS template:', err);
+    console.error('Error during DWPS template verification:', err);
     process.exit(1);
   }
 };

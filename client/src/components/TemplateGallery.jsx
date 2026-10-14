@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { exportElementToPdf, exportMultipleElementsToMergedPdf } from '../utils/exportUtils';
 import { ClassicTabularPayslip } from './templates/ClassicTabularPayslip';
 import { HclCorporatePayslip } from './templates/HclCorporatePayslip';
 import { AiimsGovtPayslip } from './templates/AiimsGovtPayslip';
@@ -32,6 +33,8 @@ import {
   ArrowUp,
   ArrowDown,
   Sliders,
+  Download,
+  Loader2,
 } from 'lucide-react';
 
 export const TemplateGallery = ({
@@ -43,6 +46,99 @@ export const TemplateGallery = ({
   const { showToast } = useAuth();
   const [selectedPreviewTemplate, setSelectedPreviewTemplate] = useState(null);
   const [assigningKey, setAssigningKey] = useState(null);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
+  // Download All Templates state
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
+  const [downloadAllProgress, setDownloadAllProgress] = useState({ current: 0, total: 0, name: '' });
+  const downloadAllAbort = useRef(false);
+
+  const handleDownloadSamplePdf = async () => {
+    setIsDownloadingPdf(true);
+    try {
+      const templateName = (selectedPreviewTemplate?.name || 'Template').replace(/\s+/g, '_');
+      await exportElementToPdf('template-preview-canvas', `Sample_${templateName}.pdf`);
+    } catch (err) {
+      showToast('Could not generate PDF: ' + (err?.message || 'Unknown error'), 'error');
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
+  const handleDownloadMergedPdf = async () => {
+    if (isDownloadingAll || !templates || templates.length === 0) return;
+    downloadAllAbort.current = false;
+    setIsDownloadingAll(true);
+    setDownloadAllProgress({ current: 0, total: templates.length, name: 'Initializing Merged PDF…' });
+
+    // Wait for hidden render area to mount
+    await new Promise(r => setTimeout(r, 800));
+
+    const items = templates.map((tpl) => ({
+      id: `batch-tpl-render-${tpl.templateKey}`,
+      name: tpl.name,
+    }));
+
+    try {
+      const result = await exportMultipleElementsToMergedPdf(
+        items,
+        'All_Salary_Templates_Catalog.pdf',
+        {
+          onProgress: (current, total, name) => {
+            setDownloadAllProgress({ current, total, name });
+          },
+          shouldAbort: () => downloadAllAbort.current,
+        }
+      );
+
+      if (result?.success) {
+        showToast(`✅ Successfully created 1 merged PDF with all ${result.pageCount} template pages!`, 'success');
+      }
+    } catch (err) {
+      if (!downloadAllAbort.current) {
+        showToast('Could not generate merged PDF: ' + (err?.message || 'Unknown error'), 'error');
+      }
+    } finally {
+      setIsDownloadingAll(false);
+      downloadAllAbort.current = false;
+      setDownloadAllProgress({ current: 0, total: 0, name: '' });
+    }
+  };
+
+  const handleDownloadSeparatePdfs = async () => {
+    if (isDownloadingAll || !templates || templates.length === 0) return;
+    downloadAllAbort.current = false;
+    setIsDownloadingAll(true);
+    setDownloadAllProgress({ current: 0, total: templates.length, name: 'Preparing separate files…' });
+
+    // Wait for hidden render area to mount
+    await new Promise(r => setTimeout(r, 800));
+
+    let downloaded = 0;
+    for (let i = 0; i < templates.length; i++) {
+      if (downloadAllAbort.current) break;
+      const tpl = templates[i];
+      setDownloadAllProgress({ current: i + 1, total: templates.length, name: tpl.name });
+      const elementId = `batch-tpl-render-${tpl.templateKey}`;
+      const safeName = tpl.name.replace(/[^a-zA-Z0-9\s]/g, '').trim().replace(/\s+/g, '_');
+      const filename = `Template_${safeName}.pdf`;
+      try {
+        await exportElementToPdf(elementId, filename);
+        downloaded++;
+      } catch (err) {
+        console.warn(`Could not export ${tpl.name}:`, err);
+      }
+      // Small pause between downloads so browser can breathe
+      await new Promise(r => setTimeout(r, 400));
+    }
+
+    setIsDownloadingAll(false);
+    downloadAllAbort.current = false;
+    setDownloadAllProgress({ current: 0, total: 0, name: '' });
+    if (downloaded > 0) {
+      showToast(`✅ Downloaded ${downloaded} template PDF${downloaded > 1 ? 's' : ''}!`, 'success');
+    }
+  };
 
   // Rename Template State
   const [renamingTemplate, setRenamingTemplate] = useState(null);
@@ -245,25 +341,144 @@ export const TemplateGallery = ({
           </p>
         </div>
 
-        {activeCompany && (
-          <div
-            className="glass-panel"
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {/* Download Merged PDF (All Templates in 1 Single PDF) */}
+          <button
+            id="download-merged-pdf-btn"
+            onClick={handleDownloadMergedPdf}
+            disabled={isDownloadingAll}
+            className="btn btn-primary"
             style={{
-              padding: '0.5rem 1rem',
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.6rem',
-              border: '1px solid rgba(6, 182, 212, 0.3)',
+              gap: '0.55rem',
+              background: 'linear-gradient(135deg, #7c3aed, #06b6d4)',
+              border: 'none',
+              color: '#ffffff',
+              fontWeight: 700,
+              fontSize: '0.86rem',
+              padding: '0.58rem 1.25rem',
+              borderRadius: '8px',
+              cursor: isDownloadingAll ? 'not-allowed' : 'pointer',
+              opacity: isDownloadingAll ? 0.75 : 1,
+              boxShadow: '0 4px 16px rgba(124, 58, 237, 0.35)',
+              transition: 'all 0.2s ease',
             }}
+            title={`Download all ${templates.length} templates merged together into one single PDF`}
           >
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Active Company:</span>
-            <strong style={{ fontSize: '0.85rem', color: '#fff' }}>{activeCompany.name || 'Company'}</strong>
-            <span className="badge badge-admin" style={{ fontSize: '0.65rem' }}>
-              {(activeCompany.templateKey || 'DEFAULT').replace('_', ' ').toUpperCase()}
-            </span>
-          </div>
-        )}
+            {isDownloadingAll ? (
+              <>
+                <Loader2 size={16} className="spin" />
+                <span>
+                  Merging {downloadAllProgress.current}/{downloadAllProgress.total}…
+                </span>
+              </>
+            ) : (
+              <>
+                <Download size={16} />
+                <span>Download Merged PDF (All {templates.length} in 1 PDF)</span>
+              </>
+            )}
+          </button>
+
+          {/* Download Separate Individual PDFs (Optional / Secondary) */}
+          <button
+            id="download-separate-pdfs-btn"
+            onClick={handleDownloadSeparatePdfs}
+            disabled={isDownloadingAll}
+            className="btn btn-secondary"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              fontSize: '0.78rem',
+              padding: '0.55rem 0.9rem',
+              borderRadius: '8px',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              background: 'rgba(255, 255, 255, 0.05)',
+              color: 'var(--text-muted)',
+              cursor: isDownloadingAll ? 'not-allowed' : 'pointer',
+              opacity: isDownloadingAll ? 0.5 : 0.9,
+            }}
+            title="Download each template as a separate individual PDF file"
+          >
+            <Layers size={13} />
+            <span>Separate PDFs</span>
+          </button>
+
+          {activeCompany && (
+            <div
+              className="glass-panel"
+              style={{
+                padding: '0.5rem 1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                border: '1px solid rgba(6, 182, 212, 0.3)',
+              }}
+            >
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Active Company:</span>
+              <strong style={{ fontSize: '0.85rem', color: '#fff' }}>{activeCompany.name || 'Company'}</strong>
+              <span className="badge badge-admin" style={{ fontSize: '0.65rem' }}>
+                {(activeCompany.templateKey || 'DEFAULT').replace('_', ' ').toUpperCase()}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Download All — Progress Overlay */}
+      {isDownloadingAll && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '1.5rem',
+            right: '1.5rem',
+            background: 'rgba(15,15,30,0.96)',
+            border: '1px solid rgba(139,92,246,0.5)',
+            borderRadius: '12px',
+            padding: '1rem 1.5rem',
+            zIndex: 9999,
+            minWidth: '320px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(12px)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Loader2 size={16} className="spin" style={{ color: '#c4b5fd' }} />
+              <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#fff' }}>Downloading Templates…</span>
+            </div>
+            <button
+              onClick={() => { downloadAllAbort.current = true; }}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.75rem' }}
+              title="Cancel downloads"
+            >
+              Cancel
+            </button>
+          </div>
+          {/* Progress bar */}
+          <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '999px', height: '6px', overflow: 'hidden', marginBottom: '0.5rem' }}>
+            <div
+              style={{
+                height: '100%',
+                width: `${downloadAllProgress.total > 0 ? (downloadAllProgress.current / downloadAllProgress.total) * 100 : 0}%`,
+                background: 'linear-gradient(90deg, #8b5cf6, #06b6d4)',
+                borderRadius: '999px',
+                transition: 'width 0.4s ease',
+              }}
+            />
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+            {downloadAllProgress.current > 0 ? (
+              <span>
+                <span style={{ color: '#c4b5fd', fontWeight: 600 }}>{downloadAllProgress.name}</span>
+                {' '}({downloadAllProgress.current} of {downloadAllProgress.total})
+              </span>
+            ) : 'Preparing all templates…'}
+          </div>
+        </div>
+      )}
 
       {/* Templates Catalog Grid */}
       <div
@@ -540,7 +755,7 @@ export const TemplateGallery = ({
             </div>
 
             {/* Render sample sheet in this template */}
-            <div className="payslip-canvas-scroll-wrapper">
+            <div id="template-preview-canvas" className="payslip-canvas-scroll-wrapper">
             {selectedPreviewTemplate.templateKey === 'new_aiims_template' ? (
               <NewAiimsPayslip
                 company={activeCompany || {
@@ -862,44 +1077,50 @@ export const TemplateGallery = ({
             ) : selectedPreviewTemplate.templateKey === 'delhi_public_school' ? (
               <DelhiPublicSchoolPayslip
                 company={activeCompany || {
-                  name: 'Delhi World Public School, Ashta',
+                  name: 'Delhi World Public School',
                   fullAddress: 'Shujalpur Road Ashta, Dist. Sehore (M.P)',
-                  pinCode: 'Pin Code - 466116',
                 }}
                 isEditable={true}
                 onSizeSaved={handlePreviewLogoUpdated}
                 employee={{
-                  empCode: 'DWPS-1021',
+                  empCode: '4417',
                   fullName: 'SUNAINA SHARMA',
-                  designation: 'Principal',
-                  department: 'Management',
+                  designation: 'PRINCIPAL',
+                  bankAccount: '38570100006930',
+                  panNumber: 'MKRPK2843N',
                   joiningDate: new Date('2021-10-21'),
                   dynamicFields: {
-                    functionRole: 'Management',
-                    designation: 'Principal',
-                    location: 'Ashta',
-                    bankDetails: '38570100006930,Bank of Baroda,Ashta',
+                    accountNo: '38570100006930',
                     dateOfJoiningStr: '21/10/2021',
+                    bankDetails: 'BANK OF BARODA(IFSC Code: BARB0VJASHT)',
+                    bankAddress: 'KANNOD ROAD, ASHTA, DIST.SEHORE, ASHTA - 466116',
+                    postingOffice: 'DELHI WORLD PUBLIC SCHOOL, ASHTA',
+                    designation: 'PRINCIPAL',
+                    empId: '4417',
+                    panNo: 'MKRPK2843N',
                   },
                 }}
                 draft={{
-                  month: 'April',
-                  year: 2022,
+                  month: 'June',
+                  year: 2023,
                   workingDays: 30,
                   paidDays: 30,
                   lopDays: 0,
                   earnings: [
-                    { label: 'Basic', amount: 20000 },
-                    { label: 'D.A', amount: 10000 },
-                    { label: 'H.R.A', amount: 20000 },
+                    { label: 'Basic', amount: 40000 },
+                    { label: 'Dearness Allowance', amount: 20000 },
+                    { label: 'House Rent Allowance', amount: 6400 },
+                    { label: 'Medical Allowance', amount: 500 },
                   ],
                   deductions: [
-                    { label: 'Professsional Tax', amount: 212 },
+                    { label: 'Provident Fund', amount: 7200 },
+                    { label: 'Income Tax', amount: 5000 },
+                    { label: 'Proffessional Tax', amount: 200 },
                   ],
-                  grossEarnings: 50000,
-                  totalDeductions: 212,
-                  netSalary: 49788,
-                  netSalaryInWords: 'Fourty nine thousand seven hunderd and eighty eighty only.',
+                  grossEarnings: 66900,
+                  totalDeductions: 12400,
+                  netSalary: 54500,
+                  netSalaryInWords: 'Rupees Fifty Four Thousand Five Hundred Only',
                 }}
               />
             ) : selectedPreviewTemplate.templateKey === 'haryana_education' ? (
@@ -1180,7 +1401,38 @@ export const TemplateGallery = ({
             )}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+              {/* Download Sample PDF */}
+              <button
+                onClick={handleDownloadSamplePdf}
+                disabled={isDownloadingPdf}
+                className="btn btn-secondary"
+                id="download-sample-pdf-btn"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  background: 'rgba(6, 182, 212, 0.12)',
+                  border: '1px solid rgba(6, 182, 212, 0.4)',
+                  color: 'var(--accent-cyan)',
+                  fontWeight: 600,
+                }}
+                title="Download this template as a sample PDF"
+              >
+                {isDownloadingPdf ? (
+                  <>
+                    <Loader2 size={15} className="spin" />
+                    <span>Generating PDF…</span>
+                  </>
+                ) : (
+                  <>
+                    <Download size={15} />
+                    <span>Download Sample PDF</span>
+                  </>
+                )}
+              </button>
+
+              {/* Assign Template */}
               <button
                 onClick={() => {
                   handleAssignTemplate(selectedPreviewTemplate.templateKey);
@@ -1615,6 +1867,312 @@ export const TemplateGallery = ({
           </div>
         </div>
       )}
+
+      {/* ============================================================
+          HIDDEN BATCH RENDER AREA — all templates rendered off-screen
+          so exportMultipleElementsToMergedPdf can capture & merge them
+          ============================================================ */}
+      {isDownloadingAll && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: '-99999px',
+            top: 0,
+            opacity: 0,
+            pointerEvents: 'none',
+            zIndex: -9999,
+          }}
+        >
+          {/* 1. NEW AIIMS (PORTRAIT) */}
+          <div id="batch-tpl-render-new_aiims_template" style={{ background: '#fff', width: '794px', margin: '0 auto' }}>
+            <NewAiimsPayslip
+              company={{ name: 'All India Institute of Medical Sciences', fullAddress: 'Ansari Nagar East', phone: '011 2658 8500' }}
+              employee={{ empCode: 'E0000195', fullName: 'Mrs. Paramjit Kaur', designation: 'Assistant Nursing Superintendent', department: 'IRCH', dynamicFields: { dealingOffice: 'Dr. BR Ambedkar Institute Rotary Cancer Hospital', payDetails: 'Level 10(15600 - 5400 - 39100)', oldSalaryCode: 'IR75475', panNumber: '******098R', bankAccount: '*******0688', pfmsNo: '**********9541', bankName: 'STATE BANK OF INDIA', ifscCode: '*******1536', nextIncrementDate: '01/JUL/2026', pranGpfNo: '***1148', reportDateTime: '24-Jul-2026&11:48 PM' } }}
+              draft={{ month: 'June', year: 2026, workingDays: 30, paidDays: 30, earnings: [{ label: 'Basic', amount: 95500 }, { label: 'Dearness Allowance', amount: 57300 }, { label: 'House Rent Allowance', amount: 28650 }, { label: 'Transport Allowance', amount: 7200 }], deductions: [{ label: 'Emp Health Scheme', amount: 650 }, { label: 'General Provided Fund', amount: 25000 }, { label: 'Income Tax', amount: 25155 }], grossEarnings: 206120, totalDeductions: 79635, netSalary: 126485, netSalaryInWords: 'One Lakh Twenty Six Thousand Four Hundred Eighty Five Rupees Only' }}
+            />
+          </div>
+
+          {/* 2. AIIMS GOVT (PORTRAIT) */}
+          <div id="batch-tpl-render-aiims_govt_medical" style={{ background: '#fff', width: '794px', margin: '0 auto' }}>
+            <AiimsGovtPayslip
+              company={{ name: 'All India Institute Of Medical Sciences' }}
+              employee={{ empCode: 'E0400345', fullName: 'AMITESH KUMAR YADAV', designation: 'Senior Programmer', department: 'IT', joiningDate: new Date('2021-08-01'), dynamicFields: { dealingOffice: 'Faculty Cell', payDetails: 'Level 10(15600 - 5400 - 39100)', oldSalaryCode: 'JHN163', pfmsNo: 'VAININ00359313', panNumber: 'AKLPY8113F', bankName: 'SBI', bankAccount: '20457116529', ifscCode: 'SBIN00033211', department: 'IT', reportDateTime: '02-Mar-2026&11:28 AM' } }}
+              draft={{ month: 'September', year: 2025, workingDays: 30, paidDays: 30, lopDays: 0, earnings: [{ label: 'Basic', amount: 67400 }, { label: 'Dearness Allowance', amount: 26960 }, { label: 'Travelling Allowance', amount: 4800 }, { label: 'Medical Allowance', amount: 3200 }], deductions: [{ label: 'Emp Health Scheme', amount: 650 }, { label: 'Income Tax', amount: 7357 }, { label: 'New Pension Scheme', amount: 10874 }], grossEarnings: 134366, totalDeductions: 35234, netSalary: 99132, netSalaryInWords: 'Ninety Nine Thousand One Hundred Thirty Two Only' }}
+            />
+          </div>
+
+          {/* 3. HCL CORPORATE (LANDSCAPE) */}
+          <div id="batch-tpl-render-hcl_corporate_tech" style={{ background: '#fff', width: '1120px', margin: '0 auto' }}>
+            <HclCorporatePayslip
+              company={{ name: 'HCL Technologies Ltd.' }}
+              employee={{ empCode: 'S285679', fullName: 'Hardeep Singh', designation: 'Software Engineer', department: 'IT', joiningDate: new Date('2023-11-01'), dynamicFields: { dojGender: '01.11.2023 / Male', panNumber: 'KEJPS3652M', pfPensionNo: 'HIL EPF Trust-GN/GGN/5572/635481', uanNumber: '100417097851', bankNameAccount: 'BOI BANK 600810110006820', location: 'Chandigarh', department: 'IT', band: 'S2' } }}
+              draft={{ month: 'January', year: 2026, payPeriod: '01.01.2026 to 31.01.2026', workingDays: 31, paidDays: 31, lopDays: 0, earnings: [{ label: 'Basic Salary', amount: 87450 }, { label: 'HRA', amount: 34980 }, { label: 'Travel Allowance', amount: 22600 }, { label: 'Holiday Allowance', amount: 9500 }, { label: 'Food Wallet', amount: 4500 }, { label: 'Incentives', amount: 45213 }], deductions: [{ label: 'Ee PF contribution', amount: 10494 }, { label: 'Prof Tax', amount: 200 }, { label: 'Income Tax', amount: 36586 }], grossEarnings: 204243, totalDeductions: 47280, netSalary: 156963 }}
+            />
+          </div>
+
+          {/* 4. CLASSIC TABULAR (LANDSCAPE) */}
+          <div id="batch-tpl-render-classic_tabular" style={{ background: '#fff', width: '1120px', margin: '0 auto' }}>
+            <ClassicTabularPayslip
+              company={{ name: 'Arunima Constructions Private Limited' }}
+              template={templates.find(t => t.templateKey === 'classic_tabular') || {}}
+              employee={{ empCode: '51410', fullName: 'HARWINDER SINGH', designation: 'Land Surveyor', department: 'Survey', joiningDate: new Date('2023-11-01'), dynamicFields: { vertical: 'Survey', location: 'Chandigarh', dempDoj: '01/11/2023', gender: 'M', panNumber: 'NQBPS8394P', pfNumber: 'PB/CHD/29780/38554', uanNumber: '101719643698', bankName: 'BOI BANK', bankAccount: '600810110006756' } }}
+              draft={{ month: 'January', year: 2026, workingDays: 31, paidDays: 31, lopDays: 0, earnings: [{ label: 'Basic', amount: 97000, rate: 97000, arrear: 0 }, { label: 'House Rent Allowance', amount: 48500, rate: 48500, arrear: 0 }, { label: 'Other Allowance', amount: 24250, rate: 24250, arrear: 0 }, { label: 'Performance Bonus', amount: 24700, rate: 0, arrear: 0 }], deductions: [{ label: 'Provident Fund', amount: 17460 }, { label: 'Professional Tax', amount: 200 }, { label: 'Income Tax', amount: 31547 }], grossEarnings: 202530, totalDeductions: 49207, netSalary: 153323, netSalaryInWords: 'RUPEES ONE LAKH FIFTY THREE THOUSAND THREE HUNDRED TWENTY THREE ONLY' }}
+            />
+          </div>
+
+          {/* 5. CONCENTRIX DAKSH (PORTRAIT) */}
+          <div id="batch-tpl-render-concentrix_daksh" style={{ background: '#fff', width: '794px', margin: '0 auto' }}>
+            <ConcentrixDakshPayslip
+              company={{ name: 'CONCENTRIX DAKSH SERVICES INDIA PRIVATE LIMITED', fullAddress: '1st Floor, Red Fort Capital Parsvnath Towers, Bhai Vir Singh Marg, New Delhi 110001' }}
+              employee={{ empCode: '306007', fullName: 'Pankaj Sharma', designation: 'Lead Business Analyst', department: 'Business Analysis', joiningDate: new Date('2022-10-10'), dynamicFields: { joiningDateStr: '10 Oct 2022', location: 'Chandigarh', bankName: 'SBI', bankAccount: '40777179100', panNumber: 'NJSPS5596H', pfNumber: 'PB/CHD/29780/38538', uanNumber: '101719643567' } }}
+              draft={{ month: 'April', year: 2025, workingDays: 30, paidDays: 30, lopDays: 0, earnings: [{ label: 'BASIC', amount: 98000, fullAmount: 98000 }, { label: 'HRA', amount: 39200, fullAmount: 39200 }, { label: 'LTA', amount: 16337, fullAmount: 16337 }, { label: 'SPECIAL ALLOWANCE', amount: 41905, fullAmount: 41905 }], deductions: [{ label: 'PF', amount: 1800 }, { label: 'PROF TAX', amount: 200 }, { label: 'INCOME TAX', amount: 39647 }], grossEarnings: 197942, totalDeductions: 41647, netSalary: 156295, netSalaryInWords: 'Rupees One Lakh Fifty Six Thousand Two Hundred Ninety Five Only' }}
+            />
+          </div>
+
+          {/* 6. SUSHMA BUILDTECH (PORTRAIT) */}
+          <div id="batch-tpl-render-sushma_buildtech" style={{ background: '#fff', width: '794px', margin: '0 auto' }}>
+            <SushmaBuildtechPayslip
+              company={{ name: 'Sushma Buildtech Limited', fullAddress: 'B-107, First Floor, Business Complex at Elante Mall, Industrial Area-1, Chandigarh-160002' }}
+              employee={{ empCode: 'S10187', fullName: 'SURJEET SINGH', designation: 'Sales Analyst', department: 'SALES OPERATION', joiningDate: new Date('2020-06-01'), dynamicFields: { employeeCode: 'S10187', dateOfJoiningStr: '01 June 2020', grade: '28', location: 'Chandigarh', panNumber: 'FWUPS9092F', uanNumber: '101719643698', pfNumber: 'PB/CHD/29780/38554', bankAccount: '600810110006815', ifscCode: 'BKID0006791', standardDays: '31.00', lwopDays: '0.00', daysWorked: '31.00' } }}
+              draft={{ month: 'August', year: 2025, workingDays: 31, paidDays: 31, lopDays: 0, earnings: [{ label: 'Basic Salary', amount: 62000, rate: 62000 }, { label: 'House Rent Allowance', amount: 31000, rate: 31000 }, { label: 'Other Allowance', amount: 15400, rate: 15400 }, { label: 'Performance Bonus', amount: 30750 }], deductions: [{ label: 'Provident Fund', amount: 7440 }, { label: 'Professional Tax', amount: 200 }, { label: 'Income Tax', amount: 11930 }], grossEarnings: 147230, totalDeductions: 19570, netSalary: 127660, netSalaryInWords: 'One Lakh Twenty Seven Thousand Six Hundred Sixty Only' }}
+            />
+          </div>
+
+          {/* 7. DELHI PUBLIC SCHOOL (PORTRAIT) */}
+          <div id="batch-tpl-render-delhi_public_school" style={{ background: '#fff', width: '794px', margin: '0 auto' }}>
+            <DelhiPublicSchoolPayslip
+              company={{ name: 'Delhi World Public School', fullAddress: 'Shujalpur Road Ashta, Dist. Sehore (M.P)' }}
+              employee={{ empCode: '4417', fullName: 'SUNAINA SHARMA', designation: 'PRINCIPAL', bankAccount: '38570100006930', panNumber: 'MKRPK2843N', joiningDate: new Date('2021-10-21'), dynamicFields: { accountNo: '38570100006930', dateOfJoiningStr: '21/10/2021', bankDetails: 'BANK OF BARODA (IFSC Code: BARB0VJASHT)', bankAddress: 'KANNOD ROAD, ASHTA, DIST.SEHORE, ASHTA - 466116', postingOffice: 'DELHI WORLD PUBLIC SCHOOL, ASHTA', designation: 'PRINCIPAL', empId: '4417', panNo: 'MKRPK2843N' } }}
+              draft={{ month: 'June', year: 2023, workingDays: 30, paidDays: 30, lopDays: 0, earnings: [{ label: 'Basic', amount: 40000 }, { label: 'Dearness Allowance', amount: 20000 }, { label: 'House Rent Allowance', amount: 6400 }, { label: 'Medical Allowance', amount: 500 }], deductions: [{ label: 'Provident Fund', amount: 7200 }, { label: 'Income Tax', amount: 5000 }, { label: 'Professional Tax', amount: 200 }], grossEarnings: 66900, totalDeductions: 12400, netSalary: 54500, netSalaryInWords: 'Rupees Fifty Four Thousand Five Hundred Only' }}
+            />
+          </div>
+
+          {/* 8. HARYANA EDUCATION (PORTRAIT) */}
+          <div id="batch-tpl-render-haryana_education" style={{ background: '#fff', width: '794px', margin: '0 auto' }}>
+            <HaryanaEducationPayslip
+              company={{ name: 'Haryana School Education Department', department: 'Education (Secondary)' }}
+              employee={{ empCode: '0F3RPK', fullName: 'PARBHAT', designation: 'P.G.T. In History', pfNumber: 'HREDU 111745', aadharNo: '********4272', bankAccount: '*******4255', dynamicFields: { educationWing: 'Education (Secondary)', gpfPranNo: 'HREDU 111745', aadharNo: '********4272', voucherNo: '001734', voucherDate: '31-08-2026', printDateTime: 'Tuesday, February 24, 2026 5:02 PM', totalLoans: 0 } }}
+              draft={{ payPeriod: 'August,2025-26', month: 'August', year: 2025, totalLoans: 0, earnings: [{ label: 'Basic Pay', amount: 64600 }, { label: 'D.A.', amount: 27132 }, { label: 'H.R.A.', amount: 5058 }, { label: 'Medical All.', amount: 1000 }], deductions: [{ label: 'GPF Subs.', amount: 10000 }, { label: 'Income Tax', amount: 5000 }] }}
+            />
+          </div>
+
+          {/* 9. NESTLE INDIA (LANDSCAPE) */}
+          <div id="batch-tpl-render-nestle_india" style={{ background: '#fff', width: '1120px', margin: '0 auto' }}>
+            <NestleIndiaPayslip
+              company={{ name: 'Nestle India Limited', location: 'Gurgaon' }}
+              employee={{ empCode: '10218436', fullName: 'Vaibhav Gupta', designation: 'Senior Key Accounts Manager', department: 'Organised Trade', fatherName: 'Mukesh Gupta', bankName: 'Kotak Mahindra Bank', bankAccount: '9449576305', dynamicFields: { costCenter: 'Organised Trade', location: 'Gurgaon', basicRate: '168129.00', pfNo: 'DL/4398/3127', esiNo: '', days: '', absence: '0.00', suspension: '0.00', leaveWithoutPay: '0.00', hoursWithoutPay: '0.00', ytdMonths: 12, annualGross: 5225152, exemptionUs10: 255058.10, deductionUs80: 467449.00, totalTaxableIncome: 4452650.00, taxPayable: 1194227.00, taxDeducted: 1194227.00, footerWatermark: '##40523418##.##.##PAYSLIP##31.03.2025##' } }}
+              draft={{ month: 'March', year: 2025, workingDays: 31, paidDays: 31, lopDays: 0, earnings: [{ label: 'Basic Salary', amount: 168129 }, { label: 'House Rent Allowance', amount: 84065 }, { label: 'Compensatory Allowance', amount: 55565 }, { label: 'Transport Allowance', amount: 28500 }], deductions: [{ label: 'Income Tax', amount: 70040 }, { label: 'Recreation Club GGN', amount: 150 }, { label: 'Ee PF contribution', amount: 20175 }], cumulatedEarnings: [{ label: 'Basic Salary', amount: 2017548 }, { label: 'House Rent Allowance', amount: 1008780 }], cumulatedDeductions: [{ label: 'Income Tax', amount: 1194227 }, { label: 'Ee PF contribution', amount: 242100 }], grossEarnings: 336259, totalDeductions: 90365, netSalary: 245894 }}
+            />
+          </div>
+
+          {/* 10. CORPORATE DETAILED (PORTRAIT) */}
+          <div id="batch-tpl-render-corporate_detailed" style={{ background: '#fff', width: '794px', margin: '0 auto' }}>
+            <div className="payslip-sheet template-corporate_detailed" style={{ margin: '0 auto', background: '#fff' }}>
+              <div className="payslip-header">
+                <div className="company-branding">
+                  <div>
+                    <h1 className="company-title">Corporate Enterprise Ltd.</h1>
+                    <p className="company-sub">Tech Zone 4, Cyber Gateway, Electronic City</p>
+                    <p className="company-sub">GSTIN: 29ABCDE1234F1Z5 • PAN: ABCDE1234F</p>
+                  </div>
+                </div>
+                <div className="payslip-badge-box">
+                  <h2>SALARY SLIP</h2>
+                  <div className="pay-period-pill">August 2026</div>
+                </div>
+              </div>
+              <div className="payslip-meta-grid">
+                <div className="meta-col">
+                  <div className="meta-row"><span className="meta-label">Emp ID:</span><span className="meta-val">EMP-9021</span></div>
+                  <div className="meta-row"><span className="meta-label">Name:</span><span className="meta-val highlight">Jordan Reynolds</span></div>
+                  <div className="meta-row"><span className="meta-label">Designation:</span><span className="meta-val">Staff Systems Architect</span></div>
+                </div>
+                <div className="meta-col">
+                  <div className="meta-row"><span className="meta-label">PAN Number:</span><span className="meta-val">BNZPS8821K</span></div>
+                  <div className="meta-row"><span className="meta-label">Bank Account:</span><span className="meta-val">••••582910</span></div>
+                  <div className="meta-row"><span className="meta-label">IFSC Code:</span><span className="meta-val">HDFC0001234</span></div>
+                </div>
+                <div className="meta-col attendance-box">
+                  <div className="meta-row"><span className="meta-label">Working Days:</span><span className="meta-val">30</span></div>
+                  <div className="meta-row"><span className="meta-label">Paid Days:</span><span className="meta-val">30</span></div>
+                  <div className="meta-row"><span className="meta-label">LOP Leaves:</span><span className="meta-val" style={{ color: '#10b981' }}>0</span></div>
+                </div>
+              </div>
+              <div className="payslip-financials-grid">
+                <div className="financial-section earnings-section">
+                  <div className="section-head"><h3>EARNINGS</h3></div>
+                  <table className="canvas-table">
+                    <thead><tr><th>Description</th><th style={{ textAlign: 'right' }}>Amount (₹)</th></tr></thead>
+                    <tbody>
+                      <tr><td>Basic Salary</td><td style={{ textAlign: 'right' }}>85,000.00</td></tr>
+                      <tr><td>House Rent Allowance (HRA)</td><td style={{ textAlign: 'right' }}>34,000.00</td></tr>
+                      <tr><td>Special Project Allowance</td><td style={{ textAlign: 'right' }}>18,000.00</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div className="financial-section deductions-section">
+                  <div className="section-head"><h3>DEDUCTIONS</h3></div>
+                  <table className="canvas-table">
+                    <thead><tr><th>Description</th><th style={{ textAlign: 'right' }}>Amount (₹)</th></tr></thead>
+                    <tbody>
+                      <tr><td>Tax Withholding (TDS)</td><td style={{ textAlign: 'right' }}>18,500.00</td></tr>
+                      <tr><td>Provident / Retirement Fund</td><td style={{ textAlign: 'right' }}>6,500.00</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="payslip-totals-summary">
+                <div className="totals-row">
+                  <div className="total-cell"><span>Gross Earnings:</span><strong>₹1,37,000.00</strong></div>
+                  <div className="total-cell"><span>Total Deductions:</span><strong>₹25,000.00</strong></div>
+                </div>
+                <div className="net-payable-highlight">
+                  <div className="net-left">
+                    <span className="net-label">NET TAKE-HOME SALARY</span>
+                    <div className="net-words">In Words: Rupees One Lakh Twelve Thousand Only</div>
+                  </div>
+                  <div className="net-amount">₹1,12,000.00</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 11. MINIMALIST STARTUP (PORTRAIT) */}
+          <div id="batch-tpl-render-minimalist_startup" style={{ background: '#fff', width: '794px', margin: '0 auto' }}>
+            <div className="payslip-sheet template-minimalist_startup" style={{ margin: '0 auto', background: '#fff' }}>
+              <div className="payslip-header">
+                <div className="company-branding">
+                  <div>
+                    <h1 className="company-title">Apex Technologies</h1>
+                    <p className="company-sub">402 Innovate Boulevard, Startup Hub</p>
+                  </div>
+                </div>
+                <div className="payslip-badge-box">
+                  <h2>SALARY SLIP</h2>
+                  <div className="pay-period-pill">August 2026</div>
+                </div>
+              </div>
+              <div className="payslip-meta-grid">
+                <div className="meta-col">
+                  <div className="meta-row"><span className="meta-label">Emp ID:</span><span className="meta-val">AT-104</span></div>
+                  <div className="meta-row"><span className="meta-label">Name:</span><span className="meta-val highlight">Ananya Sen</span></div>
+                  <div className="meta-row"><span className="meta-label">Designation:</span><span className="meta-val">Full Stack Developer</span></div>
+                </div>
+                <div className="meta-col">
+                  <div className="meta-row"><span className="meta-label">Bank Name:</span><span className="meta-val">HDFC Bank</span></div>
+                  <div className="meta-row"><span className="meta-label">Account:</span><span className="meta-val">••••9823</span></div>
+                  <div className="meta-row"><span className="meta-label">Department:</span><span className="meta-val">Engineering</span></div>
+                </div>
+              </div>
+              <div className="payslip-financials-grid">
+                <div className="financial-section earnings-section">
+                  <div className="section-head"><h3>EARNINGS</h3></div>
+                  <table className="canvas-table">
+                    <thead><tr><th>Description</th><th style={{ textAlign: 'right' }}>Amount (₹)</th></tr></thead>
+                    <tbody>
+                      <tr><td>Monthly Base Remuneration</td><td style={{ textAlign: 'right' }}>95,000.00</td></tr>
+                      <tr><td>Performance Incentive</td><td style={{ textAlign: 'right' }}>15,000.00</td></tr>
+                      <tr><td>Internet / Work Perks</td><td style={{ textAlign: 'right' }}>4,000.00</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div className="financial-section deductions-section">
+                  <div className="section-head"><h3>DEDUCTIONS</h3></div>
+                  <table className="canvas-table">
+                    <thead><tr><th>Description</th><th style={{ textAlign: 'right' }}>Amount (₹)</th></tr></thead>
+                    <tbody>
+                      <tr><td>Tax Withholding (TDS)</td><td style={{ textAlign: 'right' }}>12,000.00</td></tr>
+                      <tr><td>Other Deductions</td><td style={{ textAlign: 'right' }}>2,000.00</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="payslip-totals-summary">
+                <div className="totals-row">
+                  <div className="total-cell"><span>Gross Earnings:</span><strong>₹1,14,000.00</strong></div>
+                  <div className="total-cell"><span>Total Deductions:</span><strong>₹14,000.00</strong></div>
+                </div>
+                <div className="net-payable-highlight">
+                  <div className="net-left">
+                    <span className="net-label">NET TAKE-HOME SALARY</span>
+                    <div className="net-words">In Words: Rupees One Lakh Only</div>
+                  </div>
+                  <div className="net-amount">₹1,00,000.00</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 12. STANDARD INDUSTRIAL (PORTRAIT) */}
+          <div id="batch-tpl-render-standard_industrial" style={{ background: '#fff', width: '794px', margin: '0 auto' }}>
+            <div className="payslip-sheet template-standard_industrial" style={{ margin: '0 auto', background: '#fff' }}>
+              <div className="payslip-header">
+                <div className="company-branding">
+                  <div>
+                    <h1 className="company-title">Standard Industrial Works</h1>
+                    <p className="company-sub">Plot 88, Sector 6, Industrial Area</p>
+                  </div>
+                </div>
+                <div className="payslip-badge-box">
+                  <h2>SALARY SLIP</h2>
+                  <div className="pay-period-pill">August 2026</div>
+                </div>
+              </div>
+              <div className="payslip-meta-grid">
+                <div className="meta-col">
+                  <div className="meta-row"><span className="meta-label">Emp ID:</span><span className="meta-val">IND-409</span></div>
+                  <div className="meta-row"><span className="meta-label">Name:</span><span className="meta-val highlight">Rajesh Sharma</span></div>
+                  <div className="meta-row"><span className="meta-label">Designation:</span><span className="meta-val">Operations Supervisor</span></div>
+                </div>
+                <div className="meta-col">
+                  <div className="meta-row"><span className="meta-label">PAN Number:</span><span className="meta-val">CDKPS4829L</span></div>
+                  <div className="meta-row"><span className="meta-label">Bank Account:</span><span className="meta-val">••••3910</span></div>
+                  <div className="meta-row"><span className="meta-label">Working / Paid Days:</span><span className="meta-val">30 / 30</span></div>
+                </div>
+              </div>
+              <div className="payslip-financials-grid">
+                <div className="financial-section earnings-section">
+                  <div className="section-head"><h3>EARNINGS</h3></div>
+                  <table className="canvas-table">
+                    <thead><tr><th>Description</th><th style={{ textAlign: 'right' }}>Amount (₹)</th></tr></thead>
+                    <tbody>
+                      <tr><td>Basic Wage</td><td style={{ textAlign: 'right' }}>58,000.00</td></tr>
+                      <tr><td>DA & Shift Allowance</td><td style={{ textAlign: 'right' }}>18,000.00</td></tr>
+                      <tr><td>Overtime Allowance</td><td style={{ textAlign: 'right' }}>8,500.00</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div className="financial-section deductions-section">
+                  <div className="section-head"><h3>DEDUCTIONS</h3></div>
+                  <table className="canvas-table">
+                    <thead><tr><th>Description</th><th style={{ textAlign: 'right' }}>Amount (₹)</th></tr></thead>
+                    <tbody>
+                      <tr><td>Provident Fund</td><td style={{ textAlign: 'right' }}>6,960.00</td></tr>
+                      <tr><td>Professional Tax</td><td style={{ textAlign: 'right' }}>200.00</td></tr>
+                      <tr><td>ESI Contribution</td><td style={{ textAlign: 'right' }}>634.00</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="payslip-totals-summary">
+                <div className="totals-row">
+                  <div className="total-cell"><span>Gross Earnings:</span><strong>₹84,500.00</strong></div>
+                  <div className="total-cell"><span>Total Deductions:</span><strong>₹7,794.00</strong></div>
+                </div>
+                <div className="net-payable-highlight">
+                  <div className="net-left">
+                    <span className="net-label">NET TAKE-HOME SALARY</span>
+                    <div className="net-words">In Words: Rupees Seventy Six Thousand Seven Hundred Six Only</div>
+                  </div>
+                  <div className="net-amount">₹76,706.00</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
