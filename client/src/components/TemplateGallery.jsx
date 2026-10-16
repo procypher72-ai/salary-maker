@@ -145,9 +145,12 @@ export const TemplateGallery = ({
   const [renameForm, setRenameForm] = useState({ name: '', badge: '', description: '' });
   const [isSavingRename, setIsSavingRename] = useState(false);
 
-  // Dynamic Fields Customizer State
+  // Dynamic Fields & Component Customizer State
   const [customizingTemplate, setCustomizingTemplate] = useState(null);
+  const [customizerActiveTab, setCustomizerActiveTab] = useState('income'); // 'income' | 'deductions' | 'fields'
   const [fieldsList, setFieldsList] = useState([]);
+  const [earningsList, setEarningsList] = useState([]);
+  const [deductionsList, setDeductionsList] = useState([]);
   const [isSavingFields, setIsSavingFields] = useState(false);
   const [newFieldForm, setNewFieldForm] = useState({
     key: '',
@@ -156,6 +159,170 @@ export const TemplateGallery = ({
     section: 'job',
     required: false,
   });
+  const [newEarningForm, setNewEarningForm] = useState({ label: '', amount: '' });
+  const [newDeductionForm, setNewDeductionForm] = useState({ label: '', amount: '' });
+
+  const getTemplateDefaultEarnings = (templateKey) => {
+    switch (templateKey) {
+      case 'new_aiims_template':
+        return [
+          { label: 'Basic', amount: 95500, isFixed: true },
+          { label: 'Dearness Allowance', amount: 57300, isFixed: true },
+          { label: 'House Rent Allowance', amount: 28650, isFixed: true },
+          { label: 'Transport Allowance', amount: 7200, isFixed: true },
+          { label: 'DA ON TPT', amount: 4320, isFixed: true },
+          { label: 'ICU Allowance', amount: 1360, isFixed: false },
+          { label: 'Tool Allowance', amount: 540, isFixed: false },
+          { label: 'Uniform Allowance', amount: 2250, isFixed: false },
+          { label: 'Nursing Allowance', amount: 9000, isFixed: false },
+        ];
+      case 'aiims_govt_medical':
+        return [
+          { label: 'Basic', amount: 67400, isFixed: true },
+          { label: 'Dearness Allowance', amount: 26960, isFixed: true },
+          { label: 'Travelling Allowance', amount: 4800, isFixed: true },
+          { label: 'TADA', amount: 1512, isFixed: true },
+          { label: 'ICU Allowance', amount: 540, isFixed: false },
+          { label: 'Deputation Pay Allowance', amount: 1280, isFixed: false },
+          { label: 'Uniform Allowance', amount: 2800, isFixed: false },
+          { label: 'Medical Allowance', amount: 3200, isFixed: false },
+          { label: 'Nps Employer Earning Share', amount: 15224, isFixed: true },
+          { label: 'Other Allowance', amount: 10650, isFixed: false },
+        ];
+      case 'hcl_corporate_tech':
+        return [
+          { label: 'Basic Salary', amount: 87450, isFixed: true },
+          { label: 'HRA', amount: 34980, isFixed: true },
+          { label: 'Travel Allowance', amount: 22600, isFixed: true },
+          { label: 'Holiday Allowance', amount: 9500, isFixed: true },
+          { label: 'Food Wallet', amount: 4500, isFixed: true },
+          { label: 'Incentives', amount: 45213, isFixed: false },
+        ];
+      case 'classic_tabular':
+        return [
+          { label: 'Basic', amount: 97000, isFixed: true },
+          { label: 'House Rent Allowance', amount: 48500, isFixed: true },
+          { label: 'Other Allowance', amount: 24250, isFixed: true },
+          { label: 'Leave Travel Allowance', amount: 8080, isFixed: true },
+          { label: 'Performance Bonus', amount: 24700, isFixed: false },
+        ];
+      case 'concentrix_daksh':
+        return [
+          { label: 'BASIC', amount: 23000, isFixed: true },
+          { label: 'HRA', amount: 11500, isFixed: true },
+          { label: 'LTA', amount: 3500, isFixed: true },
+          { label: 'SPECIAL ALLOWANCE', amount: 17500, isFixed: true },
+          { label: 'RMEDICAL ALLOWANCE', amount: 2500, isFixed: true },
+          { label: 'PERFORMANCE BONUS', amount: 8000, isFixed: false },
+        ];
+      case 'sushma_buildtech':
+        return [
+          { label: 'Basic Salary', amount: 28387, isFixed: true },
+          { label: 'House Rent Allowance', amount: 14194, isFixed: true },
+          { label: 'Other Allowance', amount: 13619, isFixed: true },
+          { label: 'Leave Travel Allowance', amount: 1600, isFixed: true },
+          { label: 'Performance Bonus', amount: 10000, isFixed: false },
+        ];
+      case 'delhi_public_school':
+        return [
+          { label: 'Basic', amount: 40000, isFixed: true },
+          { label: 'Dearness Allowance', amount: 20000, isFixed: true },
+          { label: 'House Rent Allowance', amount: 6400, isFixed: true },
+          { label: 'Medical Allowance', amount: 500, isFixed: true },
+        ];
+      case 'haryana_education':
+        return [
+          { label: 'Basic Pay', amount: 64600, isFixed: true },
+          { label: 'D.A.', amount: 27132, isFixed: true },
+          { label: 'H.R.A.', amount: 5058, isFixed: true },
+          { label: 'Medical All.', amount: 1000, isFixed: true },
+        ];
+      case 'nestle_india':
+        return [
+          { label: 'Basic Salary', amount: 168129, isFixed: true },
+          { label: 'House Rent Allowance', amount: 84065, isFixed: true },
+          { label: 'Compensatory Allowance', amount: 55565, isFixed: false },
+          { label: 'Transport Allowance', amount: 28500, isFixed: false },
+        ];
+      default:
+        return [
+          { label: 'Basic Salary', amount: 45000, isFixed: true },
+          { label: 'House Rent Allowance (HRA)', amount: 18000, isFixed: true },
+          { label: 'Special Allowance', amount: 12000, isFixed: false },
+          { label: 'Conveyance Allowance', amount: 3000, isFixed: false },
+        ];
+    }
+  };
+
+  const getTemplateDefaultDeductions = (templateKey) => {
+    switch (templateKey) {
+      case 'new_aiims_template':
+        return [
+          { label: 'Emp Health Scheme', amount: 650, isFixed: true },
+          { label: 'Emp Insurance Scheme', amount: 100, isFixed: true },
+          { label: 'General Provided Fund-A/C:G-11148', amount: 25000, isFixed: true },
+          { label: 'Income Tax', amount: 25155, isFixed: true },
+          { label: 'Society Recovery 7791.0', amount: 28730, isFixed: false },
+        ];
+      case 'aiims_govt_medical':
+        return [
+          { label: 'Association Fund Category Amount', amount: 20, isFixed: false },
+          { label: 'Emp Health Scheme', amount: 650, isFixed: true },
+          { label: 'Emp Insurance Scheme', amount: 60, isFixed: true },
+          { label: 'Income Tax', amount: 7357, isFixed: true },
+          { label: 'Miscellaneous Recovery NA', amount: 967, isFixed: false },
+          { label: 'New Pension Scehme-110001989995', amount: 10874, isFixed: true },
+          { label: 'Nps Employer Ded Share', amount: 15224, isFixed: true },
+          { label: 'Water Charges', amount: 82, isFixed: false },
+        ];
+      case 'hcl_corporate_tech':
+        return [
+          { label: 'Ee PF contribution', amount: 10494, isFixed: true },
+          { label: 'Prof Tax - split period', amount: 200, isFixed: true },
+          { label: 'Income Tax', amount: 36586, isFixed: true },
+        ];
+      case 'classic_tabular':
+        return [
+          { label: 'Provident Fund', amount: 17460, isFixed: true },
+          { label: 'Professional Tax', amount: 200, isFixed: true },
+          { label: 'Income Tax', amount: 31547, isFixed: true },
+        ];
+      case 'concentrix_daksh':
+        return [
+          { label: 'PF', amount: 2760, isFixed: true },
+          { label: 'PROF TAX', amount: 200, isFixed: true },
+          { label: 'INCOME TAX', amount: 4800, isFixed: true },
+        ];
+      case 'sushma_buildtech':
+        return [
+          { label: 'Provident Fund', amount: 3406, isFixed: true },
+          { label: 'Professional Tax', amount: 200, isFixed: true },
+          { label: 'Income Tax', amount: 2500, isFixed: true },
+        ];
+      case 'delhi_public_school':
+        return [
+          { label: 'Provident Fund', amount: 7200, isFixed: true },
+          { label: 'Income Tax', amount: 5000, isFixed: true },
+          { label: 'Proffessional Tax', amount: 200, isFixed: true },
+        ];
+      case 'haryana_education':
+        return [
+          { label: 'GPF Subs.', amount: 10000, isFixed: true },
+          { label: 'Income Tax', amount: 5000, isFixed: true },
+        ];
+      case 'nestle_india':
+        return [
+          { label: 'Income Tax', amount: 35000, isFixed: true },
+          { label: 'Ee PF contribution', amount: 12000, isFixed: true },
+        ];
+      default:
+        return [
+          { label: 'Provident Fund (PF)', amount: 1800, isFixed: true },
+          { label: 'Professional Tax (PT)', amount: 200, isFixed: true },
+          { label: 'Income Tax (TDS)', amount: 2500, isFixed: false },
+        ];
+    }
+  };
 
   const handlePreviewLogoUpdated = (logoData) => {
     if (!logoData) return;
@@ -169,6 +336,9 @@ export const TemplateGallery = ({
 
   const handleOpenFieldsCustomizer = (tpl) => {
     setCustomizingTemplate(tpl);
+    setCustomizerActiveTab('income');
+
+    // 1. Employee Header Fields
     const currentFields = tpl.requiredFields && tpl.requiredFields.length > 0
       ? tpl.requiredFields.map(f => ({
           key: f.key,
@@ -194,8 +364,31 @@ export const TemplateGallery = ({
         ];
     setFieldsList(currentFields);
     setNewFieldForm({ key: '', label: '', type: 'text', section: 'job', required: false });
+
+    // 2. Dynamic Earnings / Income Fields
+    const currentEarnings = tpl.defaultEarnings && tpl.defaultEarnings.length > 0
+      ? tpl.defaultEarnings.map(e => ({
+          label: e.label,
+          amount: e.amount !== undefined ? Number(e.amount) : 0,
+          isFixed: e.isFixed !== undefined ? !!e.isFixed : true,
+        }))
+      : getTemplateDefaultEarnings(tpl.templateKey);
+    setEarningsList(currentEarnings);
+    setNewEarningForm({ label: '', amount: '' });
+
+    // 3. Dynamic Deductions / Recoveries Fields
+    const currentDeductions = tpl.defaultDeductions && tpl.defaultDeductions.length > 0
+      ? tpl.defaultDeductions.map(d => ({
+          label: d.label,
+          amount: d.amount !== undefined ? Number(d.amount) : 0,
+          isFixed: d.isFixed !== undefined ? !!d.isFixed : true,
+        }))
+      : getTemplateDefaultDeductions(tpl.templateKey);
+    setDeductionsList(currentDeductions);
+    setNewDeductionForm({ label: '', amount: '' });
   };
 
+  // --- Employee Header Fields Handlers ---
   const handleFieldLabelChange = (index, newLabel) => {
     setFieldsList(prev => {
       const updated = [...prev];
@@ -254,14 +447,117 @@ export const TemplateGallery = ({
     showToast(`Added field "${newFieldForm.label.trim()}"! Click "Save Template Schema" to apply.`, 'info');
   };
 
+  // --- Income (Earnings) Handlers ---
+  const handleEarningChange = (index, key, value) => {
+    setEarningsList(prev => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        [key]: key === 'amount' ? (value === '' ? '' : Number(value)) : value,
+      };
+      return updated;
+    });
+  };
+
+  const handleDeleteEarning = (index) => {
+    setEarningsList(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleMoveEarning = (index, direction) => {
+    setEarningsList(prev => {
+      const updated = [...prev];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= updated.length) return prev;
+      const temp = updated[index];
+      updated[index] = updated[targetIndex];
+      updated[targetIndex] = temp;
+      return updated;
+    });
+  };
+
+  const handleAddNewEarning = (e) => {
+    e.preventDefault();
+    if (!newEarningForm.label.trim()) {
+      showToast('Please enter an income field name', 'error');
+      return;
+    }
+    const cleanLabel = newEarningForm.label.trim();
+    const cleanAmt = Number(newEarningForm.amount) || 0;
+    setEarningsList(prev => [
+      ...prev,
+      { label: cleanLabel, amount: cleanAmt, isFixed: true },
+    ]);
+    setNewEarningForm({ label: '', amount: '' });
+    showToast(`Added income field "${cleanLabel}" (Rs. ${cleanAmt.toLocaleString('en-IN')})!`, 'info');
+  };
+
+  // --- Deductions Handlers ---
+  const handleDeductionChange = (index, key, value) => {
+    setDeductionsList(prev => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        [key]: key === 'amount' ? (value === '' ? '' : Number(value)) : value,
+      };
+      return updated;
+    });
+  };
+
+  const handleDeleteDeduction = (index) => {
+    setDeductionsList(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleMoveDeduction = (index, direction) => {
+    setDeductionsList(prev => {
+      const updated = [...prev];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= updated.length) return prev;
+      const temp = updated[index];
+      updated[index] = updated[targetIndex];
+      updated[targetIndex] = temp;
+      return updated;
+    });
+  };
+
+  const handleAddNewDeduction = (e) => {
+    e.preventDefault();
+    if (!newDeductionForm.label.trim()) {
+      showToast('Please enter a deduction field name', 'error');
+      return;
+    }
+    const cleanLabel = newDeductionForm.label.trim();
+    const cleanAmt = Number(newDeductionForm.amount) || 0;
+    setDeductionsList(prev => [
+      ...prev,
+      { label: cleanLabel, amount: cleanAmt, isFixed: true },
+    ]);
+    setNewDeductionForm({ label: '', amount: '' });
+    showToast(`Added deduction field "${cleanLabel}" (Rs. ${cleanAmt.toLocaleString('en-IN')})!`, 'info');
+  };
+
+  // --- Permanent Save Schema Handler ---
   const handleSaveFieldsSchema = async () => {
     if (!customizingTemplate) return;
     setIsSavingFields(true);
     try {
+      const sanitizedEarnings = earningsList.map(e => ({
+        label: (e.label || '').trim(),
+        amount: Number(e.amount) || 0,
+        isFixed: e.isFixed !== undefined ? !!e.isFixed : true,
+      }));
+      const sanitizedDeductions = deductionsList.map(d => ({
+        label: (d.label || '').trim(),
+        amount: Number(d.amount) || 0,
+        isFixed: d.isFixed !== undefined ? !!d.isFixed : true,
+      }));
+
       const res = await api.updateTemplate(customizingTemplate.templateKey, {
         requiredFields: fieldsList,
+        defaultEarnings: sanitizedEarnings,
+        defaultDeductions: sanitizedDeductions,
       });
-      showToast(`Saved ${fieldsList.length} dynamic fields for "${customizingTemplate.name}"!`, 'success');
+
+      showToast(`Saved template schema: ${fieldsList.length} header fields, ${sanitizedEarnings.length} income fields, and ${sanitizedDeductions.length} deductions for "${customizingTemplate.name}"!`, 'success');
       setCustomizingTemplate(null);
       if (onCompanyUpdated) onCompanyUpdated();
     } catch (err) {
@@ -614,39 +910,83 @@ export const TemplateGallery = ({
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
                     <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                      Form & Payslip Fields ({tpl.requiredFields?.length || 0})
+                      Template Structure & Components
                     </h4>
                     <button
                       onClick={() => handleOpenFieldsCustomizer(tpl)}
                       className="btn btn-secondary btn-sm"
                       style={{
-                        padding: '0.15rem 0.45rem',
-                        fontSize: '0.68rem',
+                        padding: '0.22rem 0.65rem',
+                        fontSize: '0.72rem',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '0.25rem',
-                        borderRadius: '4px',
-                        background: 'rgba(255, 255, 255, 0.08)',
+                        gap: '0.35rem',
+                        borderRadius: '6px',
+                        background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(124, 58, 237, 0.2))',
+                        border: '1px solid rgba(6, 182, 212, 0.4)',
+                        color: '#fff',
+                        fontWeight: 600,
                       }}
-                      title={`Edit / Add / Delete Fields for ${tpl.name}`}
+                      title={`Edit Income / Deductions / Header Fields for ${tpl.name}`}
                       id={`customize-fields-btn-${tpl.templateKey}`}
                     >
-                      <Sliders size={11} className="text-cyan" />
+                      <Sliders size={12} className="text-cyan" />
                       <span>Edit Fields</span>
                     </button>
                   </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.5rem' }}>
+                    <span
+                      style={{
+                        fontSize: '0.7rem',
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '4px',
+                        background: 'rgba(6, 182, 212, 0.1)',
+                        border: '1px solid rgba(6, 182, 212, 0.3)',
+                        color: 'var(--accent-cyan)',
+                        fontWeight: 600,
+                      }}
+                    >
+                      💰 Income: {tpl.defaultEarnings?.length || getTemplateDefaultEarnings(tpl.templateKey).length} lines
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '0.7rem',
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '4px',
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        color: '#f87171',
+                        fontWeight: 600,
+                      }}
+                    >
+                      📉 Deductions: {tpl.defaultDeductions?.length || getTemplateDefaultDeductions(tpl.templateKey).length} lines
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '0.7rem',
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '4px',
+                        background: 'rgba(124, 58, 237, 0.1)',
+                        border: '1px solid rgba(124, 58, 237, 0.3)',
+                        color: '#c4b5fd',
+                        fontWeight: 600,
+                      }}
+                    >
+                      👤 Header: {tpl.requiredFields?.length || 13} fields
+                    </span>
+                  </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
                     {tpl.requiredFields && tpl.requiredFields.length > 0 ? (
-                      tpl.requiredFields.map((f) => (
+                      tpl.requiredFields.slice(0, 6).map((f) => (
                         <span
                           key={f.key}
                           style={{
-                            fontSize: '0.7rem',
-                            padding: '0.2rem 0.5rem',
+                            fontSize: '0.68rem',
+                            padding: '0.18rem 0.45rem',
                             borderRadius: '4px',
                             background: 'rgba(255, 255, 255, 0.05)',
                             border: '1px solid var(--border-subtle)',
-                            color: 'var(--text-main)',
+                            color: 'var(--text-muted)',
                           }}
                         >
                           {f.label}
@@ -654,6 +994,11 @@ export const TemplateGallery = ({
                       ))
                     ) : (
                       <span style={{ fontSize: '0.7rem', color: 'var(--text-subtle)' }}>Standard core fields only</span>
+                    )}
+                    {tpl.requiredFields && tpl.requiredFields.length > 6 && (
+                      <span style={{ fontSize: '0.68rem', color: 'var(--text-subtle)', alignSelf: 'center' }}>
+                        +{tpl.requiredFields.length - 6} more
+                      </span>
                     )}
                   </div>
                 </div>
@@ -784,34 +1129,27 @@ export const TemplateGallery = ({
                     reportDateTime: '24-Jul-2026&11:48 PM',
                   },
                 }}
-                draft={{
-                  month: 'June',
-                  year: 2026,
-                  workingDays: 30,
-                  paidDays: 30,
-                  earnings: [
-                    { label: 'Basic', amount: 95500 },
-                    { label: 'Dearness Allowance', amount: 57300 },
-                    { label: 'House Rent Allowance', amount: 28650 },
-                    { label: 'Transport Allowance', amount: 7200 },
-                    { label: 'DA ON TPT', amount: 4320 },
-                    { label: 'ICU Allowance', amount: 1360 },
-                    { label: 'Tool Allowance', amount: 540 },
-                    { label: 'Uniform Allowance', amount: 2250 },
-                    { label: 'Nursing Allowance', amount: 9000 },
-                  ],
-                  deductions: [
-                    { label: 'Emp Health Scheme', amount: 650 },
-                    { label: 'Emp Insurance Scheme', amount: 100 },
-                    { label: 'General Provided Fund-A/C:G-11148', amount: 25000 },
-                    { label: 'Income Tax', amount: 25155 },
-                    { label: 'Society Recovery 7791.0', amount: 28730 },
-                  ],
-                  grossEarnings: 206120,
-                  totalDeductions: 79635,
-                  netSalary: 126485,
-                  netSalaryInWords: 'One Lakh Twenty Six Thousand Four Hundred Eighty Five  Rupees Only',
-                }}
+                draft={(() => {
+                  const erns = (selectedPreviewTemplate.defaultEarnings && selectedPreviewTemplate.defaultEarnings.length > 0)
+                    ? selectedPreviewTemplate.defaultEarnings
+                    : getTemplateDefaultEarnings('new_aiims_template');
+                  const deds = (selectedPreviewTemplate.defaultDeductions && selectedPreviewTemplate.defaultDeductions.length > 0)
+                    ? selectedPreviewTemplate.defaultDeductions
+                    : getTemplateDefaultDeductions('new_aiims_template');
+                  const gr = erns.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+                  const dt = deds.reduce((s, d) => s + (Number(d.amount) || 0), 0);
+                  return {
+                    month: 'June',
+                    year: 2026,
+                    workingDays: 30,
+                    paidDays: 30,
+                    earnings: erns,
+                    deductions: deds,
+                    grossEarnings: gr,
+                    totalDeductions: dt,
+                    netSalary: gr - dt,
+                  };
+                })()}
               />
             ) : selectedPreviewTemplate.templateKey === 'aiims_govt_medical' ? (
               <AiimsGovtPayslip
@@ -1551,322 +1889,921 @@ export const TemplateGallery = ({
         </div>
       )}
 
-      {/* Dynamic Fields & Schema Customizer Modal */}
-      {customizingTemplate && (
-        <div className="modal-overlay">
-          <div
-            className="modal-content glass-panel"
-            style={{ maxWidth: '720px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: '1.75rem' }}
-          >
-            {/* Modal Header */}
+      {/* Dynamic Fields & Component Customizer Modal */}
+      {customizingTemplate && (() => {
+        const totalCustomGross = earningsList.reduce((sum, item) => sum + (Number(item?.amount) || 0), 0);
+        const totalCustomDeductions = deductionsList.reduce((sum, item) => sum + (Number(item?.amount) || 0), 0);
+        const totalCustomNet = totalCustomGross - totalCustomDeductions;
+
+        return (
+          <div className="modal-overlay">
             <div
+              className="modal-content glass-panel"
               style={{
+                maxWidth: '820px',
+                width: '95%',
+                maxHeight: '92vh',
                 display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '1rem',
-                borderBottom: '1px solid var(--border-subtle)',
-                paddingBottom: '0.75rem',
+                flexDirection: 'column',
+                padding: '1.75rem',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 30px rgba(6, 182, 212, 0.15)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <Sliders size={20} className="text-cyan" />
-                <div>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', margin: 0 }}>
-                    Customize Template Fields • {customizingTemplate.name}
-                  </h3>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    Edit display text (e.g. rename DEMP DOJ to DOJ), add custom fields (e.g. Area), reorder, or delete fields.
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={() => setCustomizingTemplate(null)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              {/* Modal Header */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '1rem',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  paddingBottom: '0.85rem',
+                }}
               >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Scrollable Fields List */}
-            <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.35rem', marginBottom: '1.25rem' }}>
-              <div style={{ marginBottom: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
-                  <h4 style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-cyan)', textTransform: 'uppercase' }}>
-                    Configured Template Fields ({fieldsList.length})
-                  </h4>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-subtle)' }}>
-                    Labels update dynamically on payslips & employee forms
-                  </span>
-                </div>
-
-                {fieldsList.length === 0 ? (
-                  <div style={{ padding: '1.5rem', textAlign: 'center', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                    No fields configured yet. Add your first field below!
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <div
+                    style={{
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '8px',
+                      background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(124, 58, 237, 0.25))',
+                      border: '1px solid rgba(6, 182, 212, 0.4)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Sliders size={20} className="text-cyan" />
                   </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {fieldsList.map((field, idx) => (
+                  <div>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', margin: 0 }}>
+                      Customize Template Schema • {customizingTemplate.name}
+                    </h3>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      Add, delete, rename & set default amounts for Income, Deductions, and Employee Header fields.
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setCustomizingTemplate(null)}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    borderRadius: '6px',
+                    padding: '0.35rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  title="Close Customizer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* 3 Navigation Tabs */}
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '0.5rem',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  marginBottom: '1.25rem',
+                  paddingBottom: '0.6rem',
+                  flexWrap: 'wrap',
+                }}
+              >
+                {/* 1. Income / Earnings Tab */}
+                <button
+                  type="button"
+                  id="tab-income-fields"
+                  onClick={() => setCustomizerActiveTab('income')}
+                  style={{
+                    padding: '0.45rem 1rem',
+                    fontSize: '0.82rem',
+                    fontWeight: customizerActiveTab === 'income' ? 700 : 500,
+                    color: customizerActiveTab === 'income' ? '#fff' : 'var(--text-muted)',
+                    background: customizerActiveTab === 'income'
+                      ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(14, 165, 233, 0.15))'
+                      : 'rgba(255, 255, 255, 0.03)',
+                    border: customizerActiveTab === 'income'
+                      ? '1px solid var(--accent-cyan)'
+                      : '1px solid var(--border-subtle)',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <span>💰 Income / Earnings</span>
+                  <span
+                    style={{
+                      fontSize: '0.7rem',
+                      padding: '0.1rem 0.45rem',
+                      borderRadius: '999px',
+                      background: customizerActiveTab === 'income' ? 'var(--accent-cyan)' : 'rgba(255,255,255,0.1)',
+                      color: customizerActiveTab === 'income' ? '#000' : 'inherit',
+                      fontWeight: 800,
+                    }}
+                  >
+                    {earningsList.length}
+                  </span>
+                </button>
+
+                {/* 2. Deductions / Recoveries Tab */}
+                <button
+                  type="button"
+                  id="tab-deduction-fields"
+                  onClick={() => setCustomizerActiveTab('deductions')}
+                  style={{
+                    padding: '0.45rem 1rem',
+                    fontSize: '0.82rem',
+                    fontWeight: customizerActiveTab === 'deductions' ? 700 : 500,
+                    color: customizerActiveTab === 'deductions' ? '#fff' : 'var(--text-muted)',
+                    background: customizerActiveTab === 'deductions'
+                      ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(220, 38, 38, 0.15))'
+                      : 'rgba(255, 255, 255, 0.03)',
+                    border: customizerActiveTab === 'deductions'
+                      ? '1px solid #ef4444'
+                      : '1px solid var(--border-subtle)',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <span>📉 Deductions / Recoveries</span>
+                  <span
+                    style={{
+                      fontSize: '0.7rem',
+                      padding: '0.1rem 0.45rem',
+                      borderRadius: '999px',
+                      background: customizerActiveTab === 'deductions' ? '#ef4444' : 'rgba(255,255,255,0.1)',
+                      color: '#fff',
+                      fontWeight: 800,
+                    }}
+                  >
+                    {deductionsList.length}
+                  </span>
+                </button>
+
+                {/* 3. Employee Header Fields Tab */}
+                <button
+                  type="button"
+                  id="tab-header-fields"
+                  onClick={() => setCustomizerActiveTab('fields')}
+                  style={{
+                    padding: '0.45rem 1rem',
+                    fontSize: '0.82rem',
+                    fontWeight: customizerActiveTab === 'fields' ? 700 : 500,
+                    color: customizerActiveTab === 'fields' ? '#fff' : 'var(--text-muted)',
+                    background: customizerActiveTab === 'fields'
+                      ? 'linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(124, 58, 237, 0.15))'
+                      : 'rgba(255, 255, 255, 0.03)',
+                    border: customizerActiveTab === 'fields'
+                      ? '1px solid #a855f7'
+                      : '1px solid var(--border-subtle)',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <span>👤 Employee Details / Header</span>
+                  <span
+                    style={{
+                      fontSize: '0.7rem',
+                      padding: '0.1rem 0.45rem',
+                      borderRadius: '999px',
+                      background: customizerActiveTab === 'fields' ? '#a855f7' : 'rgba(255,255,255,0.1)',
+                      color: '#fff',
+                      fontWeight: 800,
+                    }}
+                  >
+                    {fieldsList.length}
+                  </span>
+                </button>
+              </div>
+
+              {/* Scrollable Content Container */}
+              <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.35rem', marginBottom: '1.25rem' }}>
+
+                {/* ================= TAB 1: INCOME / EARNINGS ================= */}
+                {customizerActiveTab === 'income' && (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div>
+                        <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent-cyan)', textTransform: 'uppercase', margin: 0 }}>
+                          Income & Allowance Components ({earningsList.length})
+                        </h4>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-subtle)' }}>
+                          New salary slips generated with this template will start with these earnings & amounts
+                        </span>
+                      </div>
                       <div
-                        key={`${field.key}-${idx}`}
                         style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          border: '1px solid var(--border-subtle)',
-                          borderRadius: '8px',
-                          padding: '0.6rem 0.85rem',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          padding: '0.25rem 0.65rem',
+                          borderRadius: '6px',
+                          background: 'rgba(6, 182, 212, 0.12)',
+                          border: '1px solid rgba(6, 182, 212, 0.35)',
+                          color: 'var(--accent-cyan)',
                         }}
                       >
-                        {/* Position Index */}
-                        <span
-                          style={{
-                            fontSize: '0.72rem',
-                            fontWeight: 800,
-                            color: 'var(--text-subtle)',
-                            width: '20px',
-                            textAlign: 'center',
-                          }}
-                        >
-                          {idx + 1}
-                        </span>
+                        Total Gross: Rs. {totalCustomGross.toLocaleString('en-IN')}
+                      </div>
+                    </div>
 
-                        {/* Editable Field Label */}
-                        <div style={{ flex: 1 }}>
-                          <label style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
-                            Display Text / Field Label:
+                    {earningsList.length === 0 ? (
+                      <div style={{ padding: '1.75rem', textAlign: 'center', background: 'rgba(0,0,0,0.25)', borderRadius: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', border: '1px dashed var(--border-subtle)' }}>
+                        No income components configured yet. Add your first income item below!
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {earningsList.map((earning, idx) => (
+                          <div
+                            key={`earning-${idx}`}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.75rem',
+                              background: 'rgba(255, 255, 255, 0.03)',
+                              border: '1px solid var(--border-subtle)',
+                              borderRadius: '8px',
+                              padding: '0.55rem 0.85rem',
+                            }}
+                          >
+                            {/* Position Index */}
+                            <span
+                              style={{
+                                fontSize: '0.72rem',
+                                fontWeight: 800,
+                                color: 'var(--text-subtle)',
+                                width: '22px',
+                                textAlign: 'center',
+                              }}
+                            >
+                              {idx + 1}
+                            </span>
+
+                            {/* Editable Earning Name */}
+                            <div style={{ flex: 1.4 }}>
+                              <label style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
+                                Income Field / Allowance Name:
+                              </label>
+                              <input
+                                type="text"
+                                className="form-input"
+                                style={{ padding: '0.35rem 0.6rem', fontSize: '0.85rem', fontWeight: 600 }}
+                                value={earning.label}
+                                onChange={(e) => handleEarningChange(idx, 'label', e.target.value)}
+                                placeholder="e.g. Basic Salary"
+                              />
+                            </div>
+
+                            {/* Editable Default Amount */}
+                            <div style={{ flex: 1, minWidth: '130px' }}>
+                              <label style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
+                                Default Amount (₹):
+                              </label>
+                              <div style={{ position: 'relative' }}>
+                                <span style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                                  ₹
+                                </span>
+                                <input
+                                  type="number"
+                                  className="form-input"
+                                  style={{ padding: '0.35rem 0.6rem 0.35rem 1.4rem', fontSize: '0.85rem', fontWeight: 700, textAlign: 'right' }}
+                                  value={earning.amount !== undefined ? earning.amount : ''}
+                                  onChange={(e) => handleEarningChange(idx, 'amount', e.target.value)}
+                                  placeholder="0"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Reorder Buttons */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleMoveEarning(idx, 'up')}
+                                disabled={idx === 0}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: idx === 0 ? 'rgba(255,255,255,0.15)' : 'var(--text-muted)',
+                                  cursor: idx === 0 ? 'default' : 'pointer',
+                                  padding: '2px',
+                                }}
+                                title="Move Up"
+                              >
+                                <ArrowUp size={13} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleMoveEarning(idx, 'down')}
+                                disabled={idx === earningsList.length - 1}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: idx === earningsList.length - 1 ? 'rgba(255,255,255,0.15)' : 'var(--text-muted)',
+                                  cursor: idx === earningsList.length - 1 ? 'default' : 'pointer',
+                                  padding: '2px',
+                                }}
+                                title="Move Down"
+                              >
+                                <ArrowDown size={13} />
+                              </button>
+                            </div>
+
+                            {/* Delete Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteEarning(idx)}
+                              className="btn btn-secondary btn-sm"
+                              style={{
+                                padding: '0.4rem',
+                                color: '#ef4444',
+                                borderColor: 'rgba(239, 68, 68, 0.3)',
+                                background: 'rgba(239, 68, 68, 0.08)',
+                              }}
+                              title={`Delete income field "${earning.label}"`}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Add New Income Form */}
+                    <div
+                      style={{
+                        background: 'rgba(6, 182, 212, 0.04)',
+                        border: '1px dashed rgba(6, 182, 212, 0.35)',
+                        borderRadius: '10px',
+                        padding: '1rem',
+                        marginTop: '1.25rem',
+                      }}
+                    >
+                      <h4 style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-cyan)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <Plus size={15} /> Add New Income / Allowance Field
+                      </h4>
+                      <form onSubmit={handleAddNewEarning} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr auto', gap: '0.65rem', alignItems: 'flex-end' }}>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                            Income Component Name *
                           </label>
                           <input
                             type="text"
                             className="form-input"
-                            style={{ padding: '0.35rem 0.6rem', fontSize: '0.85rem', fontWeight: 600 }}
-                            value={field.label}
-                            onChange={(e) => handleFieldLabelChange(idx, e.target.value)}
-                            placeholder="e.g. DOJ"
+                            placeholder="e.g. Special Allowance / ICU Allowance"
+                            value={newEarningForm.label}
+                            onChange={(e) => setNewEarningForm({ ...newEarningForm, label: e.target.value })}
+                            style={{ padding: '0.4rem 0.6rem', fontSize: '0.82rem' }}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                            Default Amount (₹)
+                          </label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            placeholder="e.g. 5000"
+                            value={newEarningForm.amount}
+                            onChange={(e) => setNewEarningForm({ ...newEarningForm, amount: e.target.value })}
+                            style={{ padding: '0.4rem 0.6rem', fontSize: '0.82rem' }}
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          className="btn btn-primary btn-sm"
+                          style={{ height: '36px', display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0 1rem' }}
+                        >
+                          <Plus size={14} />
+                          <span>Add Income Field</span>
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                )}
+
+                {/* ================= TAB 2: DEDUCTIONS / RECOVERIES ================= */}
+                {customizerActiveTab === 'deductions' && (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div>
+                        <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f87171', textTransform: 'uppercase', margin: 0 }}>
+                          Deduction & Recovery Components ({deductionsList.length})
+                        </h4>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-subtle)' }}>
+                          New salary slips generated with this template will start with these deductions & amounts
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          padding: '0.25rem 0.65rem',
+                          borderRadius: '6px',
+                          background: 'rgba(239, 68, 68, 0.12)',
+                          border: '1px solid rgba(239, 68, 68, 0.35)',
+                          color: '#f87171',
+                        }}
+                      >
+                        Total Deductions: Rs. {totalCustomDeductions.toLocaleString('en-IN')}
+                      </div>
+                    </div>
+
+                    {deductionsList.length === 0 ? (
+                      <div style={{ padding: '1.75rem', textAlign: 'center', background: 'rgba(0,0,0,0.25)', borderRadius: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', border: '1px dashed var(--border-subtle)' }}>
+                        No deduction components configured yet. Add your first deduction item below!
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {deductionsList.map((deduction, idx) => (
+                          <div
+                            key={`deduction-${idx}`}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.75rem',
+                              background: 'rgba(255, 255, 255, 0.03)',
+                              border: '1px solid var(--border-subtle)',
+                              borderRadius: '8px',
+                              padding: '0.55rem 0.85rem',
+                            }}
+                          >
+                            {/* Position Index */}
+                            <span
+                              style={{
+                                fontSize: '0.72rem',
+                                fontWeight: 800,
+                                color: 'var(--text-subtle)',
+                                width: '22px',
+                                textAlign: 'center',
+                              }}
+                            >
+                              {idx + 1}
+                            </span>
+
+                            {/* Editable Deduction Name */}
+                            <div style={{ flex: 1.4 }}>
+                              <label style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
+                                Deduction / Recovery Name:
+                              </label>
+                              <input
+                                type="text"
+                                className="form-input"
+                                style={{ padding: '0.35rem 0.6rem', fontSize: '0.85rem', fontWeight: 600 }}
+                                value={deduction.label}
+                                onChange={(e) => handleDeductionChange(idx, 'label', e.target.value)}
+                                placeholder="e.g. Provident Fund"
+                              />
+                            </div>
+
+                            {/* Editable Default Amount */}
+                            <div style={{ flex: 1, minWidth: '130px' }}>
+                              <label style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
+                                Default Amount (₹):
+                              </label>
+                              <div style={{ position: 'relative' }}>
+                                <span style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                                  ₹
+                                </span>
+                                <input
+                                  type="number"
+                                  className="form-input"
+                                  style={{ padding: '0.35rem 0.6rem 0.35rem 1.4rem', fontSize: '0.85rem', fontWeight: 700, textAlign: 'right' }}
+                                  value={deduction.amount !== undefined ? deduction.amount : ''}
+                                  onChange={(e) => handleDeductionChange(idx, 'amount', e.target.value)}
+                                  placeholder="0"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Reorder Buttons */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleMoveDeduction(idx, 'up')}
+                                disabled={idx === 0}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: idx === 0 ? 'rgba(255,255,255,0.15)' : 'var(--text-muted)',
+                                  cursor: idx === 0 ? 'default' : 'pointer',
+                                  padding: '2px',
+                                }}
+                                title="Move Up"
+                              >
+                                <ArrowUp size={13} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleMoveDeduction(idx, 'down')}
+                                disabled={idx === deductionsList.length - 1}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: idx === deductionsList.length - 1 ? 'rgba(255,255,255,0.15)' : 'var(--text-muted)',
+                                  cursor: idx === deductionsList.length - 1 ? 'default' : 'pointer',
+                                  padding: '2px',
+                                }}
+                                title="Move Down"
+                              >
+                                <ArrowDown size={13} />
+                              </button>
+                            </div>
+
+                            {/* Delete Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteDeduction(idx)}
+                              className="btn btn-secondary btn-sm"
+                              style={{
+                                padding: '0.4rem',
+                                color: '#ef4444',
+                                borderColor: 'rgba(239, 68, 68, 0.3)',
+                                background: 'rgba(239, 68, 68, 0.08)',
+                              }}
+                              title={`Delete deduction field "${deduction.label}"`}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Add New Deduction Form */}
+                    <div
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.04)',
+                        border: '1px dashed rgba(239, 68, 68, 0.35)',
+                        borderRadius: '10px',
+                        padding: '1rem',
+                        marginTop: '1.25rem',
+                      }}
+                    >
+                      <h4 style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f87171', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <Plus size={15} /> Add New Deduction / Recovery Field
+                      </h4>
+                      <form onSubmit={handleAddNewDeduction} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr auto', gap: '0.65rem', alignItems: 'flex-end' }}>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                            Deduction Component Name *
+                          </label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. Society Loan / General Provided Fund"
+                            value={newDeductionForm.label}
+                            onChange={(e) => setNewDeductionForm({ ...newDeductionForm, label: e.target.value })}
+                            style={{ padding: '0.4rem 0.6rem', fontSize: '0.82rem' }}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                            Default Amount (₹)
+                          </label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            placeholder="e.g. 2000"
+                            value={newDeductionForm.amount}
+                            onChange={(e) => setNewDeductionForm({ ...newDeductionForm, amount: e.target.value })}
+                            style={{ padding: '0.4rem 0.6rem', fontSize: '0.82rem' }}
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          className="btn btn-primary btn-sm"
+                          style={{ height: '36px', display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0 1rem', background: '#dc2626', borderColor: '#b91c1c' }}
+                        >
+                          <Plus size={14} />
+                          <span>Add Deduction Field</span>
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                )}
+
+                {/* ================= TAB 3: EMPLOYEE HEADER FIELDS ================= */}
+                {customizerActiveTab === 'fields' && (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div>
+                        <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#a855f7', textTransform: 'uppercase', margin: 0 }}>
+                          Employee Details & Header Fields ({fieldsList.length})
+                        </h4>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-subtle)' }}>
+                          Labels update dynamically across the employee profile & payslip top header
+                        </span>
+                      </div>
+                    </div>
+
+                    {fieldsList.length === 0 ? (
+                      <div style={{ padding: '1.75rem', textAlign: 'center', background: 'rgba(0,0,0,0.25)', borderRadius: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', border: '1px dashed var(--border-subtle)' }}>
+                        No employee fields configured yet. Add your first field below!
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {fieldsList.map((field, idx) => (
+                          <div
+                            key={`${field.key}-${idx}`}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.75rem',
+                              background: 'rgba(255, 255, 255, 0.03)',
+                              border: '1px solid var(--border-subtle)',
+                              borderRadius: '8px',
+                              padding: '0.55rem 0.85rem',
+                            }}
+                          >
+                            {/* Position Index */}
+                            <span
+                              style={{
+                                fontSize: '0.72rem',
+                                fontWeight: 800,
+                                color: 'var(--text-subtle)',
+                                width: '22px',
+                                textAlign: 'center',
+                              }}
+                            >
+                              {idx + 1}
+                            </span>
+
+                            {/* Editable Field Label */}
+                            <div style={{ flex: 1 }}>
+                              <label style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
+                                Display Text / Field Label:
+                              </label>
+                              <input
+                                type="text"
+                                className="form-input"
+                                style={{ padding: '0.35rem 0.6rem', fontSize: '0.85rem', fontWeight: 600 }}
+                                value={field.label}
+                                onChange={(e) => handleFieldLabelChange(idx, e.target.value)}
+                                placeholder="e.g. Current Department"
+                              />
+                            </div>
+
+                            {/* System Key Pill */}
+                            <div style={{ minWidth: '120px' }}>
+                              <label style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
+                                Key:
+                              </label>
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  fontSize: '0.72rem',
+                                  fontFamily: 'monospace',
+                                  padding: '0.35rem 0.6rem',
+                                  background: 'rgba(0,0,0,0.3)',
+                                  borderRadius: '4px',
+                                  border: '1px solid rgba(255,255,255,0.06)',
+                                  color: 'var(--accent-cyan)',
+                                  width: '100%',
+                                  boxSizing: 'border-box',
+                                }}
+                              >
+                                {field.key}
+                              </span>
+                            </div>
+
+                            {/* Section Pill */}
+                            <div style={{ minWidth: '85px' }}>
+                              <label style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
+                                Section:
+                              </label>
+                              <span className="badge badge-employee" style={{ fontSize: '0.68rem', textTransform: 'capitalize' }}>
+                                {field.section || 'job'}
+                              </span>
+                            </div>
+
+                            {/* Reorder Buttons */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleMoveField(idx, 'up')}
+                                disabled={idx === 0}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: idx === 0 ? 'rgba(255,255,255,0.15)' : 'var(--text-muted)',
+                                  cursor: idx === 0 ? 'default' : 'pointer',
+                                  padding: '2px',
+                                }}
+                                title="Move Up"
+                              >
+                                <ArrowUp size={13} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleMoveField(idx, 'down')}
+                                disabled={idx === fieldsList.length - 1}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: idx === fieldsList.length - 1 ? 'rgba(255,255,255,0.15)' : 'var(--text-muted)',
+                                  cursor: idx === fieldsList.length - 1 ? 'default' : 'pointer',
+                                  padding: '2px',
+                                }}
+                                title="Move Down"
+                              >
+                                <ArrowDown size={13} />
+                              </button>
+                            </div>
+
+                            {/* Delete Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteField(idx)}
+                              className="btn btn-secondary btn-sm"
+                              style={{
+                                padding: '0.4rem',
+                                color: '#ef4444',
+                                borderColor: 'rgba(239, 68, 68, 0.3)',
+                                background: 'rgba(239, 68, 68, 0.08)',
+                              }}
+                              title={`Delete field "${field.label}"`}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Add New Custom Header Field */}
+                    <div
+                      style={{
+                        background: 'rgba(168, 85, 247, 0.04)',
+                        border: '1px dashed rgba(168, 85, 247, 0.35)',
+                        borderRadius: '10px',
+                        padding: '1rem',
+                        marginTop: '1.25rem',
+                      }}
+                    >
+                      <h4 style={{ fontSize: '0.82rem', fontWeight: 700, color: '#a855f7', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <Plus size={15} /> Add New Field to Header (e.g. Area, Grade, Branch)
+                      </h4>
+
+                      <form onSubmit={handleAddNewField} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px 100px auto', gap: '0.6rem', alignItems: 'flex-end' }}>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                            Field Label *
+                          </label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. Area"
+                            value={newFieldForm.label}
+                            onChange={(e) => setNewFieldForm({ ...newFieldForm, label: e.target.value })}
+                            style={{ padding: '0.4rem 0.6rem', fontSize: '0.82rem' }}
+                            required
                           />
                         </div>
 
-                        {/* System Key Pill */}
-                        <div style={{ minWidth: '120px' }}>
-                          <label style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
-                            Key:
+                        <div>
+                          <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                            Field Key (Identifier)
                           </label>
-                          <span
-                            style={{
-                              display: 'inline-block',
-                              fontSize: '0.72rem',
-                              fontFamily: 'monospace',
-                              padding: '0.35rem 0.6rem',
-                              background: 'rgba(0,0,0,0.3)',
-                              borderRadius: '4px',
-                              border: '1px solid rgba(255,255,255,0.06)',
-                              color: 'var(--accent-cyan)',
-                              width: '100%',
-                              boxSizing: 'border-box',
-                            }}
-                          >
-                            {field.key}
-                          </span>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. area (auto)"
+                            value={newFieldForm.key}
+                            onChange={(e) => setNewFieldForm({ ...newFieldForm, key: e.target.value })}
+                            style={{ padding: '0.4rem 0.6rem', fontSize: '0.82rem' }}
+                          />
                         </div>
 
-                        {/* Section Pill */}
-                        <div style={{ minWidth: '85px' }}>
-                          <label style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
-                            Section:
+                        <div>
+                          <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                            Section
                           </label>
-                          <span className="badge badge-employee" style={{ fontSize: '0.68rem', textTransform: 'capitalize' }}>
-                            {field.section || 'job'}
-                          </span>
+                          <select
+                            className="form-input"
+                            value={newFieldForm.section}
+                            onChange={(e) => setNewFieldForm({ ...newFieldForm, section: e.target.value })}
+                            style={{ padding: '0.4rem 0.6rem', fontSize: '0.82rem' }}
+                          >
+                            <option value="job">Job</option>
+                            <option value="personal">Personal</option>
+                            <option value="statutory">Statutory</option>
+                            <option value="banking">Banking</option>
+                          </select>
                         </div>
 
-                        {/* Reorder Buttons */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <button
-                            type="button"
-                            onClick={() => handleMoveField(idx, 'up')}
-                            disabled={idx === 0}
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              color: idx === 0 ? 'rgba(255,255,255,0.15)' : 'var(--text-muted)',
-                              cursor: idx === 0 ? 'default' : 'pointer',
-                              padding: '2px',
-                            }}
-                            title="Move Up"
+                        <div>
+                          <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                            Type
+                          </label>
+                          <select
+                            className="form-input"
+                            value={newFieldForm.type}
+                            onChange={(e) => setNewFieldForm({ ...newFieldForm, type: e.target.value })}
+                            style={{ padding: '0.4rem 0.6rem', fontSize: '0.82rem' }}
                           >
-                            <ArrowUp size={13} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleMoveField(idx, 'down')}
-                            disabled={idx === fieldsList.length - 1}
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              color: idx === fieldsList.length - 1 ? 'rgba(255,255,255,0.15)' : 'var(--text-muted)',
-                              cursor: idx === fieldsList.length - 1 ? 'default' : 'pointer',
-                              padding: '2px',
-                            }}
-                            title="Move Down"
-                          >
-                            <ArrowDown size={13} />
-                          </button>
+                            <option value="text">Text</option>
+                            <option value="number">Number</option>
+                            <option value="date">Date</option>
+                          </select>
                         </div>
 
-                        {/* Delete Button */}
                         <button
-                          type="button"
-                          onClick={() => handleDeleteField(idx)}
-                          className="btn btn-secondary btn-sm"
-                          style={{
-                            padding: '0.4rem',
-                            color: '#ef4444',
-                            borderColor: 'rgba(239, 68, 68, 0.3)',
-                            background: 'rgba(239, 68, 68, 0.08)',
-                          }}
-                          title={`Delete field "${field.label}"`}
+                          type="submit"
+                          className="btn btn-primary btn-sm"
+                          style={{ height: '36px', display: 'flex', alignItems: 'center', gap: '0.3rem', background: '#9333ea', borderColor: '#7e22ce' }}
                         >
-                          <Trash2 size={14} />
+                          <Plus size={14} />
+                          <span>Add</span>
                         </button>
-                      </div>
-                    ))}
+                      </form>
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Add New Custom Field Section */}
+              {/* Modal Actions Footer */}
               <div
                 style={{
-                  background: 'rgba(6, 182, 212, 0.04)',
-                  border: '1px dashed rgba(6, 182, 212, 0.3)',
-                  borderRadius: '10px',
-                  padding: '1rem',
-                  marginTop: '1.25rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderTop: '1px solid var(--border-subtle)',
+                  paddingTop: '1rem',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem',
                 }}
               >
-                <h4 style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-cyan)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <Plus size={15} /> Add New Field to Template (e.g. Area, Grade, Branch)
-                </h4>
-
-                <form onSubmit={handleAddNewField} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px 100px auto', gap: '0.6rem', alignItems: 'flex-end' }}>
-                  <div>
-                    <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
-                      Field Label *
-                    </label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="e.g. Area"
-                      value={newFieldForm.label}
-                      onChange={(e) => setNewFieldForm({ ...newFieldForm, label: e.target.value })}
-                      style={{ padding: '0.4rem 0.6rem', fontSize: '0.82rem' }}
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
-                      Field Key (Identifier)
-                    </label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="e.g. area (auto)"
-                      value={newFieldForm.key}
-                      onChange={(e) => setNewFieldForm({ ...newFieldForm, key: e.target.value })}
-                      style={{ padding: '0.4rem 0.6rem', fontSize: '0.82rem' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
-                      Section
-                    </label>
-                    <select
-                      className="form-input"
-                      value={newFieldForm.section}
-                      onChange={(e) => setNewFieldForm({ ...newFieldForm, section: e.target.value })}
-                      style={{ padding: '0.4rem 0.6rem', fontSize: '0.82rem' }}
-                    >
-                      <option value="job">Job</option>
-                      <option value="personal">Personal</option>
-                      <option value="statutory">Statutory</option>
-                      <option value="banking">Banking</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
-                      Type
-                    </label>
-                    <select
-                      className="form-input"
-                      value={newFieldForm.type}
-                      onChange={(e) => setNewFieldForm({ ...newFieldForm, type: e.target.value })}
-                      style={{ padding: '0.4rem 0.6rem', fontSize: '0.82rem' }}
-                    >
-                      <option value="text">Text</option>
-                      <option value="number">Number</option>
-                      <option value="date">Date</option>
-                    </select>
-                  </div>
-
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Active Schema:
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)', fontWeight: 700 }}>
+                    {earningsList.length} Income (₹{totalCustomGross.toLocaleString('en-IN')})
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>•</span>
+                  <span style={{ fontSize: '0.75rem', color: '#f87171', fontWeight: 700 }}>
+                    {deductionsList.length} Deductions (₹{totalCustomDeductions.toLocaleString('en-IN')})
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>•</span>
+                  <span style={{ fontSize: '0.75rem', color: '#34d399', fontWeight: 700 }}>
+                    Net: ₹{totalCustomNet.toLocaleString('en-IN')}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <button
-                    type="submit"
-                    className="btn btn-primary btn-sm"
-                    style={{ height: '36px', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                    type="button"
+                    onClick={() => setCustomizingTemplate(null)}
+                    className="btn btn-secondary"
+                    disabled={isSavingFields}
                   >
-                    <Plus size={14} />
-                    <span>Add</span>
+                    Cancel
                   </button>
-                </form>
-              </div>
-            </div>
-
-            {/* Modal Actions Footer */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                borderTop: '1px solid var(--border-subtle)',
-                paddingTop: '1rem',
-              }}
-            >
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {fieldsList.length} fields will be active for this template
-              </span>
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setCustomizingTemplate(null)}
-                  className="btn btn-secondary"
-                  disabled={isSavingFields}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveFieldsSchema}
-                  className="btn btn-primary"
-                  disabled={isSavingFields}
-                  id="save-template-fields-schema-btn"
-                >
-                  {isSavingFields ? (
-                    <span>Saving Schema...</span>
-                  ) : (
-                    <>
-                      <Check size={16} />
-                      <span>Save Template Schema</span>
-                    </>
-                  )}
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveFieldsSchema}
+                    className="btn btn-primary"
+                    disabled={isSavingFields}
+                    id="save-template-fields-schema-btn"
+                    style={{
+                      background: 'linear-gradient(135deg, #06b6d4, #7c3aed)',
+                      border: 'none',
+                      fontWeight: 700,
+                      boxShadow: '0 4px 14px rgba(6, 182, 212, 0.4)',
+                    }}
+                  >
+                    {isSavingFields ? (
+                      <span>Saving Template Schema...</span>
+                    ) : (
+                      <>
+                        <Check size={16} />
+                        <span>Save Template Schema</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ============================================================
           HIDDEN BATCH RENDER AREA — all templates rendered off-screen

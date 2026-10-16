@@ -290,22 +290,22 @@ const DEFAULT_TEMPLATES = [
       { key: 'reportDateTime', label: 'Date & Time', type: 'text', required: false, section: 'job', placeholder: '24-Jul-2026&11:48 PM' },
     ],
     defaultEarnings: [
-      { label: 'Basic', isFixed: true },
-      { label: 'Dearness Allowance', isFixed: true },
-      { label: 'House Rent Allowance', isFixed: true },
-      { label: 'Transport Allowance', isFixed: true },
-      { label: 'DA ON TPT', isFixed: true },
-      { label: 'ICU Allowance', isFixed: false },
-      { label: 'Tool Allowance', isFixed: false },
-      { label: 'Uniform Allowance', isFixed: false },
-      { label: 'Nursing Allowance', isFixed: false },
+      { label: 'Basic', amount: 95500, isFixed: true },
+      { label: 'Dearness Allowance', amount: 57300, isFixed: true },
+      { label: 'House Rent Allowance', amount: 28650, isFixed: true },
+      { label: 'Transport Allowance', amount: 7200, isFixed: true },
+      { label: 'DA ON TPT', amount: 4320, isFixed: true },
+      { label: 'ICU Allowance', amount: 1360, isFixed: false },
+      { label: 'Tool Allowance', amount: 540, isFixed: false },
+      { label: 'Uniform Allowance', amount: 2250, isFixed: false },
+      { label: 'Nursing Allowance', amount: 9000, isFixed: false },
     ],
     defaultDeductions: [
-      { label: 'Emp Health Scheme', isFixed: true },
-      { label: 'Emp Insurance Scheme', isFixed: true },
-      { label: 'General Provided Fund-A/C:G-11148', isFixed: true },
-      { label: 'Income Tax', isFixed: true },
-      { label: 'Society Recovery 7791.0', isFixed: false },
+      { label: 'Emp Health Scheme', amount: 650, isFixed: true },
+      { label: 'Emp Insurance Scheme', amount: 100, isFixed: true },
+      { label: 'General Provided Fund-A/C:G-11148', amount: 25000, isFixed: true },
+      { label: 'Income Tax', amount: 25155, isFixed: true },
+      { label: 'Society Recovery 7791.0', amount: 28730, isFixed: false },
     ],
   },
   {
@@ -431,20 +431,17 @@ const seedDefaultTemplates = async () => {
       const existing = await SalaryTemplate.findOne({ templateKey: t.templateKey });
       if (!existing) {
         await SalaryTemplate.create(t);
-      } else if (t.templateKey === 'delhi_public_school' || t.templateKey === 'new_aiims_template' || t.templateKey === 'haryana_education' || t.templateKey === 'nestle_india') {
-        await SalaryTemplate.updateOne(
-          { templateKey: t.templateKey },
-          {
-            $set: {
-              name: t.name,
-              badge: t.badge,
-              description: t.description,
-              requiredFields: t.requiredFields,
-              defaultEarnings: t.defaultEarnings,
-              defaultDeductions: t.defaultDeductions,
-            },
-          }
-        );
+      } else if (!existing.isCustomized) {
+        // If template has not been customized by user, check if we need to hydrate default amounts
+        const needsEarningsHydration = !existing.defaultEarnings || existing.defaultEarnings.length === 0 || existing.defaultEarnings.some(e => e.amount === undefined);
+        const needsDeductionsHydration = !existing.defaultDeductions || existing.defaultDeductions.length === 0 || existing.defaultDeductions.some(d => d.amount === undefined);
+        
+        if (needsEarningsHydration || needsDeductionsHydration) {
+          const updateData = {};
+          if (needsEarningsHydration && t.defaultEarnings) updateData.defaultEarnings = t.defaultEarnings;
+          if (needsDeductionsHydration && t.defaultDeductions) updateData.defaultDeductions = t.defaultDeductions;
+          await SalaryTemplate.updateOne({ templateKey: t.templateKey }, { $set: updateData });
+        }
       }
     }
     console.log('✅ Salary Templates seeded/verified');
@@ -454,7 +451,6 @@ const seedDefaultTemplates = async () => {
 };
 
 // @desc    Get all available salary templates
-// @route   GET /api/templates
 const getTemplates = async (req, res) => {
   try {
     const templates = await SalaryTemplate.find();
@@ -483,7 +479,7 @@ const getTemplateByKey = async (req, res) => {
   }
 };
 
-// @desc    Update / Rename a template & customize dynamic fields schema
+// @desc    Update / Rename a template & customize dynamic fields schema, earnings & deductions
 // @route   PUT /api/templates/:templateKey
 const updateTemplate = async (req, res) => {
   try {
@@ -497,8 +493,21 @@ const updateTemplate = async (req, res) => {
     if (badge !== undefined) updateFields.badge = badge.trim();
     if (description !== undefined) updateFields.description = description.trim();
     if (requiredFields !== undefined) updateFields.requiredFields = requiredFields;
-    if (defaultEarnings !== undefined) updateFields.defaultEarnings = defaultEarnings;
-    if (defaultDeductions !== undefined) updateFields.defaultDeductions = defaultDeductions;
+    if (defaultEarnings !== undefined) {
+      updateFields.defaultEarnings = defaultEarnings.map(e => ({
+        label: (e.label || '').trim(),
+        amount: Number(e.amount) || 0,
+        isFixed: e.isFixed !== undefined ? !!e.isFixed : true,
+      }));
+    }
+    if (defaultDeductions !== undefined) {
+      updateFields.defaultDeductions = defaultDeductions.map(d => ({
+        label: (d.label || '').trim(),
+        amount: Number(d.amount) || 0,
+        isFixed: d.isFixed !== undefined ? !!d.isFixed : true,
+      }));
+    }
+    updateFields.isCustomized = true;
 
     const template = await SalaryTemplate.findOneAndUpdate(
       { templateKey: req.params.templateKey },

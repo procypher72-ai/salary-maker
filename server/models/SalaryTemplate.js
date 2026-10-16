@@ -42,6 +42,7 @@ const salaryTemplateSchema = new mongoose.Schema(
     defaultEarnings: [
       {
         label: { type: String, required: true },
+        amount: { type: Number, default: 0 },
         isFixed: { type: Boolean, default: true },
       },
     ],
@@ -50,9 +51,11 @@ const salaryTemplateSchema = new mongoose.Schema(
     defaultDeductions: [
       {
         label: { type: String, required: true },
+        amount: { type: Number, default: 0 },
         isFixed: { type: Boolean, default: true },
       },
     ],
+    isCustomized: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

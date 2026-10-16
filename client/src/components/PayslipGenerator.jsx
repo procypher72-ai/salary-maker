@@ -609,8 +609,14 @@ export const PayslipGenerator = ({
     const payRatio = paidDays / workingDays;
     const base = selectedEmployeeObj.baselineSalary || {};
 
+    const currentTemplate = templates.find((t) => t.templateKey === templateKey);
     let updatedEarnings = [];
-    if (templateKey === 'new_aiims_template') {
+    if (currentTemplate?.defaultEarnings && currentTemplate.defaultEarnings.length > 0) {
+      updatedEarnings = currentTemplate.defaultEarnings.map((item) => ({
+        label: item.label,
+        amount: Math.round((Number(item.amount) || 0) * payRatio),
+      }));
+    } else if (templateKey === 'new_aiims_template') {
       const newAiimsBaseEarnings = [
         { label: 'Basic', amount: 95500 },
         { label: 'Dearness Allowance', amount: 57300 },
@@ -797,6 +803,21 @@ export const PayslipGenerator = ({
   // Statutory Deductions Autofill (EPF, ESIC, PT, TDS, AIIMS Recoveries, HCL, Concentrix, Sushma)
   const handleStatutoryAutofill = () => {
     if (!draft || !selectedEmployeeObj) return;
+
+    const currentTemplate = templates.find((t) => t.templateKey === templateKey);
+    if (currentTemplate?.defaultDeductions && currentTemplate.defaultDeductions.length > 0) {
+      const updatedDeductions = currentTemplate.defaultDeductions.map((item) => ({
+        label: item.label,
+        amount: Number(item.amount) || 0,
+      }));
+      const updated = {
+        ...draft,
+        deductions: updatedDeductions,
+      };
+      recalculateTotals(updated);
+      showToast(`Autofilled ${currentTemplate.name} deductions & recoveries!`, 'success');
+      return;
+    }
 
     if (templateKey === 'new_aiims_template') {
       const updatedDeductions = [
@@ -1703,6 +1724,7 @@ export const PayslipGenerator = ({
             <NewAiimsPayslip
               company={activeCompany}
               employee={selectedEmployeeObj}
+              template={templates.find((t) => t.templateKey === templateKey)}
               draft={draft}
               isEditable={true}
               layoutConfig={layoutConfig}

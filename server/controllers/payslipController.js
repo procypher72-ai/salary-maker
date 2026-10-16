@@ -44,7 +44,7 @@ const getDaysInMonth = (monthNameOrNum, yearVal) => {
 };
 
 // Helper to calculate days and LOP pro-rata deduction
-const computePayslipFinancials = (employee, company, customOverrides = {}) => {
+const computePayslipFinancials = (employee, company, customOverrides = {}, templateDoc = null) => {
   const base = employee.baselineSalary || {};
   const monthDays = getDaysInMonth(customOverrides.month, customOverrides.year);
   const workingDays = customOverrides.workingDays !== undefined ? Number(customOverrides.workingDays) : monthDays;
@@ -72,6 +72,11 @@ const computePayslipFinancials = (employee, company, customOverrides = {}) => {
     });
   } else if (base.customEarnings && Array.isArray(base.customEarnings) && base.customEarnings.length > 0) {
     earnings = base.customEarnings.map((e) => ({
+      label: e.label,
+      amount: Math.round((Number(e.amount) || 0) * payRatio),
+    }));
+  } else if (templateDoc && templateDoc.defaultEarnings && templateDoc.defaultEarnings.length > 0) {
+    earnings = templateDoc.defaultEarnings.map((e) => ({
       label: e.label,
       amount: Math.round((Number(e.amount) || 0) * payRatio),
     }));
@@ -226,6 +231,11 @@ const computePayslipFinancials = (employee, company, customOverrides = {}) => {
     }));
   } else if (base.customDeductions && Array.isArray(base.customDeductions) && base.customDeductions.length > 0) {
     deductions = base.customDeductions.map((d) => ({
+      label: d.label,
+      amount: Number(d.amount) || 0,
+    }));
+  } else if (templateDoc && templateDoc.defaultDeductions && templateDoc.defaultDeductions.length > 0) {
+    deductions = templateDoc.defaultDeductions.map((d) => ({
       label: d.label,
       amount: Number(d.amount) || 0,
     }));
@@ -474,6 +484,7 @@ const prepareDraftPayslip = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Associated company not found' });
     }
 
+    const templateDoc = company?.templateKey ? await SalaryTemplate.findOne({ templateKey: company.templateKey }) : null;
     let financials;
     const existingPayslip = await Payslip.findOne({
       companyId: company._id,
@@ -504,7 +515,7 @@ const prepareDraftPayslip = async (req, res) => {
         netSalaryInWords: existingPayslip.netSalaryInWords,
       };
     } else {
-      financials = computePayslipFinancials(employee, company, { ...customOverrides, month, year });
+      financials = computePayslipFinancials(employee, company, { ...customOverrides, month, year }, templateDoc);
     }
 
     const snapshotData = existingPayslip?.snapshotData || createSnapshot(company, employee);
@@ -788,6 +799,7 @@ const generateBulkPayslips = async (req, res) => {
     }
 
     let currentVoucher = baseVoucherNum;
+    const templateDoc = company?.templateKey ? await SalaryTemplate.findOne({ templateKey: company.templateKey }) : null;
 
     for (let current = startTotalMonths; current <= endTotalMonths; current++) {
       const year = Math.floor(current / 12);
@@ -846,7 +858,7 @@ const generateBulkPayslips = async (req, res) => {
         lopDays: monthLopDays,
       };
 
-      const financials = computePayslipFinancials(employee, company, monthOverrides);
+      const financials = computePayslipFinancials(employee, company, monthOverrides, templateDoc);
 
       // For Nestle India: compute YTD cumulated figures from FULL baseline salary (not prorated).
       // This ensures CUMULATED EARNINGS / CUMULATED DEDUCTIONS stay constant regardless of

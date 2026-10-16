@@ -8,6 +8,7 @@ export const NewAiimsPayslip = ({
   company = {},
   employee = {},
   draft = {},
+  template = {},
   isEditable = false,
   pageNumber = 1,
   onEarningChange,
@@ -22,6 +23,15 @@ export const NewAiimsPayslip = ({
 }) => {
   const dynamic = employee?.dynamicFields || {};
   const cfg = layoutConfig || company || {};
+
+  const getFieldLabel = (key, fallback) => {
+    const list = template?.requiredFields || company?.requiredFields || draft?.templateFields;
+    if (list && Array.isArray(list)) {
+      const match = list.find(f => f.key === key || f.key?.toLowerCase() === key.toLowerCase());
+      if (match?.label) return match.label;
+    }
+    return fallback;
+  };
 
   // Strict A4 portrait baseline: 794px width, 1123px height
   const resolvedWidth = (cfg.slipWidth && cfg.slipWidth >= 700 && cfg.slipWidth <= 880) ? cfg.slipWidth : 794;
@@ -254,77 +264,77 @@ export const NewAiimsPayslip = ({
         <tbody>
           {/* Row 1 */}
           <tr>
-            <td className="meta-cell-lbl">Employee Code</td>
+            <td className="meta-cell-lbl">{getFieldLabel('empCode', getFieldLabel('empNo', 'Employee Code'))}</td>
             <td className="meta-cell-colon">:</td>
             <td className="meta-cell-val meta-v-divider">{employee?.empCode || 'E0000195'}</td>
-            <td className="meta-cell-lbl">Employee Name</td>
+            <td className="meta-cell-lbl">{getFieldLabel('fullName', getFieldLabel('name', 'Employee Name'))}</td>
             <td className="meta-cell-colon">:</td>
             <td className="meta-cell-val">{employee?.fullName || 'Mrs. Paramjit Kaur'}</td>
           </tr>
 
           {/* Row 2 */}
           <tr>
-            <td className="meta-cell-lbl">Current Designation</td>
+            <td className="meta-cell-lbl">{getFieldLabel('designation', 'Current Designation')}</td>
             <td className="meta-cell-colon">:</td>
             <td className="meta-cell-val multiline meta-v-divider">{employee?.designation || 'Assistant Nursing Superintendent'}</td>
-            <td className="meta-cell-lbl">Current Department</td>
+            <td className="meta-cell-lbl">{getFieldLabel('department', 'Current Department')}</td>
             <td className="meta-cell-colon">:</td>
             <td className="meta-cell-val">{dynamic.department || employee?.department || 'IRCH'}</td>
           </tr>
 
           {/* Row 3 */}
           <tr>
-            <td className="meta-cell-lbl">Dealing Office</td>
+            <td className="meta-cell-lbl">{getFieldLabel('dealingOffice', 'Dealing Office')}</td>
             <td className="meta-cell-colon">:</td>
             <td className="meta-cell-val multiline meta-v-divider">{dynamic.dealingOffice || 'Dr. BR Ambedkar Institute Rotary Cancer Hospital'}</td>
-            <td className="meta-cell-lbl">PAN Number</td>
+            <td className="meta-cell-lbl">{getFieldLabel('panNumber', getFieldLabel('pan', 'PAN Number'))}</td>
             <td className="meta-cell-colon">:</td>
             <td className="meta-cell-val">{maskSecurityField(dynamic.panNumber || employee?.panNumber || employee?.pan, '******098R')}</td>
           </tr>
 
           {/* Row 4 */}
           <tr>
-            <td className="meta-cell-lbl">Pay Details</td>
+            <td className="meta-cell-lbl">{getFieldLabel('payDetails', 'Pay Details')}</td>
             <td className="meta-cell-colon">:</td>
             <td className="meta-cell-val multiline meta-v-divider">{dynamic.payDetails || 'Level 10(15600 - 5400 - 39100)'}</td>
-            <td className="meta-cell-lbl">Old Salary Code</td>
+            <td className="meta-cell-lbl">{getFieldLabel('oldSalaryCode', 'Old Salary Code')}</td>
             <td className="meta-cell-colon">:</td>
             <td className="meta-cell-val">{dynamic.oldSalaryCode || 'IR75475'}</td>
           </tr>
 
           {/* Row 5 */}
           <tr>
-            <td className="meta-cell-lbl">Bank Account No.</td>
+            <td className="meta-cell-lbl">{getFieldLabel('bankAccount', getFieldLabel('accountNumber', 'Bank Account No.'))}</td>
             <td className="meta-cell-colon">:</td>
             <td className="meta-cell-val meta-v-divider">{maskSecurityField(dynamic.bankAccount || employee?.bankAccount || employee?.accountNumber || employee?.bankAccountNumber, '*******0688')}</td>
-            <td className="meta-cell-lbl">PFMS-NO</td>
+            <td className="meta-cell-lbl">{getFieldLabel('pfmsNo', 'PFMS-NO')}</td>
             <td className="meta-cell-colon">:</td>
             <td className="meta-cell-val">{maskSecurityField(dynamic.pfmsNo || employee?.pfmsNo, '**********9541')}</td>
           </tr>
 
           {/* Row 6 */}
           <tr>
-            <td className="meta-cell-lbl">Bank Name</td>
+            <td className="meta-cell-lbl">{getFieldLabel('bankName', 'Bank Name')}</td>
             <td className="meta-cell-colon">:</td>
             <td className="meta-cell-val meta-v-divider">{dynamic.bankName || 'STATE BANK OF INDIA'}</td>
-            <td className="meta-cell-lbl">IFSC Code</td>
+            <td className="meta-cell-lbl">{getFieldLabel('ifscCode', 'IFSC Code')}</td>
             <td className="meta-cell-colon">:</td>
             <td className="meta-cell-val">{maskSecurityField(dynamic.ifscCode || employee?.ifscCode || employee?.bankIfsc, '*******1536')}</td>
           </tr>
 
           {/* Row 7 */}
           <tr>
-            <td className="meta-cell-lbl">Date Of Next Increment</td>
+            <td className="meta-cell-lbl">{getFieldLabel('nextIncrementDate', 'Date Of Next Increment')}</td>
             <td className="meta-cell-colon">:</td>
             <td className="meta-cell-val meta-v-divider">{dynamic.nextIncrementDate || '01/JUL/2026'}</td>
-            <td className="meta-cell-lbl">PRAN No/GPF No</td>
+            <td className="meta-cell-lbl">{getFieldLabel('pranGpfNo', getFieldLabel('gpfNumber', 'PRAN No/GPF No'))}</td>
             <td className="meta-cell-colon">:</td>
             <td className="meta-cell-val">{maskSecurityField(dynamic.pranGpfNo || dynamic.gpfNumber || employee?.pranNumber || employee?.pfNumber, '***1148')}</td>
           </tr>
 
           {/* Row 8 */}
           <tr>
-            <td className="meta-cell-lbl">No Of Salary Days</td>
+            <td className="meta-cell-lbl">{getFieldLabel('paidDays', getFieldLabel('salaryDays', 'No Of Salary Days'))}</td>
             <td className="meta-cell-colon">:</td>
             <td className="meta-cell-val meta-v-divider">
               {isEditable && onDaysChange ? (
