@@ -56,6 +56,7 @@ const computePayslipFinancials = (employee, company, customOverrides = {}, templ
 
   let earnings = [];
   let deductions = [];
+  let standardItems = null;
 
   if (customOverrides.earnings && Array.isArray(customOverrides.earnings)) {
     earnings = customOverrides.earnings.map((e) => {
@@ -75,7 +76,39 @@ const computePayslipFinancials = (employee, company, customOverrides = {}, templ
       label: e.label,
       amount: Math.round((Number(e.amount) || 0) * payRatio),
     }));
-  } else if (templateDoc && templateDoc.defaultEarnings && templateDoc.defaultEarnings.length > 0) {
+  } else if (company?.templateKey === 'hcl_corporate_tech') {
+    const basicVal = (base.basicPay !== undefined && base.basicPay !== '' && !isNaN(base.basicPay)) ? Number(base.basicPay) : 87450;
+    const hraVal = (base.hra !== undefined && base.hra !== '' && !isNaN(base.hra)) ? Number(base.hra) : 34980;
+    const travelVal = (base.travelAllowance !== undefined && base.travelAllowance !== '' && !isNaN(base.travelAllowance))
+      ? Number(base.travelAllowance)
+      : (base.conveyanceAllowance !== undefined && base.conveyanceAllowance !== '' && !isNaN(base.conveyanceAllowance) ? Number(base.conveyanceAllowance) : 22600);
+    const holidayVal = (base.holidayAllowance !== undefined && base.holidayAllowance !== '' && !isNaN(base.holidayAllowance))
+      ? Number(base.holidayAllowance)
+      : 9500;
+    const foodVal = (base.foodWallet !== undefined && base.foodWallet !== '' && !isNaN(base.foodWallet))
+      ? Number(base.foodWallet)
+      : 4500;
+    const incentivesVal = (base.incentives !== undefined && base.incentives !== '' && !isNaN(base.incentives))
+      ? Number(base.incentives)
+      : (base.specialAllowance !== undefined && base.specialAllowance !== '' && !isNaN(base.specialAllowance) ? Number(base.specialAllowance) : 45213);
+
+    earnings = [
+      { label: 'Basic Salary', amount: Math.round(basicVal * payRatio) },
+      { label: 'HRA', amount: Math.round(hraVal * payRatio) },
+      { label: 'Travel Allowance', amount: Math.round(travelVal * payRatio) },
+      { label: 'Holiday Allowance', amount: Math.round(holidayVal * payRatio) },
+      { label: 'Food Wallet', amount: Math.round(foodVal * payRatio) },
+      { label: 'Incentives', amount: Math.round(incentivesVal * payRatio) },
+    ];
+
+    standardItems = [
+      { label: 'Basic Salary', amount: Math.round(basicVal) },
+      { label: 'HRA', amount: Math.round(hraVal) },
+      { label: 'Travel Allowance', amount: Math.round(travelVal) },
+      { label: 'Holiday Allowance', amount: Math.round(holidayVal) },
+      { label: 'Food Wallet', amount: Math.round(foodVal) },
+    ];
+  } else if (templateDoc && templateDoc.isCustomized && templateDoc.defaultEarnings && templateDoc.defaultEarnings.length > 0 && templateDoc.defaultEarnings.some(e => Number(e.amount) > 0)) {
     earnings = templateDoc.defaultEarnings.map((e) => ({
       label: e.label,
       amount: Math.round((Number(e.amount) || 0) * payRatio),
@@ -114,16 +147,6 @@ const computePayslipFinancials = (employee, company, customOverrides = {}, templ
       { label: 'Other Allowance', amount: Math.round(24250 * payRatio), rate: 24250, arrear: 0 },
       { label: 'Leave Travel Allowance', amount: Math.round(8080 * payRatio), rate: 8080, arrear: 0 },
       { label: 'Performance Bonus', amount: Math.round(24700 * payRatio), rate: 0, arrear: 0 },
-    ];
-  } else if (company?.templateKey === 'hcl_corporate_tech') {
-    // Exact HCL Corporate Tech breakdown matching original HCL format
-    earnings = [
-      { label: 'Basic Salary', amount: Math.round(87450 * payRatio) },
-      { label: 'HRA', amount: Math.round(34980 * payRatio) },
-      { label: 'Travel Allowance', amount: Math.round(22600 * payRatio) },
-      { label: 'Holiday Allowance', amount: Math.round(9500 * payRatio) },
-      { label: 'Food Wallet', amount: Math.round(4500 * payRatio) },
-      { label: 'Incentives', amount: Math.round(45213 * payRatio) },
     ];
   } else if (company?.templateKey === 'concentrix_daksh') {
     earnings = [
@@ -234,7 +257,23 @@ const computePayslipFinancials = (employee, company, customOverrides = {}, templ
       label: d.label,
       amount: Number(d.amount) || 0,
     }));
-  } else if (templateDoc && templateDoc.defaultDeductions && templateDoc.defaultDeductions.length > 0) {
+  } else if (company?.templateKey === 'hcl_corporate_tech') {
+    const pfVal = (base.pfDeduction !== undefined && base.pfDeduction !== '' && !isNaN(base.pfDeduction))
+      ? Number(base.pfDeduction)
+      : 10494;
+    const ptVal = (base.professionalTax !== undefined && base.professionalTax !== '' && !isNaN(base.professionalTax))
+      ? Number(base.professionalTax)
+      : 200;
+    const taxVal = (base.tds !== undefined && base.tds !== '' && !isNaN(base.tds))
+      ? Number(base.tds)
+      : 36586;
+
+    deductions = [
+      { label: 'Ee PF contribution', amount: pfVal },
+      { label: 'Prof Tax - split period', amount: ptVal },
+      { label: 'Income Tax', amount: taxVal },
+    ];
+  } else if (templateDoc && templateDoc.isCustomized && templateDoc.defaultDeductions && templateDoc.defaultDeductions.length > 0 && templateDoc.defaultDeductions.some(d => Number(d.amount) > 0)) {
     deductions = templateDoc.defaultDeductions.map((d) => ({
       label: d.label,
       amount: Number(d.amount) || 0,
@@ -265,12 +304,6 @@ const computePayslipFinancials = (employee, company, customOverrides = {}, templ
       { label: 'Provident Fund', amount: 17460 },
       { label: 'Professional Tax', amount: 200 },
       { label: 'Income Tax', amount: 31547 },
-    ];
-  } else if (company?.templateKey === 'hcl_corporate_tech') {
-    deductions = [
-      { label: 'Ee PF contribution', amount: 10494 },
-      { label: 'Prof Tax - split period', amount: 200 },
-      { label: 'Income Tax', amount: 36586 },
     ];
   } else if (company?.templateKey === 'concentrix_daksh') {
     deductions = [
@@ -368,6 +401,7 @@ const computePayslipFinancials = (employee, company, customOverrides = {}, templ
     totalDeductions,
     netSalary,
     netSalaryInWords,
+    ...(standardItems ? { standardItems } : {}),
   };
 };
 

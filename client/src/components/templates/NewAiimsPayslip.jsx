@@ -1,6 +1,6 @@
 import React from 'react';
 import { ResizableLogo } from '../common/ResizableLogo';
-import aiimsLogoOfficial from '../../assets/aiims logo.jpeg';
+import aiimsLogoOfficial from '../../assets/aiims-logo-official.png';
 import g20OfficialLogo from '../../assets/g20-official-logo.png';
 import aiimsSealWatermark from '../../assets/aiims-seal-watermark.png';
 
@@ -183,7 +183,7 @@ export const NewAiimsPayslip = ({
         src={aiimsLogoOfficial}
         alt="AIIMS New Delhi"
         style={{
-          width: '135px',
+          width: '138px',
           height: 'auto',
           maxHeight: '52px',
           objectFit: 'contain',
@@ -226,6 +226,9 @@ export const NewAiimsPayslip = ({
           <div className="new-aiims-header-left">
             <ResizableLogo
               company={company}
+              defaultWidth={138}
+              defaultHeight={51}
+              defaultPosition="left"
               isEditable={isEditable}
               fallbackLogo={fallbackLeftLogo}
               onSizeSaved={onSizeSaved}
@@ -242,6 +245,9 @@ export const NewAiimsPayslip = ({
             <ResizableLogo
               company={company}
               fieldPrefix="secondaryLogo"
+              defaultWidth={82}
+              defaultHeight={68}
+              defaultPosition="right"
               isEditable={isEditable}
               fallbackLogo={fallbackRightLogo}
               onSizeSaved={onSizeSaved}

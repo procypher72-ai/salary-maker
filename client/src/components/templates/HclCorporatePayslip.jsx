@@ -54,7 +54,9 @@ export const HclCorporatePayslip = ({
   const earnings = draft.earnings || [];
   const deductions = draft.deductions || [];
 
-  // Derive Standard Salary line items from baseline or draft
+  // Derive Standard Salary line items from baseline or draft:
+  // Standard Monthly Salary contains fixed components (Basic Salary, HRA, Travel Allowance, Holiday Allowance, Food Wallet)
+  // and MUST NEVER include Incentives (Incentives is only shown in the Earnings column).
   const defaultStandardItems = [
     { label: 'Basic Salary', amount: 87450 },
     { label: 'HRA', amount: 34980 },
@@ -63,16 +65,19 @@ export const HclCorporatePayslip = ({
     { label: 'Food Wallet', amount: 4500 },
   ];
 
-  let standardItems = draft.standardItems || dynamic.standardSalaryItems;
-  if (!standardItems || standardItems.length === 0) {
-    const nonVariableEarnings = earnings.filter(
+  let rawStandard = draft.standardItems || dynamic.standardSalaryItems;
+  let standardItems = [];
+  if (rawStandard && rawStandard.length > 0) {
+    standardItems = rawStandard.filter(
       (e) => !/incentive|bonus|variable|arrear|one-time|reimbursement/i.test(e.label || '')
     );
-    if (nonVariableEarnings.length > 0) {
-      standardItems = nonVariableEarnings;
-    } else {
-      standardItems = defaultStandardItems;
-    }
+  } else {
+    standardItems = earnings.filter(
+      (e) => !/incentive|bonus|variable|arrear|one-time|reimbursement/i.test(e.label || '')
+    );
+  }
+  if (!standardItems || standardItems.length === 0) {
+    standardItems = defaultStandardItems;
   }
 
   const totalStandardSalary = standardItems.reduce(

@@ -1,40 +1,26 @@
 import React from 'react';
 import { ResizableLogo } from '../common/ResizableLogo';
+import eclerxLogoImg from '../../assets/eclerx_logo.png';
+import { eclerxLogoBase64 } from '../../assets/eclerxLogoBase64';
 
-// SVG Sun Logo matching the PDF top-left icon (Arunima Sunburst)
-export const SunLogo = () => (
-  <svg width="38" height="38" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="50" cy="50" r="16" stroke="#e67e22" strokeWidth="2" fill="none" />
-    <circle cx="50" cy="50" r="12" fill="#f39c12" />
-    {/* Stylized monogram A inside sun */}
-    <path
-      d="M44 57L50 42L56 57M46 52H54"
-      stroke="#ffffff"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+// High-resolution eClerx Brand Logo matching the official replica logo
+export const EclerxLogo = () => (
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', width: '100%', height: '100%' }}>
+    <img
+      src={eclerxLogoBase64 || eclerxLogoImg}
+      alt="eClerx Logo"
+      style={{
+        maxWidth: '100%',
+        maxHeight: '100%',
+        objectFit: 'contain',
+        display: 'block',
+      }}
     />
-    {/* 24 Sun rays */}
-    {[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270, 285, 300, 315, 330, 345].map((deg, i) => {
-      const isLong = i % 2 === 0;
-      const innerR = 19;
-      const outerR = isLong ? 39 : 33;
-      const rad = (deg * Math.PI) / 180;
-      return (
-        <line
-          key={i}
-          x1={50 + innerR * Math.cos(rad)}
-          y1={50 + innerR * Math.sin(rad)}
-          x2={50 + outerR * Math.cos(rad)}
-          y2={50 + outerR * Math.sin(rad)}
-          stroke="#e67e22"
-          strokeWidth={isLong ? '1.8' : '1.2'}
-          strokeLinecap="round"
-        />
-      );
-    })}
-  </svg>
+  </div>
 );
+
+// Backward compatibility alias in case legacy code references SunLogo
+export const SunLogo = EclerxLogo;
 
 export const ClassicTabularPayslip = ({
   company = {},
@@ -124,8 +110,10 @@ export const ClassicTabularPayslip = ({
             <ResizableLogo
               company={company}
               isEditable={isEditable}
-              fallbackLogo={<SunLogo />}
+              fallbackLogo={<EclerxLogo />}
               onSizeSaved={onSizeSaved}
+              defaultWidth={105}
+              defaultHeight={48}
             />
           </div>
           <div className="ct-company-info">

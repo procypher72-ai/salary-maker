@@ -379,6 +379,46 @@ export const PayslipGenerator = ({
           otherDeductions: 0,
         },
       });
+    } else if (activeCompany?.templateKey === 'hcl_corporate_tech' || templateKey === 'hcl_corporate_tech') {
+      const todayFormatted = new Date().toLocaleDateString('en-GB').replace(/\//g, '.');
+      setEmpFormData({
+        fullName: '',
+        empCode: `S${Math.floor(100000 + Math.random() * 900000)}`,
+        bankAccount: '',
+        pan: '',
+        panNumber: '',
+        designation: 'Lead Business Finance Analyst',
+        department: 'Business Finance',
+        joiningDate: new Date().toISOString().split('T')[0],
+        dynamicFields: {
+          dojGender: `${todayFormatted} / Male`,
+          panNumber: '',
+          pfPensionNo: 'HIL EPF Trust-GN/GGN/5572/635481',
+          uanNumber: '',
+          bankNameAccount: '',
+          location: 'Noida',
+          department: 'Business Finance',
+          band: 'E4',
+          daysWorked: '31.00',
+        },
+        baselineSalary: {
+          basicPay: 112500,
+          hra: 45000,
+          travelAllowance: 28000,
+          holidayAllowance: 12000,
+          foodWallet: 4500,
+          incentives: 54500,
+          pfDeduction: 13500,
+          professionalTax: 200,
+          tds: 34300,
+          otherAllowances: 0,
+          otherDeductions: 0,
+          specialAllowance: 0,
+          conveyanceAllowance: 0,
+          medicalAllowance: 0,
+          esicDeduction: 0,
+        },
+      });
     } else {
       setEmpFormData({
         fullName: '',
@@ -480,6 +520,27 @@ export const PayslipGenerator = ({
       dynToSave.designation = empFormData.designation;
       if (!dynToSave.postingOffice) {
         dynToSave.postingOffice = activeCompany?.name || 'DELHI WORLD PUBLIC SCHOOL, ASHTA';
+      }
+    } else if (activeCompany?.templateKey === 'hcl_corporate_tech' || templateKey === 'hcl_corporate_tech') {
+      if (empFormData.joiningDate) {
+        const d = new Date(empFormData.joiningDate);
+        if (!isNaN(d.getTime())) {
+          const day = String(d.getDate()).padStart(2, '0');
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const year = d.getFullYear();
+          const genderStr = dynToSave.dojGender?.includes('Female') ? 'Female' : 'Male';
+          dynToSave.dojGender = `${day}.${month}.${year} / ${genderStr}`;
+        }
+      }
+      dynToSave.panNumber = empFormData.pan || empFormData.panNumber || dynToSave.panNumber || '';
+      dynToSave.pfPensionNo = dynToSave.pfPensionNo || 'HIL EPF Trust-GN/GGN/5572/635481';
+      dynToSave.uanNumber = dynToSave.uanNumber || '';
+      dynToSave.bankNameAccount = dynToSave.bankNameAccount || empFormData.bankAccount || '';
+      dynToSave.location = dynToSave.location || 'Noida';
+      dynToSave.department = empFormData.department || dynToSave.department || 'Business Finance';
+      dynToSave.band = dynToSave.band || 'E4';
+      if (!dynToSave.daysWorked) {
+        dynToSave.daysWorked = '31.00';
       }
     }
 
@@ -650,13 +711,28 @@ export const PayslipGenerator = ({
         amount: Math.round(item.amount * payRatio),
       }));
     } else if (templateKey === 'hcl_corporate_tech') {
+      const basicVal = base.basicPay !== undefined && Number(base.basicPay) > 0 ? Number(base.basicPay) : 87450;
+      const hraVal = base.hra !== undefined && Number(base.hra) > 0 ? Number(base.hra) : 34980;
+      const travelVal = base.travelAllowance !== undefined && Number(base.travelAllowance) > 0
+        ? Number(base.travelAllowance)
+        : (base.conveyanceAllowance ? Number(base.conveyanceAllowance) : 22600);
+      const holidayVal = base.holidayAllowance !== undefined && Number(base.holidayAllowance) > 0
+        ? Number(base.holidayAllowance)
+        : 9500;
+      const foodVal = base.foodWallet !== undefined && Number(base.foodWallet) > 0
+        ? Number(base.foodWallet)
+        : 4500;
+      const incentivesVal = base.incentives !== undefined && base.incentives !== '' && !isNaN(base.incentives)
+        ? Number(base.incentives)
+        : (base.specialAllowance ? Number(base.specialAllowance) : 45213);
+
       const hclBaseEarnings = [
-        { label: 'Basic Salary', amount: 87450 },
-        { label: 'HRA', amount: 34980 },
-        { label: 'Travel Allowance', amount: 22600 },
-        { label: 'Holiday Allowance', amount: 9500 },
-        { label: 'Food Wallet', amount: 4500 },
-        { label: 'Incentives', amount: 45213 },
+        { label: 'Basic Salary', amount: basicVal },
+        { label: 'HRA', amount: hraVal },
+        { label: 'Travel Allowance', amount: travelVal },
+        { label: 'Holiday Allowance', amount: holidayVal },
+        { label: 'Food Wallet', amount: foodVal },
+        { label: 'Incentives', amount: incentivesVal },
       ];
       updatedEarnings = hclBaseEarnings.map((item) => ({
         label: item.label,
@@ -857,10 +933,14 @@ export const PayslipGenerator = ({
     }
 
     if (templateKey === 'hcl_corporate_tech') {
+      const base = selectedEmployeeObj?.baselineSalary || {};
+      const pfVal = base.pfDeduction !== undefined && Number(base.pfDeduction) > 0 ? Number(base.pfDeduction) : 10494;
+      const ptVal = base.professionalTax !== undefined && Number(base.professionalTax) > 0 ? Number(base.professionalTax) : 200;
+      const taxVal = base.tds !== undefined && Number(base.tds) > 0 ? Number(base.tds) : 36586;
       const updatedDeductions = [
-        { label: 'Ee PF contribution', amount: 10494 },
-        { label: 'Prof Tax - split period', amount: 200 },
-        { label: 'Income Tax', amount: 36586 },
+        { label: 'Ee PF contribution', amount: pfVal },
+        { label: 'Prof Tax - split period', amount: ptVal },
+        { label: 'Income Tax', amount: taxVal },
       ];
       const updated = {
         ...draft,
@@ -2559,6 +2639,447 @@ export const PayslipGenerator = ({
                           id="gen-dwps-salary-pt"
                         />
                       </div>
+                    </div>
+                  </div>
+                </>
+              ) : (activeCompany?.templateKey === 'hcl_corporate_tech' || templateKey === 'hcl_corporate_tech') ? (
+                /* ── HCL TECHNOLOGIES 3-COLUMN ENTERPRISE ONBOARDING FORM ── */
+                <>
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid rgba(2, 132, 199, 0.2)', paddingBottom: '0.6rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Building2 size={18} style={{ color: '#0284c7' }} />
+                        <h4 style={{ fontSize: '0.98rem', color: '#38bdf8', margin: 0, fontWeight: 700 }}>
+                          HCL Technologies Ltd. — Employee Profile & 3-Column Salary Matrix
+                        </h4>
+                      </div>
+                      <span className="badge" style={{ background: 'rgba(2, 132, 199, 0.15)', color: '#38bdf8', border: '1px solid rgba(2, 132, 199, 0.3)', fontSize: '0.72rem', padding: '0.2rem 0.5rem' }}>
+                        Enterprise 3-Column Template
+                      </span>
+                    </div>
+
+                    {/* Section 1: Top Metadata */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                      {/* Left Box */}
+                      <div style={{ background: 'rgba(2, 132, 199, 0.03)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(2, 132, 199, 0.18)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#38bdf8', borderBottom: '1px solid rgba(2, 132, 199, 0.15)', paddingBottom: '0.35rem' }}>
+                          📄 Template Left Side Header Details
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Employee ID : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. S285679 or 52194821"
+                            value={empFormData.empCode || ''}
+                            onChange={(e) => setEmpFormData({ ...empFormData, empCode: e.target.value })}
+                            required
+                            autoFocus
+                            id="gen-hcl-input-empcode"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Designation : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. Lead Business Finance Analyst"
+                            value={empFormData.designation || ''}
+                            onChange={(e) => setEmpFormData({ ...empFormData, designation: e.target.value })}
+                            required
+                            id="gen-hcl-input-designation"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>DOJ / Gender : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. 01.11.2023 / Male"
+                            value={empFormData.dynamicFields?.dojGender || ''}
+                            onChange={(e) => setEmpFormData((prev) => ({
+                              ...prev,
+                              dynamicFields: { ...prev.dynamicFields, dojGender: e.target.value },
+                            }))}
+                            required
+                            id="gen-hcl-input-dojgender"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>PAN No : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. KEJPS3652M"
+                            value={empFormData.pan || empFormData.panNumber || empFormData.dynamicFields?.panNumber || ''}
+                            onChange={(e) => {
+                              const val = e.target.value.toUpperCase();
+                              setEmpFormData((prev) => ({
+                                ...prev,
+                                pan: val,
+                                panNumber: val,
+                                dynamicFields: { ...prev.dynamicFields, panNumber: val },
+                              }));
+                            }}
+                            required
+                            id="gen-hcl-input-panno"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>PF / Pension No* : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. HIL EPF Trust-GN/GGN/5572/635481"
+                            value={empFormData.dynamicFields?.pfPensionNo || ''}
+                            onChange={(e) => setEmpFormData((prev) => ({
+                              ...prev,
+                              dynamicFields: { ...prev.dynamicFields, pfPensionNo: e.target.value },
+                            }))}
+                            required
+                            id="gen-hcl-input-pfpension"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>UAN No : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. 100417097851"
+                            value={empFormData.dynamicFields?.uanNumber || ''}
+                            onChange={(e) => setEmpFormData((prev) => ({
+                              ...prev,
+                              dynamicFields: { ...prev.dynamicFields, uanNumber: e.target.value },
+                            }))}
+                            required
+                            id="gen-hcl-input-uanno"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Right Box */}
+                      <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-cyan)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '0.35rem' }}>
+                          🏢 Template Right Side Header Details
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Employee Full Name *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. Hardeep Singh"
+                            value={empFormData.fullName || ''}
+                            onChange={(e) => setEmpFormData({ ...empFormData, fullName: e.target.value })}
+                            required
+                            id="gen-hcl-input-fullname"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Bank Name & Account No : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. BOI BANK 600810110006820"
+                            value={empFormData.dynamicFields?.bankNameAccount || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setEmpFormData((prev) => ({
+                                ...prev,
+                                bankAccount: val,
+                                dynamicFields: { ...prev.dynamicFields, bankNameAccount: val },
+                              }));
+                            }}
+                            required
+                            id="gen-hcl-input-bankaccount"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Location : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. Noida or Chandigarh"
+                            value={empFormData.dynamicFields?.location || ''}
+                            onChange={(e) => setEmpFormData((prev) => ({
+                              ...prev,
+                              dynamicFields: { ...prev.dynamicFields, location: e.target.value },
+                            }))}
+                            required
+                            id="gen-hcl-input-location"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Department : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. Business Finance or IT"
+                            value={empFormData.department || empFormData.dynamicFields?.department || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setEmpFormData((prev) => ({
+                                ...prev,
+                                department: val,
+                                dynamicFields: { ...prev.dynamicFields, department: val },
+                              }));
+                            }}
+                            required
+                            id="gen-hcl-input-department"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Band : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. E4 or S2"
+                            value={empFormData.dynamicFields?.band || ''}
+                            onChange={(e) => setEmpFormData((prev) => ({
+                              ...prev,
+                              dynamicFields: { ...prev.dynamicFields, band: e.target.value },
+                            }))}
+                            required
+                            id="gen-hcl-input-band"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Days worked in month :</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. 31.00"
+                            value={empFormData.dynamicFields?.daysWorked !== undefined ? empFormData.dynamicFields.daysWorked : '31.00'}
+                            onChange={(e) => setEmpFormData((prev) => ({
+                              ...prev,
+                              dynamicFields: { ...prev.dynamicFields, daysWorked: e.target.value },
+                            }))}
+                            id="gen-hcl-input-daysworked"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section 2: Compensation Structure */}
+                    <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(2, 132, 199, 0.2)', paddingTop: '1.25rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <DollarSign size={18} style={{ color: '#0284c7' }} />
+                          <h4 style={{ fontSize: '0.95rem', color: '#38bdf8', margin: 0, fontWeight: 700 }}>
+                            Monthly Salary Components (Exact HCL Technologies Breakdown)
+                          </h4>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.25rem' }}>
+                        {/* Income Side (6 fields) */}
+                        <div style={{ background: 'rgba(2, 132, 199, 0.04)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(2, 132, 199, 0.2)' }}>
+                          <div style={{ fontWeight: 700, color: '#38bdf8', fontSize: '0.85rem', marginBottom: '0.85rem', borderBottom: '1px solid rgba(2, 132, 199, 0.15)', paddingBottom: '0.4rem' }}>
+                            📈 Income / Earnings Side ({currencySymbol})
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>Basic Salary ({currencySymbol}) *</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={empFormData.baselineSalary?.basicPay}
+                                onChange={(e) => setEmpFormData((prev) => ({
+                                  ...prev,
+                                  baselineSalary: { ...prev.baselineSalary, basicPay: Number(e.target.value) || 0 },
+                                }))}
+                                placeholder="e.g. 112500"
+                                required
+                                id="gen-hcl-salary-basic"
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>HRA ({currencySymbol}) *</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={empFormData.baselineSalary?.hra}
+                                onChange={(e) => setEmpFormData((prev) => ({
+                                  ...prev,
+                                  baselineSalary: { ...prev.baselineSalary, hra: Number(e.target.value) || 0 },
+                                }))}
+                                placeholder="e.g. 45000"
+                                required
+                                id="gen-hcl-salary-hra"
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>Travel Allowance ({currencySymbol}) *</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={empFormData.baselineSalary?.travelAllowance}
+                                onChange={(e) => setEmpFormData((prev) => ({
+                                  ...prev,
+                                  baselineSalary: { ...prev.baselineSalary, travelAllowance: Number(e.target.value) || 0 },
+                                }))}
+                                placeholder="e.g. 28000"
+                                required
+                                id="gen-hcl-salary-travel"
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>Holiday Allowance ({currencySymbol}) *</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={empFormData.baselineSalary?.holidayAllowance}
+                                onChange={(e) => setEmpFormData((prev) => ({
+                                  ...prev,
+                                  baselineSalary: { ...prev.baselineSalary, holidayAllowance: Number(e.target.value) || 0 },
+                                }))}
+                                placeholder="e.g. 12000"
+                                required
+                                id="gen-hcl-salary-holiday"
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>Food Wallet ({currencySymbol}) *</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={empFormData.baselineSalary?.foodWallet}
+                                onChange={(e) => setEmpFormData((prev) => ({
+                                  ...prev,
+                                  baselineSalary: { ...prev.baselineSalary, foodWallet: Number(e.target.value) || 0 },
+                                }))}
+                                placeholder="e.g. 4500"
+                                required
+                                id="gen-hcl-salary-food"
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600, color: '#fbbf24' }}>Incentives ({currencySymbol})</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                style={{ borderColor: 'rgba(251, 191, 36, 0.4)' }}
+                                value={empFormData.baselineSalary?.incentives}
+                                onChange={(e) => setEmpFormData((prev) => ({
+                                  ...prev,
+                                  baselineSalary: { ...prev.baselineSalary, incentives: Number(e.target.value) || 0 },
+                                }))}
+                                placeholder="e.g. 54500"
+                                id="gen-hcl-salary-incentives"
+                              />
+                            </div>
+                          </div>
+                          <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(251, 191, 36, 0.08)', borderRadius: '6px', border: '1px solid rgba(251, 191, 36, 0.25)', fontSize: '0.73rem', color: '#fde68a' }}>
+                            <strong>⚠️ Notice:</strong> <code>Incentives</code> sirf <strong>Earnings</strong> column me aayega; <strong>Standard Monthly Salary</strong> column me show nahi hoga.
+                          </div>
+                        </div>
+
+                        {/* Deductions Side (3 fields) */}
+                        <div style={{ background: 'rgba(244, 63, 94, 0.03)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(244, 63, 94, 0.2)' }}>
+                          <div style={{ fontWeight: 700, color: '#fb7185', fontSize: '0.85rem', marginBottom: '0.85rem', borderBottom: '1px solid rgba(244, 63, 94, 0.15)', paddingBottom: '0.4rem' }}>
+                            📉 Deductions Side ({currencySymbol})
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>Ee PF contribution ({currencySymbol}) *</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={empFormData.baselineSalary?.pfDeduction}
+                                onChange={(e) => setEmpFormData((prev) => ({
+                                  ...prev,
+                                  baselineSalary: { ...prev.baselineSalary, pfDeduction: Number(e.target.value) || 0 },
+                                }))}
+                                placeholder="e.g. 13500 (12% of Basic)"
+                                required
+                                id="gen-hcl-salary-pf"
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>Prof Tax - split period ({currencySymbol}) *</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={empFormData.baselineSalary?.professionalTax}
+                                onChange={(e) => setEmpFormData((prev) => ({
+                                  ...prev,
+                                  baselineSalary: { ...prev.baselineSalary, professionalTax: Number(e.target.value) || 0 },
+                                }))}
+                                placeholder="e.g. 200"
+                                required
+                                id="gen-hcl-salary-pt"
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>Income Tax ({currencySymbol}) *</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={empFormData.baselineSalary?.tds}
+                                onChange={(e) => setEmpFormData((prev) => ({
+                                  ...prev,
+                                  baselineSalary: { ...prev.baselineSalary, tds: Number(e.target.value) || 0 },
+                                }))}
+                                placeholder="e.g. 34300"
+                                required
+                                id="gen-hcl-salary-tax"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Live Calculation */}
+                      {(() => {
+                        const bVal = Number(empFormData.baselineSalary?.basicPay) || 0;
+                        const hVal = Number(empFormData.baselineSalary?.hra) || 0;
+                        const tVal = Number(empFormData.baselineSalary?.travelAllowance) || 0;
+                        const holVal = Number(empFormData.baselineSalary?.holidayAllowance) || 0;
+                        const fVal = Number(empFormData.baselineSalary?.foodWallet) || 0;
+                        const incVal = Number(empFormData.baselineSalary?.incentives) || 0;
+
+                        const stdSum = bVal + hVal + tVal + holVal + fVal;
+                        const grossSum = stdSum + incVal;
+
+                        const pfVal = Number(empFormData.baselineSalary?.pfDeduction) || 0;
+                        const ptVal = Number(empFormData.baselineSalary?.professionalTax) || 0;
+                        const taxVal = Number(empFormData.baselineSalary?.tds) || 0;
+
+                        const dedSum = pfVal + ptVal + taxVal;
+                        const netVal = Math.max(0, grossSum - dedSum);
+
+                        return (
+                          <div style={{ marginTop: '1.25rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1.2fr', gap: '0.85rem', alignItems: 'center' }}>
+                              <div style={{ padding: '0.6rem 0.85rem', background: 'rgba(2, 132, 199, 0.08)', borderRadius: '6px', border: '1px solid rgba(2, 132, 199, 0.2)' }}>
+                                <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>Total Standard Salary</div>
+                                <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#38bdf8', marginTop: '2px' }}>
+                                  {currencySymbol} {stdSum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </div>
+                                <div style={{ fontSize: '0.65rem', color: '#64748b' }}>Excludes Incentives</div>
+                              </div>
+                              <div style={{ padding: '0.6rem 0.85rem', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>Gross Earnings</div>
+                                <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#34d399', marginTop: '2px' }}>
+                                  {currencySymbol} {grossSum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </div>
+                                <div style={{ fontSize: '0.65rem', color: '#64748b' }}>Incl. Incentives</div>
+                              </div>
+                              <div style={{ padding: '0.6rem 0.85rem', background: 'rgba(244, 63, 94, 0.08)', borderRadius: '6px', border: '1px solid rgba(244, 63, 94, 0.2)' }}>
+                                <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>Gross Deductions</div>
+                                <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fb7185', marginTop: '2px' }}>
+                                  {currencySymbol} {dedSum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </div>
+                              </div>
+                              <div style={{ padding: '0.65rem 1rem', background: netVal >= 200000 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(2, 132, 199, 0.15)', borderRadius: '6px', border: `1.5px solid ${netVal >= 200000 ? '#10b981' : '#0284c7'}` }}>
+                                <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Net Pay</div>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: netVal >= 200000 ? '#10b981' : '#38bdf8', marginTop: '2px' }}>
+                                  {currencySymbol} {netVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </>

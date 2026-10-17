@@ -234,6 +234,55 @@ export const EmployeeManager = ({
           otherDeductions: 150,
         },
       });
+    } else if (tplKey === 'hcl_corporate_tech') {
+      const todayFormatted = new Date().toLocaleDateString('en-GB').replace(/\//g, '.');
+      setFormData({
+        empCode: `S${Math.floor(100000 + Math.random() * 900000)}`,
+        fullName: '',
+        bankAccount: '',
+        pan: '',
+        panNumber: '',
+        fatherName: '',
+        dob: '',
+        residentStatus: 'Resident',
+        residentialAddress: '',
+        email: '',
+        phone: '',
+        designation: 'Lead Business Finance Analyst',
+        department: 'Business Finance',
+        joiningDate: new Date().toISOString().split('T')[0],
+        taxRegime: chosenComp?.defaultTaxRegime || 'new',
+        ptState: chosenComp?.ptState || 'haryana',
+        ctcAnnual: 3078000,
+        dynamicFields: {
+          dojGender: `${todayFormatted} / Male`,
+          panNumber: '',
+          pfPensionNo: 'HIL EPF Trust-GN/GGN/5572/635481',
+          uanNumber: '',
+          bankNameAccount: '',
+          location: 'Noida',
+          department: 'Business Finance',
+          band: 'E4',
+          daysWorked: '31.00',
+        },
+        baselineSalary: {
+          basicPay: 112500,
+          hra: 45000,
+          travelAllowance: 28000,
+          holidayAllowance: 12000,
+          foodWallet: 4500,
+          incentives: 54500,
+          pfDeduction: 13500,
+          professionalTax: 200,
+          tds: 34300,
+          otherAllowances: 0,
+          otherDeductions: 0,
+          specialAllowance: 0,
+          conveyanceAllowance: 0,
+          medicalAllowance: 0,
+          esicDeduction: 0,
+        },
+      });
     } else {
       setFormData(initialForm);
     }
@@ -362,6 +411,27 @@ export const EmployeeManager = ({
       if (dynamicFieldsToSave.functionRole) {
         departmentToUse = dynamicFieldsToSave.functionRole;
       }
+    } else if (tplKey === 'hcl_corporate_tech') {
+      if (formData.joiningDate) {
+        const d = new Date(formData.joiningDate);
+        if (!isNaN(d.getTime())) {
+          const day = String(d.getDate()).padStart(2, '0');
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const year = d.getFullYear();
+          const genderStr = dynamicFieldsToSave.dojGender?.includes('Female') ? 'Female' : 'Male';
+          dynamicFieldsToSave.dojGender = `${day}.${month}.${year} / ${genderStr}`;
+        }
+      }
+      dynamicFieldsToSave.panNumber = formData.pan || formData.panNumber || dynamicFieldsToSave.panNumber || '';
+      dynamicFieldsToSave.pfPensionNo = dynamicFieldsToSave.pfPensionNo || 'HIL EPF Trust-GN/GGN/5572/635481';
+      dynamicFieldsToSave.uanNumber = dynamicFieldsToSave.uanNumber || '';
+      dynamicFieldsToSave.bankNameAccount = dynamicFieldsToSave.bankNameAccount || formData.bankAccount || '';
+      dynamicFieldsToSave.location = dynamicFieldsToSave.location || 'Noida';
+      dynamicFieldsToSave.department = formData.department || dynamicFieldsToSave.department || 'Business Finance';
+      dynamicFieldsToSave.band = dynamicFieldsToSave.band || 'E4';
+      if (!dynamicFieldsToSave.daysWorked) {
+        dynamicFieldsToSave.daysWorked = '31.00';
+      }
     }
 
     setLoading(true);
@@ -459,13 +529,28 @@ export const EmployeeManager = ({
         { label: 'Other Allowance', amount: 10650 },
       ];
     } else if (tplKey === 'hcl_corporate_tech') {
+      const basicVal = base.basicPay !== undefined && Number(base.basicPay) > 0 ? Number(base.basicPay) : 87450;
+      const hraVal = base.hra !== undefined && Number(base.hra) > 0 ? Number(base.hra) : 34980;
+      const travelVal = base.travelAllowance !== undefined && Number(base.travelAllowance) > 0
+        ? Number(base.travelAllowance)
+        : (base.conveyanceAllowance ? Number(base.conveyanceAllowance) : 22600);
+      const holidayVal = base.holidayAllowance !== undefined && Number(base.holidayAllowance) > 0
+        ? Number(base.holidayAllowance)
+        : 9500;
+      const foodVal = base.foodWallet !== undefined && Number(base.foodWallet) > 0
+        ? Number(base.foodWallet)
+        : 4500;
+      const incentivesVal = base.incentives !== undefined && base.incentives !== '' && !isNaN(base.incentives)
+        ? Number(base.incentives)
+        : (base.specialAllowance ? Number(base.specialAllowance) : 45213);
+
       initialEarnings = [
-        { label: 'Basic Salary', amount: 87450 },
-        { label: 'HRA', amount: 34980 },
-        { label: 'Travel Allowance', amount: 22600 },
-        { label: 'Holiday Allowance', amount: 9500 },
-        { label: 'Food Wallet', amount: 4500 },
-        { label: 'Incentives', amount: 45213 },
+        { label: 'Basic Salary', amount: basicVal },
+        { label: 'HRA', amount: hraVal },
+        { label: 'Travel Allowance', amount: travelVal },
+        { label: 'Holiday Allowance', amount: holidayVal },
+        { label: 'Food Wallet', amount: foodVal },
+        { label: 'Incentives', amount: incentivesVal },
       ];
     } else if (tplKey === 'concentrix_daksh') {
       initialEarnings = [
@@ -550,10 +635,13 @@ export const EmployeeManager = ({
         { label: 'Water Charges', amount: 82 },
       ];
     } else if (tplKey === 'hcl_corporate_tech') {
+      const pfVal = base.pfDeduction !== undefined && Number(base.pfDeduction) > 0 ? Number(base.pfDeduction) : 10494;
+      const ptVal = base.professionalTax !== undefined && Number(base.professionalTax) > 0 ? Number(base.professionalTax) : 200;
+      const taxVal = base.tds !== undefined && Number(base.tds) > 0 ? Number(base.tds) : 36586;
       initialDeductions = [
-        { label: 'Ee PF contribution', amount: 10494 },
-        { label: 'Prof Tax - split period', amount: 200 },
-        { label: 'Income Tax', amount: 36586 },
+        { label: 'Ee PF contribution', amount: pfVal },
+        { label: 'Prof Tax - split period', amount: ptVal },
+        { label: 'Income Tax', amount: taxVal },
       ];
     } else if (tplKey === 'concentrix_daksh') {
       initialDeductions = [
@@ -2090,6 +2178,43 @@ export const EmployeeManager = ({
                             otherDeductions: 0,
                           },
                         }));
+                      } else if (chosen && chosen.templateKey === 'hcl_corporate_tech') {
+                        const todayFormatted = new Date().toLocaleDateString('en-GB').replace(/\//g, '.');
+                        setFormData((prev) => ({
+                          ...prev,
+                          empCode: prev.empCode && prev.empCode !== 'EMP-001' ? prev.empCode : `S${Math.floor(100000 + Math.random() * 900000)}`,
+                          designation: prev.designation || 'Lead Business Finance Analyst',
+                          department: prev.department && prev.department !== 'Engineering' ? prev.department : 'Business Finance',
+                          dynamicFields: {
+                            ...prev.dynamicFields,
+                            dojGender: prev.dynamicFields?.dojGender || `${todayFormatted} / Male`,
+                            panNumber: prev.pan || prev.panNumber || prev.dynamicFields?.panNumber || '',
+                            pfPensionNo: prev.dynamicFields?.pfPensionNo || 'HIL EPF Trust-GN/GGN/5572/635481',
+                            uanNumber: prev.dynamicFields?.uanNumber || '',
+                            bankNameAccount: prev.dynamicFields?.bankNameAccount || '',
+                            location: prev.dynamicFields?.location || 'Noida',
+                            department: prev.dynamicFields?.department || 'Business Finance',
+                            band: prev.dynamicFields?.band || 'E4',
+                            daysWorked: prev.dynamicFields?.daysWorked || '31.00',
+                          },
+                          baselineSalary: (prev.baselineSalary?.travelAllowance || prev.baselineSalary?.basicPay > 40000) ? prev.baselineSalary : {
+                            basicPay: 112500,
+                            hra: 45000,
+                            travelAllowance: 28000,
+                            holidayAllowance: 12000,
+                            foodWallet: 4500,
+                            incentives: 54500,
+                            pfDeduction: 13500,
+                            professionalTax: 200,
+                            tds: 34300,
+                            otherAllowances: 0,
+                            otherDeductions: 0,
+                            specialAllowance: 0,
+                            conveyanceAllowance: 0,
+                            medicalAllowance: 0,
+                            esicDeduction: 0,
+                          },
+                        }));
                       }
                     }}
                     id="modal-company-select"
@@ -2371,6 +2496,470 @@ export const EmployeeManager = ({
                           id="dwps-salary-pt"
                         />
                       </div>
+                    </div>
+                  </div>
+                </>
+              ) : ((companies.find((c) => c._id === modalCompanyId) || activeCompany)?.templateKey === 'hcl_corporate_tech') ? (
+                /* ── HCL TECHNOLOGIES 3-COLUMN ENTERPRISE ONBOARDING FORM ── */
+                <>
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid rgba(2, 132, 199, 0.2)', paddingBottom: '0.6rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Building2 size={18} style={{ color: '#0284c7' }} />
+                        <h4 style={{ fontSize: '0.98rem', color: '#38bdf8', margin: 0, fontWeight: 700 }}>
+                          HCL Technologies Ltd. — Employee Profile & 3-Column Salary Matrix
+                        </h4>
+                      </div>
+                      <span className="badge" style={{ background: 'rgba(2, 132, 199, 0.15)', color: '#38bdf8', border: '1px solid rgba(2, 132, 199, 0.3)', fontSize: '0.72rem', padding: '0.2rem 0.5rem' }}>
+                        Enterprise 3-Column Template
+                      </span>
+                    </div>
+
+                    {/* Section 1: Top Metadata (Two Balanced Columns matching HCL Payslip header) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                      {/* Left Column Box (Payslip Left Header) */}
+                      <div style={{ background: 'rgba(2, 132, 199, 0.03)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(2, 132, 199, 0.18)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#38bdf8', borderBottom: '1px solid rgba(2, 132, 199, 0.15)', paddingBottom: '0.35rem' }}>
+                          📄 Template Left Side Header Details
+                        </div>
+
+                        {/* Employee ID */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Employee ID : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. S285679 or 52194821"
+                            value={formData.empCode || ''}
+                            onChange={(e) => setFormData({ ...formData, empCode: e.target.value })}
+                            required
+                            autoFocus
+                            id="hcl-input-empcode"
+                          />
+                        </div>
+
+                        {/* Designation */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Designation : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. Lead Business Finance Analyst"
+                            value={formData.designation || ''}
+                            onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                            required
+                            id="hcl-input-designation"
+                          />
+                        </div>
+
+                        {/* DOJ / Gender */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>DOJ / Gender : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. 01.11.2023 / Male"
+                            value={formData.dynamicFields?.dojGender || ''}
+                            onChange={(e) => handleDynamicFieldChange('dojGender', e.target.value)}
+                            required
+                            id="hcl-input-dojgender"
+                          />
+                        </div>
+
+                        {/* PAN No */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>PAN No : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. KEJPS3652M"
+                            value={formData.pan || formData.panNumber || formData.dynamicFields?.panNumber || ''}
+                            onChange={(e) => {
+                              const val = e.target.value.toUpperCase();
+                              setFormData((prev) => ({
+                                ...prev,
+                                pan: val,
+                                panNumber: val,
+                                dynamicFields: { ...prev.dynamicFields, panNumber: val },
+                              }));
+                            }}
+                            required
+                            id="hcl-input-panno"
+                          />
+                        </div>
+
+                        {/* PF / Pension No* */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>PF / Pension No* : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. HIL EPF Trust-GN/GGN/5572/635481"
+                            value={formData.dynamicFields?.pfPensionNo || ''}
+                            onChange={(e) => handleDynamicFieldChange('pfPensionNo', e.target.value)}
+                            required
+                            id="hcl-input-pfpension"
+                          />
+                        </div>
+
+                        {/* UAN No */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>UAN No : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. 100417097851"
+                            value={formData.dynamicFields?.uanNumber || ''}
+                            onChange={(e) => handleDynamicFieldChange('uanNumber', e.target.value)}
+                            required
+                            id="hcl-input-uanno"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Right Column Box (Payslip Right Header) */}
+                      <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-cyan)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '0.35rem' }}>
+                          🏢 Template Right Side Header Details
+                        </div>
+
+                        {/* Full Name */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Employee Full Name *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. Hardeep Singh"
+                            value={formData.fullName || ''}
+                            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                            required
+                            id="hcl-input-fullname"
+                          />
+                        </div>
+
+                        {/* Bank Name & Account No */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Bank Name & Account No : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. BOI BANK 600810110006820"
+                            value={formData.dynamicFields?.bankNameAccount || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              handleDynamicFieldChange('bankNameAccount', val);
+                              setFormData((prev) => ({ ...prev, bankAccount: val }));
+                            }}
+                            required
+                            id="hcl-input-bankaccount"
+                          />
+                        </div>
+
+                        {/* Location */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Location : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. Noida or Chandigarh"
+                            value={formData.dynamicFields?.location || ''}
+                            onChange={(e) => handleDynamicFieldChange('location', e.target.value)}
+                            required
+                            id="hcl-input-location"
+                          />
+                        </div>
+
+                        {/* Department */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Department : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. Business Finance or IT"
+                            value={formData.department || formData.dynamicFields?.department || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setFormData((prev) => ({ ...prev, department: val }));
+                              handleDynamicFieldChange('department', val);
+                            }}
+                            required
+                            id="hcl-input-department"
+                          />
+                        </div>
+
+                        {/* Band */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Band : *</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. E4 or S2"
+                            value={formData.dynamicFields?.band || ''}
+                            onChange={(e) => handleDynamicFieldChange('band', e.target.value)}
+                            required
+                            id="hcl-input-band"
+                          />
+                        </div>
+
+                        {/* Days worked in month */}
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 700 }}>Days worked in month :</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. 31.00"
+                            value={formData.dynamicFields?.daysWorked !== undefined ? formData.dynamicFields.daysWorked : '31.00'}
+                            onChange={(e) => handleDynamicFieldChange('daysWorked', e.target.value)}
+                            id="hcl-input-daysworked"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section 2: Compensation Structure (Earnings & Deductions side by side) */}
+                    <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(2, 132, 199, 0.2)', paddingTop: '1.25rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <DollarSign size={18} style={{ color: '#0284c7' }} />
+                          <h4 style={{ fontSize: '0.95rem', color: '#38bdf8', margin: 0, fontWeight: 700 }}>
+                            Monthly Salary Components (Exact HCL Technologies Breakdown)
+                          </h4>
+                        </div>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          Standard Monthly Salary | Earnings | Deductions
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.25rem' }}>
+                        {/* Left: Income / Earnings Side (6 fields) */}
+                        <div style={{ background: 'rgba(2, 132, 199, 0.04)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(2, 132, 199, 0.2)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', borderBottom: '1px solid rgba(2, 132, 199, 0.15)', paddingBottom: '0.4rem' }}>
+                            <span style={{ fontWeight: 700, color: '#38bdf8', fontSize: '0.85rem' }}>
+                              📈 Income / Earnings Side ({currencySymbol})
+                            </span>
+                            <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>6 Fields</span>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                            {/* 1. Basic Salary */}
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>Basic Salary ({currencySymbol}) *</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={formData.baselineSalary.basicPay}
+                                onChange={(e) => handleSalaryChange('basicPay', e.target.value)}
+                                placeholder="e.g. 112500"
+                                required
+                                id="hcl-salary-basic"
+                              />
+                            </div>
+
+                            {/* 2. HRA */}
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>HRA ({currencySymbol}) *</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={formData.baselineSalary.hra}
+                                onChange={(e) => handleSalaryChange('hra', e.target.value)}
+                                placeholder="e.g. 45000"
+                                required
+                                id="hcl-salary-hra"
+                              />
+                            </div>
+
+                            {/* 3. Travel Allowance */}
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>Travel Allowance ({currencySymbol}) *</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={formData.baselineSalary.travelAllowance}
+                                onChange={(e) => handleSalaryChange('travelAllowance', e.target.value)}
+                                placeholder="e.g. 28000"
+                                required
+                                id="hcl-salary-travel"
+                              />
+                            </div>
+
+                            {/* 4. Holiday Allowance */}
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>Holiday Allowance ({currencySymbol}) *</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={formData.baselineSalary.holidayAllowance}
+                                onChange={(e) => handleSalaryChange('holidayAllowance', e.target.value)}
+                                placeholder="e.g. 12000"
+                                required
+                                id="hcl-salary-holiday"
+                              />
+                            </div>
+
+                            {/* 5. Food Wallet */}
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>Food Wallet ({currencySymbol}) *</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={formData.baselineSalary.foodWallet}
+                                onChange={(e) => handleSalaryChange('foodWallet', e.target.value)}
+                                placeholder="e.g. 4500"
+                                required
+                                id="hcl-salary-food"
+                              />
+                            </div>
+
+                            {/* 6. Incentives */}
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600, color: '#fbbf24' }}>
+                                Incentives ({currencySymbol})
+                              </label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                style={{ borderColor: 'rgba(251, 191, 36, 0.4)' }}
+                                value={formData.baselineSalary.incentives}
+                                onChange={(e) => handleSalaryChange('incentives', e.target.value)}
+                                placeholder="e.g. 54500"
+                                id="hcl-salary-incentives"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Important Note about Incentives */}
+                          <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(251, 191, 36, 0.08)', borderRadius: '6px', border: '1px solid rgba(251, 191, 36, 0.25)', fontSize: '0.73rem', color: '#fde68a', lineHeight: 1.35 }}>
+                            <strong>⚠️ Notice:</strong> <code>Incentives</code> sirf <strong>Earnings</strong> column me aayega; yeh <strong>Standard Monthly Salary</strong> column me show nahi hoga.
+                          </div>
+                        </div>
+
+                        {/* Right: Deductions Side (3 fields) */}
+                        <div style={{ background: 'rgba(244, 63, 94, 0.03)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(244, 63, 94, 0.2)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', borderBottom: '1px solid rgba(244, 63, 94, 0.15)', paddingBottom: '0.4rem' }}>
+                            <span style={{ fontWeight: 700, color: '#fb7185', fontSize: '0.85rem' }}>
+                              📉 Deductions Side ({currencySymbol})
+                            </span>
+                            <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>3 Fields</span>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                            {/* 1. Ee PF contribution */}
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>Ee PF contribution ({currencySymbol}) *</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={formData.baselineSalary.pfDeduction}
+                                onChange={(e) => handleSalaryChange('pfDeduction', e.target.value)}
+                                placeholder="e.g. 13500 (12% of Basic)"
+                                required
+                                id="hcl-salary-pf"
+                              />
+                            </div>
+
+                            {/* 2. Prof Tax - split period */}
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>Prof Tax - split period ({currencySymbol}) *</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={formData.baselineSalary.professionalTax}
+                                onChange={(e) => handleSalaryChange('professionalTax', e.target.value)}
+                                placeholder="e.g. 200"
+                                required
+                                id="hcl-salary-pt"
+                              />
+                            </div>
+
+                            {/* 3. Income Tax */}
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>Income Tax ({currencySymbol}) *</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={formData.baselineSalary.tds}
+                                onChange={(e) => handleSalaryChange('tds', e.target.value)}
+                                placeholder="e.g. 34300"
+                                required
+                                id="hcl-salary-tax"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Live Calculation Preview Ribbon */}
+                      {(() => {
+                        const bVal = Number(formData.baselineSalary.basicPay) || 0;
+                        const hVal = Number(formData.baselineSalary.hra) || 0;
+                        const tVal = Number(formData.baselineSalary.travelAllowance) || 0;
+                        const holVal = Number(formData.baselineSalary.holidayAllowance) || 0;
+                        const fVal = Number(formData.baselineSalary.foodWallet) || 0;
+                        const incVal = Number(formData.baselineSalary.incentives) || 0;
+
+                        const stdSum = bVal + hVal + tVal + holVal + fVal;
+                        const grossSum = stdSum + incVal;
+
+                        const pfVal = Number(formData.baselineSalary.pfDeduction) || 0;
+                        const ptVal = Number(formData.baselineSalary.professionalTax) || 0;
+                        const taxVal = Number(formData.baselineSalary.tds) || 0;
+
+                        const dedSum = pfVal + ptVal + taxVal;
+                        const netVal = Math.max(0, grossSum - dedSum);
+
+                        return (
+                          <div style={{ marginTop: '1.25rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1.2fr', gap: '0.85rem', alignItems: 'center' }}>
+                              <div style={{ padding: '0.6rem 0.85rem', background: 'rgba(2, 132, 199, 0.08)', borderRadius: '6px', border: '1px solid rgba(2, 132, 199, 0.2)' }}>
+                                <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                  Total Standard Salary
+                                </div>
+                                <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#38bdf8', marginTop: '2px' }}>
+                                  {currencySymbol} {stdSum.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+                                <div style={{ fontSize: '0.65rem', color: '#64748b' }}>Excludes Incentives</div>
+                              </div>
+
+                              <div style={{ padding: '0.6rem 0.85rem', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                  Gross Earnings
+                                </div>
+                                <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#34d399', marginTop: '2px' }}>
+                                  {currencySymbol} {grossSum.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+                                <div style={{ fontSize: '0.65rem', color: '#64748b' }}>Incl. Incentives</div>
+                              </div>
+
+                              <div style={{ padding: '0.6rem 0.85rem', background: 'rgba(244, 63, 94, 0.08)', borderRadius: '6px', border: '1px solid rgba(244, 63, 94, 0.2)' }}>
+                                <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                  Gross Deductions
+                                </div>
+                                <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fb7185', marginTop: '2px' }}>
+                                  {currencySymbol} {dedSum.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+                                <div style={{ fontSize: '0.65rem', color: '#64748b' }}>PF + PT + TDS</div>
+                              </div>
+
+                              <div style={{ padding: '0.65rem 1rem', background: netVal >= 200000 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(2, 132, 199, 0.15)', borderRadius: '6px', border: `1.5px solid ${netVal >= 200000 ? '#10b981' : '#0284c7'}` }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>
+                                    Net Pay (Take Home)
+                                  </span>
+                                  {netVal >= 200000 && (
+                                    <span style={{ fontSize: '0.65rem', background: '#10b981', color: '#fff', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                                      &gt; ₹2 Lakh Verified
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: netVal >= 200000 ? '#10b981' : '#38bdf8', marginTop: '2px' }}>
+                                  {currencySymbol} {netVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </>

@@ -82,6 +82,12 @@ const employeeSchema = new mongoose.Schema(
       conveyanceAllowance: { type: Number, default: 0 },
       medicalAllowance: { type: Number, default: 0 },
       otherAllowances: { type: Number, default: 0 },
+
+      // HCL Technologies and Enterprise specific fields
+      travelAllowance: { type: Number, default: 0 },
+      holidayAllowance: { type: Number, default: 0 },
+      foodWallet: { type: Number, default: 0 },
+      incentives: { type: Number, default: 0 },
       
       // Standard deductions
       pfDeduction: { type: Number, default: 0 },

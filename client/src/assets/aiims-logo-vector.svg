@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 100" width="100%" height="100%">
+  <defs>
+    <!-- Top Arc for Hindi Text -->
+    <path id="aiimsTopArc" d="M 12.5,50 A 37.5,37.5 0 0,1 87.5,50" fill="none" />
+    <!-- Bottom Arc for English Text -->
+    <path id="aiimsBottomArc" d="M 87.5,50 A 37.5,37.5 0 0,1 12.5,50" fill="none" />
+  </defs>
+
+  <!-- Outer Concentric Rings -->
+  <circle cx="50" cy="50" r="47" stroke="#A83216" stroke-width="2.6" fill="#ffffff" />
+  <circle cx="50" cy="50" r="43.5" stroke="#A83216" stroke-width="1.1" fill="none" />
+  <circle cx="50" cy="50" r="31.5" stroke="#A83216" stroke-width="1.2" fill="none" />
+
+  <!-- Top Arc Text: भारतीय आयुर्विज्ञान संस्थान -->
+  <text font-size="6.2" fill="#A83216" font-weight="bold" font-family="'Times New Roman', 'Mangal', 'Nirmala UI', serif">
+    <textPath href="#aiimsTopArc" startOffset="50%" textAnchor="middle">
+      भारतीय आयुर्विज्ञान संस्थान
+    </textPath>
+  </text>
+
+  <!-- Bottom Arc Text: ALL INDIA INSTITUTE OF MEDICAL SCIENCES -->
+  <text font-size="4.6" fill="#A83216" font-weight="bold" font-family="'Arial', 'Helvetica', sans-serif" letter-spacing="0.2px">
+    <textPath href="#aiimsBottomArc" startOffset="50%" textAnchor="middle">
+      ALL INDIA INSTITUTE OF MEDICAL SCIENCES
+    </textPath>
+  </text>
+
+  <!-- Central Caduceus Staff -->
+  <line x1="50" y1="23" x2="50" y2="76" stroke="#A83216" stroke-width="2.6" stroke-linecap="round" />
+  
+  <!-- Top Lotus / Emblem Finial -->
+  <circle cx="50" cy="22" r="3.2" fill="#A83216" />
+  <path d="M 46 25 C 44 21, 46 17, 50 16 C 54 17, 56 21, 54 25 Z" fill="#A83216" />
+  <path d="M 42 26 C 41 23, 43 19, 47 18 C 45 22, 45 25, 42 26 Z" fill="#A83216" />
+  <path d="M 58 26 C 59 23, 57 19, 53 18 C 55 22, 55 25, 58 26 Z" fill="#A83216" />
+
+  <!-- Entwined Serpents -->
+  <!-- Left Serpent -->
+  <path d="M 37 32 C 48 26, 52 38, 50 43 C 48 48, 36 53, 50 59 C 64 65, 50 74, 50 74" 
+        stroke="#A83216" stroke-width="2.2" fill="none" stroke-linecap="round" />
+  <!-- Right Serpent -->
+  <path d="M 63 32 C 52 26, 48 38, 50 43 C 52 48, 64 53, 50 59 C 36 65, 50 74, 50 74" 
+        stroke="#A83216" stroke-width="2.2" fill="none" stroke-linecap="round" />
+
+  <!-- Serpent Heads -->
+  <circle cx="37" cy="32" r="1.8" fill="#A83216" />
+  <circle cx="63" cy="32" r="1.8" fill="#A83216" />
+
+  <!-- Lateral Acoustic Resonance Waves -->
+  <!-- Left Waves -->
+  <path d="M 32 44 A 12 12 0 0 0 32 56" stroke="#A83216" stroke-width="1.1" fill="none" stroke-linecap="round" />
+  <path d="M 28 41 A 16 16 0 0 0 28 59" stroke="#A83216" stroke-width="1.1" fill="none" stroke-linecap="round" />
+  <!-- Right Waves -->
+  <path d="M 68 44 A 12 12 0 0 1 68 56" stroke="#A83216" stroke-width="1.1" fill="none" stroke-linecap="round" />
+  <path d="M 72 41 A 16 16 0 0 1 72 59" stroke="#A83216" stroke-width="1.1" fill="none" stroke-linecap="round" />
+
+  <!-- Base Motto Banner -->
+  <g transform="translate(50, 93)">
+    <text font-size="6.8" fill="#A83216" font-family="'Times New Roman', 'Mangal', 'Nirmala UI', serif" font-weight="bold" text-anchor="middle">
+      शरीरमाद्यं खलु धर्मसाधनम्
+    </text>
+  </g>
+
+  <!-- Divider / Decorative element if needed, or clean space -->
+
+  <!-- Brand Typography: AIIMS -->
+  <text x="108" y="54" 
+        font-family="'Arial Black', 'Impact', 'Trebuchet MS', sans-serif" 
+        font-size="44" 
+        font-weight="900" 
+        fill="#A83216" 
+        letter-spacing="0.5px">
+    AIIMS
+  </text>
+
+  <!-- Brand Typography: New Delhi -->
+  <text x="110" y="85" 
+        font-family="'Arial', 'Helvetica', 'Segoe UI', sans-serif" 
+        font-size="24" 
+        font-weight="700" 
+        fill="#A83216" 
+        letter-spacing="0.8px">
+    New Delhi
+  </text>
+</svg>
